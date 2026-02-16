@@ -168,6 +168,9 @@ def main() -> None:
         elif cmd == "meme.offload":
             from app.cli.brn_cmds_meme import main as meme_main
             sys.exit(meme_main(sys.argv[2:]))
+        elif cmd == "signal.compose":
+            from app.cli.brn_cmds_signal import main as signal_main
+            sys.exit(signal_main(sys.argv[2:]))
 
 
 if __name__ == "__main__":

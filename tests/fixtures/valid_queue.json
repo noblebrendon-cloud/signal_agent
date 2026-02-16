@@ -1,0 +1,29 @@
+{
+    "queue_version": "social_queue_v1",
+    "lane": "artifact_channel",
+    "platform": "linkedin",
+    "intent": "post",
+    "meme_id": "test_meme_001",
+    "render_paths": [
+        "tests/fixtures/dummy_render.svg"
+    ],
+    "artifact_links": [
+        {
+            "label": "Meme Render",
+            "path": "tests/fixtures/dummy_render.svg"
+        }
+    ],
+    "copy": {
+        "headline": "Signal Agent Update",
+        "body": "New internal tooling update.\nDeterministic outputs guaranteed."
+    },
+    "pack": {
+        "pack_id": "content_meme_offload",
+        "pack_hash": "sha256:abcdef1234567890"
+    },
+    "provenance": {
+        "source_artifact_id": "artifact_001",
+        "session_id": "session_test_001",
+        "created_at_utc": "2026-02-16T08:00:00Z"
+    }
+}

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>{headline}</title>
+    <style>
+        body {
+                {
+                font-family: Georgia, "Times New Roman", serif;
+                max-width: 720px;
+                margin: 2rem auto;
+                padding: 0 1rem;
+                color: #292929;
+                background: #ffffff;
+                line-height: 1.8;
+            }
+        }
+
+        h1 {
+                {
+                font-size: 1.75rem;
+                margin-bottom: 1.5rem;
+                color: #292929;
+                font-weight: 700;
+            }
+        }
+
+        .body {
+                {
+                margin-bottom: 2rem;
+                font-size: 1.1rem;
+            }
+        }
+
+        .artifacts,
+        .renders {
+                {
+                margin-bottom: 1rem;
+            }
+        }
+
+        .artifacts h2,
+        .renders h2 {
+                {
+                font-size: 1rem;
+                color: #757575;
+            }
+        }
+
+        ul {
+                {
+                padding-left: 1.5rem;
+            }
+        }
+
+        li {
+                {
+                margin-bottom: 0.25rem;
+            }
+        }
+
+        a {
+                {
+                color: #e86c00;
+                text-decoration: none;
+            }
+        }
+
+        a:hover {
+                {
+                text-decoration: underline;
+            }
+        }
+
+        .pack-footer {
+                {
+                font-size: 0.75rem;
+                color: #999;
+                margin-top: 2rem;
+                border-top: 1px solid #e0e0e0;
+                padding-top: 0.5rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <h1>{headline}</h1>
+    <div class="body">
+        {body_html}
+    </div>
+    <div class="artifacts">
+        <h2>Artifacts</h2>
+        <ul>
+            {artifact_links_html}
+        </ul>
+    </div>
+    <div class="renders">
+        <h2>Renders</h2>
+        <ul>
+            {render_paths_html}
+        </ul>
+    </div>
+    <div class="pack-footer">{pack_footer}</div>
+</body>
+
+</html>
