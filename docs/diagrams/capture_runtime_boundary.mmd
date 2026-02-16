@@ -1,0 +1,52 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#1a1a2e', 'primaryTextColor': '#eee', 'primaryBorderColor': '#555', 'lineColor': '#888', 'secondaryColor': '#16213e', 'tertiaryColor': '#0f3460' }}}%%
+graph TB
+    subgraph VOLATILE["Volatile Boundary (Non-Canonical)"]
+        style VOLATILE fill:#1a1a2e33,stroke:#e94560,stroke-width:2px,stroke-dasharray: 5 5
+        CLI["Capture CLI<br/>brn capture.add"]
+        RAW["data/capture/raw/"]
+        PROMO["Promote Engine<br/>promote.py"]
+        PROMOTED["data/capture/promoted/"]
+        ARCHIVE["data/capture/archive/"]
+        CLI -->|writes raw fragment| RAW
+        RAW -->|sorted docs| PROMO
+        PROMO -->|bundle .md| PROMOTED
+        PROMO -->|archive raw| ARCHIVE
+    end
+
+    subgraph CANONICAL["Canonical Boundary"]
+        style CANONICAL fill:#0f346033,stroke:#00d2ff,stroke-width:2px
+        CURATE["Curate Pipeline<br/>curate.py"]
+        REGISTRY["artifact_registry.jsonl"]
+        PROCESSED["data/processed/ + data/archive/"]
+        CURATE -->|register + hash| REGISTRY
+        CURATE -->|move + rename| PROCESSED
+    end
+
+    subgraph DOWNSTREAM["Downstream Pipeline"]
+        style DOWNSTREAM fill:#16213e33,stroke:#7b68ee,stroke-width:2px
+        POLICY["Constraint / Policy Layer"]
+        KERNEL["Stability Kernel<br/>coherence_kernel.py"]
+        SIGNAL["Signal Compose<br/>compose.py"]
+        RELEASE["Release Tag / CI"]
+        POLICY -->|enforce| KERNEL
+        KERNEL -->|score| SIGNAL
+        SIGNAL -->|stage| RELEASE
+    end
+
+    subgraph EXTERNAL["External (Optional)"]
+        style EXTERNAL fill:#2d2d2d33,stroke:#666,stroke-dasharray: 3 3
+        NOTEBOOK["NotebookLM<br/>(Synthesis - optional)"]
+    end
+
+    PROMOTED -->|curate handoff| CURATE
+    PROCESSED -->|input| POLICY
+    REGISTRY -->|provenance| DOWNSTREAM
+    NOTEBOOK -.->|human review| CURATE
+    NOTEBOOK -.->|NOT canonical storage| EXTERNAL
+
+    classDef volatile fill:#e9456022,stroke:#e94560,color:#fff
+    classDef canonical fill:#00d2ff22,stroke:#00d2ff,color:#fff
+    classDef downstream fill:#7b68ee22,stroke:#7b68ee,color:#fff
+    class CLI,RAW,PROMO,PROMOTED,ARCHIVE volatile
+    class CURATE,REGISTRY,PROCESSED canonical
+    class POLICY,KERNEL,SIGNAL,RELEASE downstream

@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 700" font-family="Segoe UI, Arial, sans-serif" font-size="13">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 7" refX="9" refY="3.5" markerWidth="10" markerHeight="7" orient="auto-start-reverse">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#888"/>
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 7" refX="9" refY="3.5" markerWidth="10" markerHeight="7" orient="auto-start-reverse">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#e94560"/>
+    </marker>
+    <marker id="arrow-blue" viewBox="0 0 10 7" refX="9" refY="3.5" markerWidth="10" markerHeight="7" orient="auto-start-reverse">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#00d2ff"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="900" height="700" fill="#0d1117" rx="8"/>
+
+  <!-- Volatile Boundary -->
+  <rect x="30" y="30" width="400" height="320" rx="12" fill="none" stroke="#e94560" stroke-width="2" stroke-dasharray="8 4"/>
+  <text x="50" y="55" fill="#e94560" font-weight="bold" font-size="14">VOLATILE (Non-Canonical)</text>
+
+  <!-- Capture CLI -->
+  <rect x="60" y="75" width="160" height="45" rx="6" fill="#1a1a2e" stroke="#e94560"/>
+  <text x="140" y="100" fill="#fff" text-anchor="middle" font-size="12">Capture CLI</text>
+  <text x="140" y="113" fill="#aaa" text-anchor="middle" font-size="10">brn capture.add</text>
+
+  <!-- data/capture/raw -->
+  <rect x="60" y="150" width="160" height="40" rx="6" fill="#2a1a2e" stroke="#e94560" stroke-dasharray="4 2"/>
+  <text x="140" y="175" fill="#eee" text-anchor="middle" font-size="11">data/capture/raw/</text>
+
+  <!-- Promote Engine -->
+  <rect x="250" y="150" width="160" height="45" rx="6" fill="#1a1a2e" stroke="#e94560"/>
+  <text x="330" y="172" fill="#fff" text-anchor="middle" font-size="12">Promote Engine</text>
+  <text x="330" y="187" fill="#aaa" text-anchor="middle" font-size="10">promote.py</text>
+
+  <!-- data/capture/promoted -->
+  <rect x="250" y="230" width="160" height="40" rx="6" fill="#2a1a2e" stroke="#e94560" stroke-dasharray="4 2"/>
+  <text x="330" y="255" fill="#eee" text-anchor="middle" font-size="11">data/capture/promoted/</text>
+
+  <!-- data/capture/archive -->
+  <rect x="60" y="230" width="160" height="40" rx="6" fill="#2a1a2e" stroke="#666" stroke-dasharray="4 2"/>
+  <text x="140" y="255" fill="#aaa" text-anchor="middle" font-size="11">data/capture/archive/</text>
+
+  <!-- Volatile arrows -->
+  <line x1="140" y1="120" x2="140" y2="150" stroke="#e94560" marker-end="url(#arrow-red)"/>
+  <line x1="220" y1="170" x2="250" y2="170" stroke="#e94560" marker-end="url(#arrow-red)"/>
+  <line x1="330" y1="195" x2="330" y2="230" stroke="#e94560" marker-end="url(#arrow-red)"/>
+  <line x1="250" y1="180" x2="220" y2="240" stroke="#666" marker-end="url(#arrow)"/>
+  <text x="210" y="210" fill="#888" font-size="9">archive</text>
+
+  <!-- Canonical Boundary -->
+  <rect x="470" y="30" width="400" height="200" rx="12" fill="none" stroke="#00d2ff" stroke-width="2"/>
+  <text x="490" y="55" fill="#00d2ff" font-weight="bold" font-size="14">CANONICAL</text>
+
+  <!-- Curate Pipeline -->
+  <rect x="500" y="75" width="160" height="45" rx="6" fill="#0f3460" stroke="#00d2ff"/>
+  <text x="580" y="98" fill="#fff" text-anchor="middle" font-size="12">Curate Pipeline</text>
+  <text x="580" y="113" fill="#aaa" text-anchor="middle" font-size="10">curate.py</text>
+
+  <!-- artifact_registry -->
+  <rect x="690" y="75" width="160" height="40" rx="6" fill="#0a2540" stroke="#00d2ff" stroke-dasharray="4 2"/>
+  <text x="770" y="100" fill="#eee" text-anchor="middle" font-size="10">artifact_registry.jsonl</text>
+
+  <!-- processed/archive -->
+  <rect x="500" y="155" width="160" height="40" rx="6" fill="#0a2540" stroke="#00d2ff" stroke-dasharray="4 2"/>
+  <text x="580" y="178" fill="#eee" text-anchor="middle" font-size="11">processed + archive</text>
+
+  <!-- Canonical arrows -->
+  <line x1="660" y1="95" x2="690" y2="95" stroke="#00d2ff" marker-end="url(#arrow-blue)"/>
+  <line x1="580" y1="120" x2="580" y2="155" stroke="#00d2ff" marker-end="url(#arrow-blue)"/>
+
+  <!-- Volatile → Canonical arrow (curate handoff) -->
+  <path d="M 410 250 Q 455 250, 500 95" fill="none" stroke="#f0a500" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="440" y="190" fill="#f0a500" font-size="10" transform="rotate(-50,440,190)">curate handoff</text>
+
+  <!-- Downstream Pipeline -->
+  <rect x="470" y="270" width="400" height="180" rx="12" fill="none" stroke="#7b68ee" stroke-width="2"/>
+  <text x="490" y="295" fill="#7b68ee" font-weight="bold" font-size="14">DOWNSTREAM</text>
+
+  <rect x="500" y="310" width="140" height="40" rx="6" fill="#16213e" stroke="#7b68ee"/>
+  <text x="570" y="335" fill="#eee" text-anchor="middle" font-size="11">Constraint / Policy</text>
+
+  <rect x="670" y="310" width="140" height="40" rx="6" fill="#16213e" stroke="#7b68ee"/>
+  <text x="740" y="335" fill="#eee" text-anchor="middle" font-size="11">Stability Kernel</text>
+
+  <rect x="500" y="380" width="140" height="40" rx="6" fill="#16213e" stroke="#7b68ee"/>
+  <text x="570" y="405" fill="#eee" text-anchor="middle" font-size="11">Signal Compose</text>
+
+  <rect x="670" y="380" width="140" height="40" rx="6" fill="#16213e" stroke="#7b68ee"/>
+  <text x="740" y="405" fill="#eee" text-anchor="middle" font-size="11">Release / CI</text>
+
+  <!-- Downstream arrows -->
+  <line x1="580" y1="195" x2="570" y2="310" stroke="#7b68ee" marker-end="url(#arrow)"/>
+  <line x1="640" y1="330" x2="670" y2="330" stroke="#7b68ee" marker-end="url(#arrow)"/>
+  <line x1="740" y1="350" x2="570" y2="380" stroke="#7b68ee" marker-end="url(#arrow)"/>
+  <line x1="640" y1="400" x2="670" y2="400" stroke="#7b68ee" marker-end="url(#arrow)"/>
+
+  <!-- External (NotebookLM) -->
+  <rect x="30" y="400" width="400" height="80" rx="12" fill="none" stroke="#666" stroke-dasharray="6 3"/>
+  <text x="50" y="420" fill="#666" font-size="12" font-weight="bold">EXTERNAL (Optional)</text>
+  <rect x="60" y="435" width="200" height="35" rx="6" fill="#1a1a1a" stroke="#555"/>
+  <text x="160" y="457" fill="#888" text-anchor="middle" font-size="11">NotebookLM (Synthesis)</text>
+  <text x="280" y="457" fill="#555" font-size="9">NOT canonical storage</text>
+
+  <!-- Legend -->
+  <rect x="30" y="520" width="840" height="150" rx="8" fill="#0d1117" stroke="#333"/>
+  <text x="50" y="545" fill="#ccc" font-size="13" font-weight="bold">Phase Separation</text>
+  <line x1="50" y1="570" x2="80" y2="570" stroke="#e94560" stroke-width="3" stroke-dasharray="6 3"/>
+  <text x="90" y="574" fill="#e94560" font-size="11">Capture → Promote (entropy-permissive, volatile)</text>
+  <line x1="50" y1="595" x2="80" y2="595" stroke="#00d2ff" stroke-width="3"/>
+  <text x="90" y="599" fill="#00d2ff" font-size="11">Curate (entropy-reducing, canonical gate)</text>
+  <line x1="50" y1="620" x2="80" y2="620" stroke="#7b68ee" stroke-width="3"/>
+  <text x="90" y="624" fill="#7b68ee" font-size="11">Constrain → Synthesize → Release (governed pipeline)</text>
+  <line x1="50" y1="645" x2="80" y2="645" stroke="#666" stroke-width="2" stroke-dasharray="4 2"/>
+  <text x="90" y="649" fill="#666" font-size="11">External (optional, non-canonical)</text>
+
+  <text x="500" y="574" fill="#888" font-size="11">Capture layer NEVER touches artifact_registry.jsonl</text>
+  <text x="500" y="599" fill="#888" font-size="11">Promotion is non-canonical until curate accepts</text>
+  <text x="500" y="624" fill="#888" font-size="11">Stability kernel + policy remain downstream of curate</text>
+</svg>

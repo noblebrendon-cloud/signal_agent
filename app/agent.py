@@ -168,6 +168,15 @@ def main() -> None:
         elif cmd == "meme.offload":
             from app.cli.brn_cmds_meme import main as meme_main
             sys.exit(meme_main(sys.argv[2:]))
+        elif cmd == "capture.add":
+            from app.hq.capture.capture import main as capture_main
+            sys.exit(capture_main(["add"] + sys.argv[2:]))
+        elif cmd == "capture.promote":
+            from app.hq.capture.promote import main as promote_main
+            sys.exit(promote_main(sys.argv[2:]))
+        elif cmd == "capture.status":
+            from app.hq.capture.capture import main as capture_main
+            sys.exit(capture_main(["status"]))
 
 
 if __name__ == "__main__":
