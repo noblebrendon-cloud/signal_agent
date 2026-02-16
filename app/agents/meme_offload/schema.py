@@ -61,6 +61,7 @@ class MemeSpecV1:
     meme_id: str = ""
     pack: MemePackRef = field(default_factory=lambda: MemePackRef("", "", ""))
     format: str = "two_panel"  # "two_panel" | "infographic_list"
+    render_mode: str = "png"   # "png" | "svg"
     canvas: MemeCanvas = field(default_factory=MemeCanvas)
     text: Any = field(default_factory=lambda: MemeTextTwoPanel())
     output: MemeOutput = field(default_factory=MemeOutput)
@@ -72,6 +73,11 @@ class MemeSpecV1:
             raise ValueError(
                 f"Invalid spec_version: '{self.spec_version}'. "
                 f"Must be '{SPEC_VERSION_CANONICAL}'."
+            )
+        # Validate render_mode
+        if self.render_mode not in ("png", "svg"):
+            raise ValueError(
+                f"Invalid render_mode: '{self.render_mode}'. Must be 'png' or 'svg'."
             )
 
     def validate(self) -> None:

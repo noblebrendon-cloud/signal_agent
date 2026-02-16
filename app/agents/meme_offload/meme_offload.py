@@ -209,21 +209,16 @@ def meme_offload_generate(
     session_id: str = "",
     source_artifact_id: str = "",
     fmt: str = "two_panel",
+    render_mode: str = "png",
 ) -> List[MemeSpecV1]:
     """
     Generate up to `n` meme specs from source text, enforced by constraint pack.
 
-    Steps:
-      1. Emit MEME_OFFLOAD_START (with pack provenance)
-      2. Load pack YAML
-      3. Extract candidate frames (deterministic)
-      4. Build up to n MemeSpecV1 objects (spec_version="meme_spec_v1")
-      5. [Optional] Provider expansion if policy-gated ALLOW
-      6. Reprojection checkpoint per spec
-      7. On FAIL: kernel.record_constraint_violation(), raise ConstraintViolation
-      8. Write spec JSON
-      9. Call renderer
-     10. Emit MEME_OFFLOAD_DONE (with pack provenance)
+    v0.3 additions:
+    - render_mode: 'png' | 'svg'
+    - meme_id recomputed after provider expansion
+    - Artifact registry auto-ingest
+    - Render mode routing (SVG vs PNG)
     """
     now_utc = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     log = logger_fn or (lambda _evt: None)
@@ -290,6 +285,9 @@ def meme_offload_generate(
     SPEC_DIR.mkdir(parents=True, exist_ok=True)
     RENDER_DIR.mkdir(parents=True, exist_ok=True)
 
+    # Determine file extension from render_mode
+    ext = "svg" if render_mode == "svg" else "png"
+
     for idx, frame in enumerate(frames[:effective_n]):
         # Normalize text for ID generation
         if fmt == "infographic_list":
@@ -307,10 +305,12 @@ def meme_offload_generate(
                 top_text = _expand_caption(top_text, kernel, log, now_utc, prov)
                 bottom_text = _expand_caption(bottom_text, kernel, log, now_utc, prov)
 
+            # v0.3: normalize AFTER expansion so meme_id reflects final text
             normalized = (top_text + bottom_text).strip()
             text_obj = MemeTextTwoPanel(top=top_text, bottom=bottom_text)
 
         frame_id = f"frame_{idx:04d}"
+        # v0.3: meme_id computed from final (possibly expanded) text
         meme_id = generate_meme_id(p_hash, frame_id, normalized, fmt)
 
         spec = MemeSpecV1(
@@ -318,12 +318,13 @@ def meme_offload_generate(
             meme_id=meme_id,
             pack=pack_ref,
             format=fmt,
+            render_mode=render_mode,
             canvas=MemeCanvas(),
             text=text_obj,
             output=MemeOutput(
                 spec_path=str(SPEC_DIR / f"{meme_id}.json"),
                 render_dir=str(RENDER_DIR),
-                filename=f"{meme_id}.png",
+                filename=f"{meme_id}.{ext}",
             ),
             provenance=MemeProvenance(
                 source_artifact_id=source_artifact_id,
@@ -375,19 +376,45 @@ def meme_offload_generate(
             f.write(spec.to_json())
 
     # ------------------------------------------------------------------
-    # 9. Render
+    # 9. Render (mode-routed: PNG or SVG)
     # ------------------------------------------------------------------
-    from app.agents.meme_offload.render.render_memes import render_meme
+    if render_mode == "svg":
+        from app.agents.meme_offload.render.render_svg import render_meme_svg as _render
+    else:
+        from app.agents.meme_offload.render.render_memes import render_meme as _render
 
     for spec in specs:
-        out_path = render_meme(spec)
+        out_path = _render(spec)
         log({
             "event": "MEME_RENDER_DONE",
             "meme_id": spec.meme_id,
             "output_path": str(out_path),
+            "render_mode": render_mode,
             "timestamp": now_utc,
             **prov,
         })
+
+    # ------------------------------------------------------------------
+    # 9b. Artifact registry auto-ingest (v0.3)
+    # ------------------------------------------------------------------
+    from app.agents.meme_offload.artifact_registry import ingest_artifact
+
+    for spec in specs:
+        rendered_file = Path(spec.output.render_dir) / spec.output.filename
+        if rendered_file.exists():
+            registry_entry = ingest_artifact(
+                rendered_path=rendered_file,
+                pack_id=pack_ref.pack_id,
+                pack_hash=pack_ref.pack_hash,
+                meme_id=spec.meme_id,
+            )
+            log({
+                "event": "MEME_ARTIFACT_INGESTED",
+                "meme_id": spec.meme_id,
+                "artifact_id": registry_entry.get("artifact_id", ""),
+                "timestamp": now_utc,
+                **prov,
+            })
 
     # ------------------------------------------------------------------
     # 10. Final telemetry (with pack provenance)
@@ -397,6 +424,7 @@ def meme_offload_generate(
         "total_rendered": len(specs),
         "meme_ids": [s.meme_id for s in specs],
         "expansion_used": expansion_enabled,
+        "render_mode": render_mode,
         "timestamp": now_utc,
         **prov,
     })
