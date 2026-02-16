@@ -1,0 +1,207 @@
+# Deterministic Constraint Evaluation Engine
+
+## 1. SYSTEM_ID
+`SIGNAL_AGENT_CONSTRAINT_ENGINE_V2`
+
+## 2. THREAT_MODEL
+1.  **Policy Drift**: Runtime state diverging from approved configuration.
+    *   *Mitigation*: SHA256 Policy Hashing + Periodic Re-validation.
+2.  **Override Escalation**: Low-privilege overrides disabling core safety rules.
+    *   *Mitigation*: Merge logic enforces `Core > Override` priority and scope validation.
+3.  **Nondeterministic Evaluation**: "Flaky" policy decisions causing unreplayable bugs.
+    *   *Mitigation*: Seeded RNG, sorted constraints, no `eval()`, fixed-time budget.
+4.  **Resource Exhaustion**: Policies consuming excessive CPU/Memory (DoS).
+    *   *Mitigation*: Recursion depth limit (3), simple operator DSL.
+
+## 3. RUNTIME_EVALUATION_FUNCTION
+
+```python
+def evaluate_action(action, policy, context):
+    """
+    Deterministically evaluates an action against a policy.
+    Returns: ConstraintResult(decision, reason, constraint_id)
+    """
+    
+    # 1. Unknown Action Protection (Strict Mode)
+    if policy.strict_mode and action.name not in policy.tool_surface:
+        return Result(BLOCK, "UNKNOWN_ACTION_STRICT_MODE", "SYS-000")
+
+    # 2. Budget Check (Pre-Execution)
+    if not BudgetEngine.check_funds(action.cost_estimate, context.budget_remaining):
+        return Result(BLOCK, "BUDGET_EXCEEDED", "SYS-001")
+
+    # 3. Sort Constraints
+    # Priority ASC (lower=more important), Specificity DESC, ID ASC
+    sorted_constraints = sort(policy.constraints, key=lambda c: (c.priority, -c.specificity, c.id))
+
+    # 4. Evaluate Chain
+    for constraint in sorted_constraints:
+        if not scope_matches(constraint.scope, action):
+            continue
+
+        decision = evaluate_dsl(constraint.rule, action, context)
+        
+        if decision in [BLOCK, REQUEST_APPROVAL, RETRY]:
+            # Stop at first restrictive result
+            return Result(decision, constraint.intent, constraint.id)
+
+    # 5. Default Behavior
+    return Result(ALLOW, "DEFAULT_ALLOW", "SYS-OK")
+```
+
+## 4. RULE_DSL_SCHEMA
+
+Rules are JSON trees. No string parsing at runtime.
+
+**Node Types**:
+- `Logical`: `AND`, `OR`, `NOT`
+- `Comparison`: `EQ`, `GT`, `LT`, `IN`, `MATCHES` (Regex)
+- `Accessor`: `FIELD` (e.g., `action.parameters.filename`)
+
+**Example Rule**:
+```yaml
+operator: "AND"
+operands:
+  - operator: "EQ"
+    left: { type: "field", path: "action.domain" }
+    right: { type: "value", value: "content_publishing" }
+  - operator: "NOT"
+    operand:
+      operator: "IN"
+      left: { type: "field", path: "user.role" }
+      right: { type: "value", value: ["editor", "admin"] }
+```
+
+## 5. MERGE_ENGINE
+
+```python
+def merge_policies(core_pack, domain_pack, overrides):
+    """
+    Merges constraint packs into a single effective policy.
+    Enforces Core supremacy and validates overrides.
+    """
+    effective_map = {}
+
+    # 1. Load Core (Immutable)
+    for rule in core_pack:
+        rule.source = "CORE"
+        effective_map[rule.id] = rule
+
+    # 2. Load Domain (Must not relax Core)
+    for rule in domain_pack:
+        if rule.id in effective_map:
+            raise MergeError("Domain ID conflict with Core")
+        rule.source = "DOMAIN"
+        # Domain rules cannot loosen; they are additional constraints.
+        effective_map[rule.id] = rule
+
+    # 3. Apply Overrides
+    for override in overrides:
+        target = effective_map.get(override.target_id)
+        if not target:
+            continue # specific override for missing rule is ignored safe
+            
+        if target.source == "CORE":
+            Log.audit("Override attempt on Core blocked", override)
+            continue # SILENT FAIL or ERROR? Default strict: Ignore override.
+            
+        # Overrides modify the existing constraint logic or relax it
+        if validate_override(override, target):
+             # Deep copy and apply mutation
+             modified_rule = apply_mutation(target, override)
+             effective_map[modified_rule.id] = modified_rule
+
+    return list(effective_map.values())
+```
+
+## 6. OVERRIDE_VALIDATION_LOGIC
+
+1.  **Scope Check**: Override target must match a loaded Domain ID.
+2.  **Role Check**: `override.signer_role` must be `>=` `target.min_override_role`.
+3.  **Expiry Check**: `now() < override.expiry_timestamp`.
+4.  **Integrity Check**: `verify_signature(override.hash, override.signature)`.
+
+## 7. UNKNOWN_ACTION_HANDLING
+
+If `strict_mode == true`:
+-   The `tool_surface` allows-list is exhaustive.
+-   Evaluator explicitly checks `action.name` against `tool_surface` *before* loading constraints.
+-   Violation -> `BLOCK (Reasons: UNKNOWN_ACTION)`.
+
+If `strict_mode == false`:
+-   Unknown actions pass to constraint evaluation.
+-   If no constraint blocks them -> `ALLOW`.
+
+## 8. POLICY_HASHING_PROTOCOL
+
+1.  Serialize `effective_policy` (list of constraints) to Canonical JSON (sorted keys).
+2.  Compute `SHA256(canonical_json)`.
+3.  Store as `active_policy_hash`.
+4.  Emit event: `POLICY_HASH_ACTIVATED`.
+5.  All subsequent `POLICY_CHECK` events include this hash for drift detection.
+
+## 9. BUDGET_ENFORCEMENT_LAYER
+
+**Pre-Execution Gate**:
+```python
+estimated_cost = Estimator.predict(action)
+budget_limit = context.budget_total * config.max_budget_multiplier
+
+if (context.spend_so_far + estimated_cost) > budget_limit:
+    return BLOCK("BUDGET_OVERRUN")
+    
+# Reservation (Atomic) happens in Policy Layer v1.1 hooks
+```
+
+## 10. AUDIT_LOG_SCHEMA
+
+```json
+{
+  "trace_id": "UUID",
+  "timestamp": "ISO8601",
+  "policy_hash": "SHA256",
+  "event_type": "POLICY_EVALUATION",
+  "payload": {
+    "action": "String",
+    "domain": "String",
+    "constraint_id": "String (or SYS-000)",
+    "decision": "BLOCK | ALLOW | REQUEST",
+    "reason": "String",
+    "override_active": "Boolean"
+  }
+}
+```
+
+## 11. FAILURE_MODES + SAFE_MODE_BEHAVIOR
+
+**Triggers**:
+1.  `MergeError` (Core conflict).
+2.  `SchemaError` (Invalid DSL).
+3.  `HashMismatch` (Loaded policy != Computed hash).
+4.  `InternalException` (Evaluator crash).
+
+**Safe Mode Behavior**:
+-   **State**: `SAFE_MODE_ACTIVE = True`
+-   **Effect**: All actions with side-effects (`WRITE`, `NETWORK`) are `BLOCKED`.
+-   **Allowed**: `READ` (Diagnostics only).
+-   **Recovery**: Requires Manual Administrator Reset (Signed Signal).
+
+## 12. MINIMAL TEST_MATRIX
+
+### Merge Tests
+| Case | Input | Expected | Reason |
+| :--- | :--- | :--- | :--- |
+| `M-01` | Override targets Core | Ignore Override | Core is immutable. |
+| `M-02` | Valid Domain Override | Rule Modified | Domain allows mutations. |
+| `M-03` | Expired Override | Ignore Override | Time validation. |
+| `M-04` | Duplicate ID (Core/Domain) | Raise Error | ID collision. |
+
+### Runtime Tests
+| Case | Input | Expected | Reason |
+| :--- | :--- | :--- | :--- |
+| `R-01` | Unknown Action (Strict) | BLOCK | Surface Check. |
+| `R-02` | High Priority Block | BLOCK | Priority Order. |
+| `R-03` | Specific Allow over Gen Allow | ALLOW | Specificity (Precedence). |
+| `R-04` | Budget Exceeded | BLOCK | Pre-check. |
+| `R-05` | DSL Operator `GT` (5 > 3) | Match | Logic Correctness. |
+| `R-06` | Safe Mode Active | BLOCK | Fail-Closed. |

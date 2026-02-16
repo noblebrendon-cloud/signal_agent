@@ -1,0 +1,314 @@
+# Deterministic Constraint Pack Injector — SIGNAL_AGENT_CONSTRAINT_PACKS_V1
+
+----------------------------------------------------------------
+SECTION 1 — SYSTEM ID
+----------------------------------------------------------------
+CONSTRAINT_SYSTEM_ID = "SIGNAL_AGENT_CONSTRAINT_PACKS_V1"
+
+Target Architecture:
+SIGNAL_AGENT_MODULES_V1
+
+----------------------------------------------------------------
+SECTION 2 — INTEGRATION CONTRACT
+----------------------------------------------------------------
+The Constraint System integrates via standard interfaces:
+
+- **PolicyModule**: Hosted here. The `evaluate()` function iterates through active constraint packs.
+- **CapabilityRegistryModule**: Reference Only. Constraint packs validate against registry IDs at load time.
+- **OrchestratorProtocol**: Enforcement. Orchestrator must `BLOCK` if Policy returns `DENY`.
+- **AuditModule**: Output Sink. All decisions (Allow/Deny) are piped to `StandardEvent` inputs.
+
+**Invariants**:
+1.  **Read-Only Execution**: Constraints cannot modify the `Action` or `State` directly. They only return a "Decision".
+2.  **No Dynamic Registration**: Capabilities are fixed. Constraints can only restrict existing capabilities.
+3.  **Governance Telemetry**: Every decision emits a `POLICY_EVALUATION` event to Audit.
+
+----------------------------------------------------------------
+SECTION 3 — CONSTRAINT EVALUATION ORDER
+----------------------------------------------------------------
+**Priority Stack (Lowest to Highest Precendence)**:
+
+| Priority | Scope | Behavior |
+| :--- | :--- | :--- |
+| 1 | `GLOBAL_PACK` | Baseline restrictions. Cannot be loosened by 2, 3, 4. |
+| 2 | `DOMAIN_PACK` | Domain-specific rules. logic AND(Global, Domain). |
+| 3 | `TASK_PACK` | Task-specific rules. logic AND(Domain, Task). |
+| 4 | `SESSION_OVERRIDES` | Runtime tightening. logic AND(Task, Session). |
+| 5 | `EMERGENCY_OVERRIDE` | **EXCEPTION**. Can loosen 1-4. Must be auditable. |
+
+**Strict Evaluation Logic**:
+- `Tightening Rule`: Higher layers (2-4) can TIGHTEN (restrict) but NEVER LOOSEN (allow) what a lower layer blocked.
+- `Emergency Exception`: Layer 5 can bypass any restriction but triggers CRITICAL alerts.
+
+**Precedence Semantics**:
+`DENY` > `REQUIRE_APPROVAL` > `LIMIT` > `ALLOW`
+
+**Early Exit**:
+- If `DENY` encountered: Stop immediately. Return `BLOCK`.
+- If `REQUIRE_APPROVAL` encountered: Continue to check for `DENY`. If no `DENY`, return `REQUEST_APPROVAL`.
+- If `LIMIT` encountered: Continue. If limit exceeded -> `BLOCK`.
+- If all checks pass: Return `ALLOW`.
+
+----------------------------------------------------------------
+SECTION 4 — CORE CONSTRAINT SCHEMA
+----------------------------------------------------------------
+
+```json
+{
+  "$schema": "http://signal-agent.ai/schemas/constraint-rule-v1.json",
+  "type": "object",
+  "properties": {
+    "constraint_id": { "type": "string", "pattern": "^[A-Z0-9_]+$" },
+    "scope": { "enum": ["GLOBAL", "DOMAIN", "TASK", "SESSION", "EMERGENCY"] },
+    "intent": { "type": "string" },
+    "trigger": {
+      "capability_id": { "type": ["string", "null"] },
+      "risk_tier": { "enum": ["LOW", "MEDIUM", "HIGH", "ANY"] }
+    },
+    "predicate": {
+      "type": "object",
+      "description": "Structured DSL - No Eval. Operators: AND, OR, NOT, EQ, GT, LT, IN, MATCHES"
+    },
+    "rule_type": { "enum": ["ALLOW", "DENY", "REQUIRE_APPROVAL", "LIMIT"] },
+    "parameters": { "type": "object" },
+    "enforcement_action": { "enum": ["BLOCK", "ESCALATE", "LOG_ONLY"] },
+    "audit_event": { "type": "string" },
+    "rollback_behavior": { "enum": ["ABORT", "RETRY", "COMPENSATE"] }
+  },
+  "required": ["constraint_id", "scope", "intent", "rule_type"]
+}
+```
+
+----------------------------------------------------------------
+SECTION 5 — CONSTRAINT PACK STRUCTURE
+----------------------------------------------------------------
+
+Each Pack (Global, Domain, etc.) follows:
+
+```yaml
+pack_metadata:
+  name: "logistics_ops"
+  version: "1.0.0"
+  pack_hash: "sha256:..."
+  compatibility: "SIGNAL_AGENT_MODULES_V1"
+
+activation_conditions:
+  domain_match: ["logistics", "supply_chain"]
+  
+constraint_rules:
+  - { ... rule 1 ... }
+  - { ... rule 2 ... }
+```
+
+**Canonicalization Rule for Pack Hash**:
+1. Parse YAML to Object.
+2. Sort keys recursively.
+3. Serialize to Minified JSON (no whitespace).
+4. Compute SHA256.
+
+----------------------------------------------------------------
+SECTION 6 — DOMAIN PACK EXAMPLES
+----------------------------------------------------------------
+
+### 1. logistics_ops (Pack)
+
+1.  `LOG_NO_WRITE_OUTSIDE_ORDERS`: `DENY` `fs:write` if `path` not startswith `/orders/`.
+2.  `LOG_REQUIRE_HTTPS`: `DENY` `http:request` if `url.scheme` != `https`.
+3.  `LOG_MAX_ORDER_VALUE`: `LIMIT` `create_order` `amount` < 5000 USD.
+4.  `LOG_APPROVAL_HIGH_VALUE`: `REQUIRE_APPROVAL` `create_order` if `amount` > 1000.
+5.  `LOG_RATE_LIMIT_API`: `LIMIT` `http:request` (60/min).
+6.  `LOG_BUDGET_SESSION`: `LIMIT` Session Cost < $2.00.
+7.  `LOG_BLOCK_SHELL`: `DENY` `sys:exec` ANY.
+8.  `LOG_VERIFY_ADDRESS`: `REQUIRE_APPROVAL` `ship_order` unless `address_verified` is True.
+
+### 2. content_publishing (Pack)
+
+1.  `PUB_NO_DELETE`: `DENY` `fs:delete` ANY.
+2.  `PUB_MAX_TOKEN_OUTPUT`: `LIMIT` `llm:generate` tokens < 4000.
+3.  `PUB_REQUIRE_EDITORIAL`: `REQUIRE_APPROVAL` `cms:publish` if `risk_tier` >= `HIGH`.
+4.  `PUB_IMG_GEN_LIMIT`: `LIMIT` `img:generate` Cost < $0.10.
+5.  `PUB_SAFE_SITES`: `DENY` `http:request` unless `host` in `['wiki', 'internal']`.
+6.  `PUB_BUDGET_SESSION`: `LIMIT` Session Cost < $5.00.
+7.  `PUB_RATE_LIMIT_GEN`: `LIMIT` `llm:generate` (10/min).
+8.  `PUB_ENFORCE_TAGS`: `DENY` `cms:publish` if `tags` is Empty.
+
+----------------------------------------------------------------
+SECTION 7 — CONFLICT RESOLUTION ENGINE
+----------------------------------------------------------------
+
+```python
+def resolve_constraints(action, snapshot, active_packs):
+    """
+    Determines decision based on Priority Stack.
+    Returns: (decision, reason, matched_constraints)
+    """
+    cumulative_decision = ALLOW
+    matched = []
+    
+    # 1. Sort Packs (Global -> Emergency)
+    sorted_packs = sort_by_priority(active_packs)
+    
+    # 2. Iterate
+    for pack in sorted_packs:
+        decision = evaluate_limit_approvals(pack, action, snapshot)
+        
+        if decision == EMERGENCY_ALLOW:
+             return ALLOW, "EMERGENCY_OVERRIDE", [pack.name]
+
+        if decision == DENY:
+             return DENY, pack.name, [pack.name]
+
+        if decision == REQUIRE_APPROVAL:
+             cumulative_decision = REQUIRE_APPROVAL
+             matched.append(pack.name)
+             
+        if decision == LIMIT_EXCEEDED:
+             return DENY, "LIMIT_EXCEEDED", [pack.name]
+             
+    return cumulative_decision, "CONSENSUS", matched
+```
+
+**Approval State Contract**:
+- Stored in `StateSnapshot.approvals`.
+- Keyed by: `sha256(trace_id + action_id + constraint_id)`.
+- Value: `{ status: "PENDING"|"APPROVED"|"REJECTED", timestamp, approver_id }`.
+
+**Rate Limit State Contract**:
+- Stored in `StateSnapshot.rate_limits`.
+- Keyed by: `scope + constraint_id + time_bucket`.
+- Value: `count`.
+
+----------------------------------------------------------------
+SECTION 8 — MERGE ALGORITHM
+----------------------------------------------------------------
+
+```python
+def merge_packs(packs):
+    """
+    Merges packs. Validates tightening.
+    """
+    merged = []
+    base_constraints = packs[0].rules # Global
+    
+    for pack in packs[1:]:
+        if pack.scope == EMERGENCY:
+            merged.extend(pack.rules)
+            continue
+            
+        # Validation: Cannot loosen base?
+        # Actually we just append. Runtime logic handles precedence (Deny wins).
+        # We check for conflict if we wanted static validation.
+        merged.extend(pack.rules)
+        
+    return canonicalize(merged)
+```
+
+**Merge Tests (Static Validations)**:
+1.  `Global(Deny A) + Domain(Allow A)` -> Valid (Deny wins at runtime).
+2.  `Global(Limit 10) + Domain(Limit 20)` -> Valid (Lower wins? No, strict aggregation: min(10, 20) = 10).
+3.  `Global(Allow) + Domain(Deny)` -> Valid.
+4.  `Duplicate Constraint ID` -> Error.
+5.  `Invalid Scope Relation` -> Error if Domain tries to set Global scope.
+6.  `Missing Dependencies` -> Error.
+7.  `Schema Violation` -> Error.
+8.  `Hash Mismatch` -> Error.
+
+**Runtime Evaluation Tests**:
+1.  `Global(Deny) + Domain(Allow)` -> **DENY**.
+2.  `Global(Allow) + Domain(Deny)` -> **DENY**.
+3.  `Global(Limit 10) + Domain(Limit 5)` -> **BLOCK** (if val=6).
+4.  `Global(Limit 10) + Domain(Limit 15)` -> **BLOCK** (if val=12 -- wait, 12 > 10, so Global blocks).
+5.  `Global(Limit 10) + Domain(Limit 15)` -> **ALLOW** (if val=8).
+6.  `Global(ReqApp) + Domain(Allow)` -> **REQ_APP**.
+7.  `Global(Allow) + Domain(ReqApp)` -> **REQ_APP**.
+8.  `Global(Deny) + Emergency(Allow)` -> **ALLOW**.
+
+----------------------------------------------------------------
+SECTION 9 — TELEMETRY REQUIREMENTS
+----------------------------------------------------------------
+
+**Governance Event**:
+```json
+{
+  "event_type": "POLICY_EVALUATION",
+  "constraint_id": "LOG_NO_WRITE_OUTSIDE_ORDERS",
+  "decision": "DENY",
+  "trace_id": "a1b2...",
+  "determinism_sensitive": true,
+  "severity": "WARN",
+  "pack": "logistics_ops",
+  "context": {
+    "trigger_val": "/etc/passwd"
+  }
+}
+```
+
+**Required Events**:
+- `POLICY_EVALUATION`: Per decision.
+- `VIOLATION_ATTEMPT`: On Block.
+- `EMERGENCY_OVERRIDE_ACTIVATED`: On Emergency Allow.
+- `SYSTEM_GOVERNANCE_FAILURE`: Internal Error.
+
+----------------------------------------------------------------
+SECTION 10 — ECONOMIC BOUNDING
+----------------------------------------------------------------
+
+**Schema**:
+```json
+{
+  "budget_type": "USD",
+  "max_per_step": 0.50,
+  "max_per_session": 5.00,
+  "action": "BLOCK"
+}
+```
+
+**Reservation Contract**:
+1.  **Estimate**: `cost = estimator.cost(action)`.
+2.  **Reserve**: Atomic CAS on `budget_state`.
+    -   `new_used = used + cost`.
+    -   `if new_used > max`: **FAIL**.
+3.  **Execute**: Only if Reserve OK.
+4.  **Reconcile**: Adjust actuals post-exec.
+
+**Storage**:
+- `StateSnapshot.budgets`: Map<Scope, {used, limit}>.
+
+----------------------------------------------------------------
+SECTION 11 — REPLAY SAFETY
+----------------------------------------------------------------
+
+1.  **Deterministic Predicates**: Rules cannot use `Reference(Time.Now)` directly. Must use `Context.Time`.
+2.  **No External Calls**: Rules cannot check network/DB. Only `Action` payload.
+3.  **Log Verification**:
+    - During Replay, `ConstraintEngine` re-evaluates rules.
+    - If `ReplayDecision != LoggedDecision`, raise `DeterministicDriftError`.
+
+----------------------------------------------------------------
+SECTION 12 — FAILURE ISOLATION
+----------------------------------------------------------------
+
+**Engine Failure**:
+- If DSL parser crashes or internal error -> `BLOCK ALL`.
+- Emit `SYSTEM_GOVERNANCE_FAILURE`.
+- Do NOT fallback to "Allow All".
+
+**Load Failure**:
+- If `pack_hash` mismatch -> Abort Startup.
+- If `compatibility` mismatch -> Abort Startup.
+
+----------------------------------------------------------------
+SECTION 13 — DEPLOYMENT MODEL
+----------------------------------------------------------------
+
+- **Storage**: `/governance/packs/*.yaml` (Read-only volume).
+- **Loading**: At process start. Static analysis.
+- **Versioning**: `pack_version` must be >= `min_required_version`.
+- **Integrity**: `startup_check` verifies `sha256(file) == manifest.hash`.
+- **Updates**: Restart required. No Hot Reload (to guarantee Session determinism).
+
+----------------------------------------------------------------
+SECTION 14 — OUTPUT RULES
+----------------------------------------------------------------
+Specification defines Signal Agent Constraint Packs V1.
+(Strict adherence to structure above).

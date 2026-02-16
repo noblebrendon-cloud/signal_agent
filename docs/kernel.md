@@ -1,0 +1,35 @@
+# Coherence Stability Kernel (v1.0)
+
+The **Coherence Stability Kernel** is a deterministic safety system that monitors agent telemetry and enforces stability limits through bounded risk signals and regime-based escalation.
+
+## Core Concepts
+
+### 1. Polarity & Definitions
+*   **Risk Signals ($\Phi_i$)**: Normalized to `[0, 1]`, where `0` is Safe (Good) and `1` is Critical (Bad).
+*   **Coherence ($C$)**: $C = 1 - \Phi_{risk}$. `1` is perfectly coherent, `0` is decoherent.
+*   **Escalation Ratio ($E$)**: Ratio of Risk Acceleration ($A$) to Recovery Capacity ($R$).
+
+### 2. Metrics (Normalization Layer)
+*   **C1 (Constraint Violations)**: $\Phi_1 = 1 - e^{-\lambda V_c}$ (Exponential decay mapping of violations).
+*   **C2 (Context Drift)**: $\Phi_2 = \text{clamp}(D_{ctx} / D_{max})$. Levenshtein distance from session centroid.
+*   **C3 (Tool Instability)**: $\Phi_3 = \text{clamp}(B_{open})$. Ratio of OPEN circuit breakers.
+*   **C4 (Retry Pressure)**: $\Phi_4 = \text{clamp}(R_{rate} / R_{max})$. Ratio of retries to requests.
+*   **C5 (Recovery Staleness)**: $\Phi_5 = \text{sigmoid}(k(T_{last} - T_{target}))$. Time since last successful provider recovery.
+
+### 3. Aggregation & Stability
+*   **Aggregated Risk**: $\Phi_{risk} = (1 - \alpha) \cdot W_{avg} + \alpha \cdot \max(\Phi_i)$. (Detects single-signal dominance).
+*   **Stability Condition**: System is **STABLE** iff $C \ge K \cdot E$.
+
+### 4. Regime States (Hysteresis)
+| State | Risk Threshold ($\Phi_{risk}$) | Action |
+| :--- | :--- | :--- |
+| **STABLE** | $< 0.20$ | Normal Operation |
+| **PRESSURE** | $0.20 \le \Phi < 0.50$ | Log Warning |
+| **UNSTABLE** | $0.50 \le \Phi < 0.80$ | **Load Shedding** (Low Priority) |
+| **FAILURE** | $\ge 0.80$ | **System Halt** (Emergency Stop) |
+
+## Implementation Hooks
+
+*   **Kernel Logic**: `app/audit/coherence_kernel.py`
+*   **Resilience Hook**: `app/utils/resilience.py` (Checks stability before retries, halts on FAILURE).
+*   **Agent Hook**: `app/agent.py` (Updates C1 violations and C2 context drift).

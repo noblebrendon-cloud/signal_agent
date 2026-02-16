@@ -1,0 +1,46 @@
+import unittest
+from app.utils.reprojection import pack_hash
+
+class TestPackHash(unittest.TestCase):
+    def test_pack_hash_is_deterministic(self):
+        pack1 = {
+            "scope": "test",
+            "disallowed_phrases": ["b", "a"],
+            "boundary_conditions": {"y": 2, "x": 1}
+        }
+        pack2 = {
+            "boundary_conditions": {"x": 1, "y": 2},
+            "disallowed_phrases": ["a", "b"],
+            "scope": "test"
+        }
+        
+        # Lists are canonicalized? User code: [canonicalize(x) for x in obj]
+        # It does NOT sort lists. So ["b", "a"] != ["a", "b"]
+        # Wait, the user code was:
+        # if isinstance(obj, list): return [canonicalize(x) for x in obj]
+        # So list order MATTERS.
+        
+        # Let's adjust pack2 to match pack1's list order for this test 
+        # OR check if I should have sorted lists. 
+        # User code: "if isinstance(obj, dict): return {k: canonicalize(obj[k]) for k in sorted(obj.keys())}"
+        # It sorts DICT keys, but not LIST items.
+        
+        # So:
+        pack3 = {
+            "scope": "test",
+            "disallowed_phrases": ["b", "a"], # Same order as pack1
+            "boundary_conditions": {"x": 1, "y": 2} # Different order than pack1 dict
+        }
+        
+        h1 = pack_hash(pack1)
+        h3 = pack_hash(pack3)
+        
+        self.assertEqual(h1, h3)
+        
+    def test_pack_hash_excludes_metadata_hash(self):
+        pack1 = {"a": 1, "pack_metadata": {"pack_hash": "old_hash", "author": "me"}}
+        pack2 = {"a": 1, "pack_metadata": {"author": "me"}}
+        self.assertEqual(pack_hash(pack1), pack_hash(pack2))
+
+if __name__ == '__main__':
+    unittest.main()

@@ -1,0 +1,9 @@
+﻿{{ meta.title }}
+
+{% if meta.subtitle %}{{ meta.subtitle }}{% endif %}
+
+{% if meta.author %}by {{ meta.author }}{% endif %}
+
+{% if front_matter.cover_blurb %}
+{{ front_matter.cover_blurb }}
+{% endif %}

@@ -1,0 +1,11 @@
+# SYSTEM_STATE (Canonical)
+
+This repository state is valid **iff**:
+
+python tools/verify_system.py
+
+passes on this machine.
+
+If verification fails, this document is stale until corrected and re-verified.
+
+STOP GMAIL is absolute.

@@ -1,0 +1,47 @@
+import unittest
+from app.utils.dsl import predicate_eval, DSLViolation
+
+class TestDSL(unittest.TestCase):
+    def test_empty_predicate_true(self):
+        self.assertTrue(predicate_eval({}, {}, {}, {}))
+
+    def test_eq(self):
+        pred = {"op":"EQ","left":"action.x","right":5}
+        self.assertTrue(predicate_eval(pred, {"x":5}, {}, {}))
+        self.assertFalse(predicate_eval(pred, {"x":6}, {}, {}))
+
+    def test_and_or_not(self):
+        pred = {"op":"AND","args":[
+            {"op":"EQ","left":"action.a","right":1},
+            {"op":"NOT","arg":{"op":"EQ","left":"action.b","right":2}}
+        ]}
+        self.assertTrue(predicate_eval(pred, {"a":1,"b":3}, {}, {}))
+        self.assertFalse(predicate_eval(pred, {"a":1,"b":2}, {}, {}))
+
+    def test_gt_numeric(self):
+        pred = {"op":"GT","left":"action.amount","right":10}
+        self.assertTrue(predicate_eval(pred, {"amount":11}, {}, {}))
+        self.assertFalse(predicate_eval(pred, {"amount":9}, {}, {}))
+
+    def test_in(self):
+        pred = {"op":"IN","left":"action.host","right":["wiki","internal"]}
+        self.assertTrue(predicate_eval(pred, {"host":"wiki"}, {}, {}))
+        self.assertFalse(predicate_eval(pred, {"host":"evil"}, {}, {}))
+
+    def test_matches(self):
+        pred = {"op":"MATCHES","left":"action.path","right":"^/orders/.*"}
+        self.assertTrue(predicate_eval(pred, {"path":"/orders/123"}, {}, {}))
+        self.assertFalse(predicate_eval(pred, {"path":"/etc/passwd"}, {}, {}))
+
+    def test_invalid_accessor_root_fails(self):
+        pred = {"op":"EQ","left":"time.now","right":1}
+        with self.assertRaises(DSLViolation):
+            predicate_eval(pred, {}, {}, {})
+
+    def test_disallowed_regex_token(self):
+        pred = {"op":"MATCHES","left":"action.x","right":"(?=a)"}  # blocked
+        with self.assertRaises(DSLViolation):
+            predicate_eval(pred, {"x":"a"}, {}, {})
+
+if __name__ == "__main__":
+    unittest.main()

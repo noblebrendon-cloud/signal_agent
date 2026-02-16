@@ -1,0 +1,3 @@
+class Fail503Provider:
+    def call(self, model: str, prompt: str) -> str:
+        raise RuntimeError("UNAVAILABLE (code 503): No capacity available")

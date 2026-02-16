@@ -1,0 +1,19 @@
+from app.hq.curation import curate
+
+def brn_curate_path(path):
+    """
+    Curate a specific file or directory.
+    """
+    curate.curate_file(path)
+
+def brn_curate_backfill():
+    """
+    Scan all configured intake roots for new files.
+    """
+    curate.curate_backfill()
+
+def brn_curate_intake_downloads():
+    """
+    Specific wrapper for downloads folder if needed.
+    """
+    pass # Managed via backfill for now

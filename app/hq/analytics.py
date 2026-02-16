@@ -1,0 +1,27 @@
+import json
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Dict, Any
+
+class AnalyticsSink:
+    def track(self, event: Dict[str, Any]):
+        raise NotImplementedError
+
+class JsonlSink(AnalyticsSink):
+    def __init__(self, log_path: str = "data/analytics/events.jsonl"):
+        self.log_path = Path(log_path)
+        self.log_path.parent.mkdir(parents=True, exist_ok=True)
+
+    def track(self, event: Dict[str, Any]):
+        if "timestamp" not in event:
+            event["timestamp"] = datetime.now(timezone.utc).isoformat()
+
+        try:
+            with open(self.log_path, "a", encoding="utf-8") as f:
+                f.write(json.dumps(event) + "\n")
+        except Exception as e:
+            print(f"Analytics Error: {e}")
+
+class NoopSink(AnalyticsSink):
+    def track(self, event: Dict[str, Any]):
+        pass

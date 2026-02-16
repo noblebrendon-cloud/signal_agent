@@ -1,0 +1,56 @@
+﻿{{ meta.title }}
+{{ "=" * (meta.title | length) }}
+
+{% if meta.subtitle %}{{ meta.subtitle }}{% endif %}
+{% if meta.author %}by {{ meta.author }}{% endif %}
+
+---
+
+{% if front_matter.cover_blurb %}{{ front_matter.cover_blurb }}{% endif %}
+
+{% if front_matter.copyright %}
+## Copyright
+{{ front_matter.copyright }}
+{% endif %}
+
+{% if front_matter.dedication %}
+## Dedication
+{{ front_matter.dedication }}
+{% endif %}
+
+{% if front_matter.acknowledgments %}
+## Acknowledgments
+{{ front_matter.acknowledgments }}
+{% endif %}
+
+{% if front_matter.preface %}
+## Preface
+{{ front_matter.preface }}
+{% endif %}
+
+{% if chapters %}
+## Chapter Ledger
+{% for ch in chapters -%}
+{{ loop.index }}. {{ ch.title }}
+{% endfor %}
+{% endif %}
+
+---
+
+{% for ch in chapters %}
+## Chapter {{ loop.index }}: {{ ch.title | upper }}
+
+{{ ch.body }}
+
+{% endfor %}
+
+{% if end_matter.endnote %}
+---
+
+## Endnote
+{{ end_matter.endnote }}
+{% endif %}
+{% if meta.subtitle %}{{ meta.subtitle }}{% endif %}
+{% if meta.author %}
+by {{ meta.author }}
+{% endif %}

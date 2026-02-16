@@ -1,0 +1,31 @@
+import json
+import os
+from datetime import datetime, timezone
+
+class TokenExporter:
+    @staticmethod
+    def export_bundle() -> str:
+        """
+        Creates a REDACTED bundle of configuration/env state.
+        NEVER exports actual secrets.
+        """
+        bundle = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "env_vars_present": [],
+            "config_keys": []
+        }
+
+        # Example: Check for specific vars but only log presence
+        sensitive_vars = ["GOOGLE_CREDENTIALS", "OPENAI_API_KEY", "SIGNAL_SECRET", "GMAIL_CREDENTIALS"]
+        for var in sensitive_vars:
+            if os.environ.get(var) or os.path.exists(var if 'CREDENTIALS' in var else ''):
+                # Basic check, can be refined based on actual config system
+                bundle["env_vars_present"].append(var)
+
+        return json.dumps(bundle, indent=2)
+
+    @staticmethod
+    def print_safe_snippet():
+        print("\n--- HQ_DEV EXPORT (REDACTED) ---")
+        print(TokenExporter.export_bundle())
+        print("--------------------------------\n")

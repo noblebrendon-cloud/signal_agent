@@ -1,0 +1,19 @@
+scope: GLOBAL
+disallowed_phrases:
+  - "internal_use_only"
+  - "confidential_proprietary"
+  - "do_not_share"
+  - "placeholder_text"
+boundary_conditions:
+  max_word_count: 5000
+  max_claims: 50
+allowed_output_classes:
+  - "Executive Summary"
+  - "Technical Analysis"
+  - "Risk Assessment"
+  - "Recommendations"
+  - "Appendix"
+required_invariants:
+  - id: "inv_no_hallucinations"
+    keywords: ["verified", "confirmed", "evidence"]
+    min_count: 1

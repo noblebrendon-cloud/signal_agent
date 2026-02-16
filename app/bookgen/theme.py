@@ -1,0 +1,60 @@
+from dataclasses import dataclass, field
+from typing import Dict
+
+@dataclass(frozen=True)
+class ModeProfile:
+    name: str
+    tokens: Dict[str, str]
+    features: Dict[str, bool] = field(default_factory=dict)
+
+TOKENS_STANDARD = {
+    "bg": "#f0f0f0", # Keeping original light grey for standard
+    "fg": "#333333",
+    "accent": "#0078d7",
+    "font": "Arial",
+    "active_bg": "#e0e0e0",
+    "active_fg": "#000000"
+}
+
+TOKENS_MOD = {
+    "bg": "#111111",
+    "fg": "#00ff41",
+    "accent": "#222222", # Button bg
+    "font": "Courier",
+    "active_bg": "#00ff41",
+    "active_fg": "#111111"
+}
+
+TOKENS_HQ_DEV = {
+    "bg": "#0b0d10",
+    "fg": "#00ff66",
+    "accent": "#1a1c20",
+    "font": "Consolas",
+    "active_bg": "#00ff66",
+    "active_fg": "#000000"
+}
+
+MODE_STANDARD = ModeProfile(
+    name="STANDARD",
+    tokens=TOKENS_STANDARD,
+    features={"dm_panel": False, "analytics": False, "token_export": False},
+)
+
+MODE_MOD = ModeProfile(
+    name="MOD_INTEGRITY_V1",
+    tokens=TOKENS_MOD,
+    features={"dm_panel": True, "analytics": False, "token_export": False},
+)
+
+MODE_HQ_DEV = ModeProfile(
+    name="HQ_DEV_V1",
+    tokens=TOKENS_HQ_DEV,
+    features={"dm_panel": True, "analytics": True, "token_export": True},
+)
+
+def get_mode(mode_name: str) -> ModeProfile:
+    if mode_name == "MOD":
+        return MODE_MOD
+    elif mode_name == "HQ_DEV":
+        return MODE_HQ_DEV
+    return MODE_STANDARD

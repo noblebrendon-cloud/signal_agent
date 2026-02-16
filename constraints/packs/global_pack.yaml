@@ -1,0 +1,37 @@
+pack_metadata:
+  name: "global_pack"
+  scope: "GLOBAL"
+  version: "1.0.0"
+  pack_hash: "sha256:714aec6e849427a691d6ae973632b2e23621429dcc32d216c85c8ce5c59b4db8"
+  compatibility: "SIGNAL_AGENT_MODULES_V1"
+
+activation_conditions: {}
+
+constraint_rules:
+  - constraint_id: "GLOBAL_BLOCK_SHELL"
+    scope: "GLOBAL"
+    intent: "Block any system execution"
+    rule_type: "DENY"
+    trigger:
+      capability_id: "sys:exec"
+      risk_tier: "ANY"
+    predicate: {}
+    enforcement_action: "BLOCK"
+    audit_event: "POLICY_EVALUATION"
+    rollback_behavior: "ABORT"
+
+  - constraint_id: "GLOBAL_SESSION_BUDGET_USD"
+    scope: "GLOBAL"
+    intent: "Cap total session cost"
+    rule_type: "LIMIT"
+    trigger:
+      capability_id: null
+      risk_tier: "ANY"
+    predicate: {}
+    parameters:
+      metric_id: "session_cost_usd"
+      selector_key: "GLOBAL"
+      max_value: 5.00
+    enforcement_action: "BLOCK"
+    audit_event: "POLICY_EVALUATION"
+    rollback_behavior: "ABORT"

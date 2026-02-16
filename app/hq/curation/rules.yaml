@@ -1,0 +1,24 @@
+intake_roots:
+  - "e:\\signal_agent\\data\\intake"
+  - "e:\\signal_agent\\data\\intake\\_staging"
+
+routes:
+  docs: "e:\\signal_agent\\data\\docs\\processed"
+  outputs: "e:\\signal_agent\\data\\outputs"
+  archive: "e:\\signal_agent\\data\\archive"
+  trash: "e:\\signal_agent\\data\\trash"
+
+kinds:
+  - ext: [".pdf", ".docx", ".txt", ".md"]
+    kind: "docs"
+    route: "docs"
+  - ext: [".png", ".jpg", ".jpeg", ".gif", ".webp"]
+    kind: "image"
+    route: "archive"
+  - ext: [".mp3", ".wav"]
+    kind: "audio"
+    route: "archive"
+    
+defaults:
+  route: "archive"
+  action: "move" # move | copy

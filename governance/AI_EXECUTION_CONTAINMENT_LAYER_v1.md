@@ -1,0 +1,152 @@
+# AI Execution Containment Layer (v1)
+
+Purpose:
+Define runtime-level execution boundaries that prevent cascading failures,
+cost escalation, and instability in AI-enabled systems.
+
+Scope:
+Applies to all LLM calls, agent workflows, and dependent services.
+
+Non-Scope:
+Does not define prompt quality, model alignment, or UX behavior.
+
+---
+
+## 1. Execution Budgets (Hard Caps)
+
+Every execution must enforce:
+
+- max_wall_time
+- max_attempts_total (across retries and failover)
+- max_attempts_per_dependency
+- max_output_tokens
+- max_tool_calls (if agent-based)
+- max_cost_estimate (if pricing-aware)
+
+Violation results in immediate termination with explicit reason code.
+
+---
+
+## 2. Dependency Isolation
+
+All external calls must be keyed by:
+
+dependency_key = provider:model (or service identifier)
+
+Breaker state is isolated per dependency_key.
+
+Failure in one key must not degrade unrelated keys.
+
+---
+
+## 3. Retry Governance
+
+Retries must:
+
+- Be bounded by global attempt cap.
+- Respect exponential backoff.
+- Avoid synchronized retry storms.
+- Never exceed wall-time budget.
+
+Retries are recovery attempts — not load amplifiers.
+
+---
+
+## 4. Failover Governance
+
+Failover must:
+
+- Respect remaining execution budget.
+- Never reset attempt counters.
+- Not exceed cost ceiling.
+- Not cascade across all providers blindly.
+
+Failover is conditional, not automatic.
+
+---
+
+## 5. Latency Policy
+
+Latency thresholds must be defined:
+
+- slow_success_threshold (e.g., p95 > X ms)
+- treat excessive latency as degradation
+- route or terminate accordingly
+
+“Successful but slow” is a failure mode.
+
+---
+
+## 6. Agent Escalation Control (If Applicable)
+
+Agent systems must enforce:
+
+- max_steps
+- max_recursion_depth
+- max_tool_calls
+- max_context_growth
+
+Recursive expansion must be explicitly capped.
+
+---
+
+## 7. Concurrency & Load Control
+
+System must define:
+
+- max_concurrency_per_model
+- max_queue_depth
+- load shedding policy (reject early vs. queue)
+- backpressure mechanism
+
+System must fail predictably under overload.
+
+---
+
+## 8. Breaker State Machine
+
+States:
+
+CLOSED → OPEN → HALF_OPEN
+
+Rules:
+
+- OPEN duration fixed.
+- HALF_OPEN allows limited probes.
+- Transition events logged.
+- State is dependency_key scoped.
+
+---
+
+## 9. Observability Requirements
+
+Each execution must log:
+
+- request_id
+- dependency_key
+- attempt_index
+- breaker_state_before/after
+- latency
+- termination_reason
+- remaining_budget_snapshot
+
+Logs must allow incident reconstruction.
+
+---
+
+## 10. Termination Reasons (Standardized)
+
+- TIME_BUDGET_EXCEEDED
+- ATTEMPT_BUDGET_EXCEEDED
+- TOKEN_BUDGET_EXCEEDED
+- COST_BUDGET_EXCEEDED
+- STEP_BUDGET_EXCEEDED
+- BREAKER_OPEN
+- DEPENDENCY_UNAVAILABLE
+- LOAD_SHED
+
+Termination must be explicit, not silent.
+
+---
+
+Version: v1

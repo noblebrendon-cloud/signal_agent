@@ -1,0 +1,274 @@
+import os
+import shutil
+import hashlib
+import yaml
+import json
+import logging
+import time
+from pathlib import Path
+from datetime import datetime
+from typing import Dict, Any, Optional
+
+# Setup Logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+REGISTRY_PATH = Path("e:\\signal_agent\\data\\artifact_registry.jsonl")
+INDEX_PATH = Path("e:\\signal_agent\\data\\INDEX_ARTIFACTS.md")
+CONFIG_PATH = Path("e:\\signal_agent\\app\\hq\\curation\\rules.yaml")
+
+def load_config() -> Dict[str, Any]:
+    if not CONFIG_PATH.exists():
+        logger.warning(f"Config not found at {CONFIG_PATH}, utilizing defaults")
+        return {}
+    try:
+        with open(CONFIG_PATH, "r") as f:
+            return yaml.safe_load(f) or {}
+    except Exception as e:
+        logger.error(f"Error loading config: {e}, utilizing defaults")
+        return {}
+
+def get_file_hash(path):
+    sha256_hash = hashlib.sha256()
+    with open(path, "rb") as f:
+        for byte_block in iter(lambda: f.read(65536), b""):
+            sha256_hash.update(byte_block)
+    return sha256_hash.hexdigest()
+
+def find_in_registry(file_hash):
+    """
+    Returns the canonical record if found, else None.
+    Tolerates corrupt lines by skipping them.
+    """
+    if not REGISTRY_PATH.exists():
+        return None
+    
+    with open(REGISTRY_PATH, "r", encoding="utf-8", errors="ignore") as f:
+        for line in f:
+            try:
+                record = json.loads(line)
+                if record.get("sha256") == file_hash:
+                    return record
+            except json.JSONDecodeError:
+                continue
+    return None
+
+def register_artifact(record):
+    """
+    Appends record to registry atomically-ish (OS append).
+    """
+    # Simple Append - for higher concurrency, file locking would be needed
+    # but for CLI usage this is generally sufficient on NTFS
+    try:
+        with open(REGISTRY_PATH, "a", encoding="utf-8") as f:
+            f.write(json.dumps(record) + "\n")
+    except Exception as e:
+        logger.error(f"Failed to write to registry: {e}")
+        # Critical failure if we can't log
+        raise e
+        
+    update_index()
+
+def update_index():
+    if not REGISTRY_PATH.exists():
+        return
+    
+    records = []
+    with open(REGISTRY_PATH, 'r', encoding="utf-8", errors="ignore") as f:
+        for line in f:
+            try:
+                records.append(json.loads(line))
+            except:
+                continue
+    
+    # Sort by timestamp desc
+    records.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
+    
+    try:
+        with open(INDEX_PATH, 'w', encoding="utf-8") as f:
+            f.write("# Artifact Index\n\n")
+            f.write("| Timestamp | Name | Kind | Size | Path |\n")
+            f.write("|---|---|---|---|---|\n")
+            for r in records:
+                f.write(f"| {r.get('timestamp')} | {r.get('name')} | {r.get('kind')} | {r.get('size')} | {r.get('path')} |\n")
+    except Exception:
+        logger.warning("Failed to update index markdown (non-critical)")
+
+def sanitize_stem(stem):
+    # Basic sanitization
+    keep = "".join(c for c in stem if c.isalnum() or c in "._-")
+    return keep.strip()
+
+def curate_file(file_path):
+    config: Dict[str, Any] = load_config()
+    file_path = Path(file_path).resolve()
+    
+    if not file_path.exists() or not file_path.is_file():
+        logger.error(f"Invalid file: {file_path}")
+        return {"action": "error", "reason": "not_found"}
+
+    try:
+        # 1. Hash (Content Addressable)
+        file_hash = get_file_hash(file_path)
+    except Exception as e:
+        logger.error(f"Hashing failed: {e}")
+        return {"action": "error", "reason": "hashing_failed"}
+
+    # 2. Deduplication Policy A: Check Registry
+    existing = find_in_registry(file_hash)
+    if existing:
+        logger.info(f"DEDUP: {file_path.name} -> {existing['path']}")
+        return {
+            "action": "deduped",
+            "sha256": file_hash,
+            "output_path": existing['path'],
+            "route": existing['route']
+        }
+
+    # 3. Routing
+    # Normalize extension for routing (case-insensitive)
+    original_ext = file_path.suffix
+    ext_lower = original_ext.lower()
+    
+    kind = "other"
+    defaults: Dict[str, Any] = config.get("defaults", {})
+    route_key = defaults.get("route", "archive")
+    
+    for k in config.get("kinds", []):
+        if ext_lower in [e.lower() for e in k.get("ext", [])]:
+            kind = k.get("kind")
+            route_key = k.get("route")
+            break
+            
+    dest_root = config.get("routes", {}).get(route_key)
+    if not dest_root:
+        # Fallback to defaults or fail? Defaults safer.
+        dest_root = config.get("routes", {}).get("archive", "e:\\signal_agent\\data\\archive")
+        
+    dest_path = Path(dest_root)
+    dest_path.mkdir(parents=True, exist_ok=True)
+    
+    # 4. Deterministic Naming: stem__hash.ext
+    # Ensure stem + hash + ext
+    stem = sanitize_stem(file_path.stem)
+    # If file has multiple extensions (e.g. .tar.gz), pathlib .stem gives .tar
+    # User requested: scan.final.v2.pdf -> "scan.final.v2"
+    # Logic: name minus suffix is the stem? 
+    # Actually pathlib stem is just name without last extension. 
+    # "scan.final.v2.pdf" -> stem "scan.final.v2", suffix ".pdf". This works for standard usage.
+    
+    short_hash = file_hash[:12] # User requested full sha256? 
+    # "Deterministic naming: stem__fullsha256.ext (no truncation)"
+    # Ah, "fullsha256" means full hash.
+    
+    new_name = f"{stem}__{file_hash}{ext_lower}" # Normalize to lowercase ext per user option
+    
+    final_path = dest_path / new_name
+    
+    # 5. Crash-Safe Write
+    # Write to temp string first
+    temp_name = f".tmp_{file_hash}_{int(time.time()*1000)}"
+    temp_path = dest_path / temp_name
+    
+    action_type = config.get("defaults", {}).get("action", "move")
+    
+    try:
+        # Copy to temp first (always copy to temp, then move to final)
+        shutil.copy2(str(file_path), str(temp_path))
+        
+        # Atomic rename
+        if final_path.exists():
+            # If it exists physically but wasn't in registry (edge case), we overwrite or just use it?
+            # If content matches hash, it is same.
+            pass 
+        
+        os.replace(str(temp_path), str(final_path))
+        
+        # 6. Verify written file
+        if get_file_hash(final_path) != file_hash:
+            logger.error("Integrity check failed after write")
+            return {"action": "error", "reason": "integrity_check_failed"}
+            
+        # 7. Register
+        record = {
+            "timestamp": datetime.now().isoformat(),
+            "name": new_name,
+            "original_name": file_path.name,
+            "kind": kind,
+            "sha256": file_hash,
+            "size": final_path.stat().st_size,
+            "path": str(final_path),
+            "route": route_key
+        }
+        register_artifact(record)
+        
+        # 8. Cleanup Input if 'move'
+        # Only delete input after successful registry
+        if action_type == "move":
+            try:
+                os.remove(str(file_path))
+            except Exception as e:
+                logger.warning(f"Failed to remove input file {file_path}: {e}")
+        
+        logger.info(f"CREATED: {final_path}")
+        return {
+            "action": "created",
+            "sha256": file_hash,
+            "output_path": str(final_path),
+            "route": route_key
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to curate {file_path}: {e}")
+        if temp_path.exists():
+            try:
+                os.remove(str(temp_path))
+            except:
+                pass
+        return {"action": "error", "reason": str(e)}
+
+def curate_backfill():
+    config = load_config()
+    roots = config.get("intake_roots", [])
+    results = []
+    
+    for root in roots:
+        p = Path(root)
+        if not p.exists(): continue
+        
+        # Walk
+        for item in p.rglob("*"):
+            if item.is_file():
+                # Avoid processing our own output/staging if nested?
+                # User config defines intake_roots.
+                res = curate_file(item)
+                results.append(res)
+                
+    return results
+
+if __name__ == "__main__":
+    import argparse
+    import sys
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--path", help="Path to file or directory to curate")
+    parser.add_argument("--backfill", action="store_true", help="Process all intake roots")
+    args = parser.parse_args()
+    
+    if args.backfill:
+        res = curate_backfill()
+        print(json.dumps(res, indent=2))
+    elif args.path:
+        p = Path(args.path)
+        if p.is_file():
+            res = curate_file(p)
+            print(json.dumps(res, indent=2))
+        elif p.is_dir():
+             # Recurse dir
+             final_res = []
+             for item in p.rglob("*"):
+                if item.is_file():
+                    final_res.append(curate_file(item))
+             print(json.dumps(final_res, indent=2))
+    else:
+        print("Usage: curate.py --path <path> OR --backfill")
