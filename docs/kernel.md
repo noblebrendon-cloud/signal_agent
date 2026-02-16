@@ -33,3 +33,15 @@ The **Coherence Stability Kernel** is a deterministic safety system that monitor
 *   **Kernel Logic**: `app/audit/coherence_kernel.py`
 *   **Resilience Hook**: `app/utils/resilience.py` (Checks stability before retries, halts on FAILURE).
 *   **Agent Hook**: `app/agent.py` (Updates C1 violations and C2 context drift).
+
+## Module Catalog
+
+| Module | Path | Scope | Purpose |
+| :--- | :--- | :--- | :--- |
+| Coherence Kernel | `app/audit/coherence_kernel.py` | GLOBAL | Stability monitoring + regime enforcement |
+| Policy Engine | `app/utils/policy_engine.py` | GLOBAL/DOMAIN | DSL-based constraint evaluation |
+| Reprojection | `app/utils/reprojection.py` | GLOBAL/DOMAIN | Artifact validation against packs |
+| Resilience | `app/utils/resilience.py` | GLOBAL | Provider retry + circuit breaker |
+| IR Bridge | `app/utils/ir.py` | GLOBAL | Artifact state extraction + pack hashing |
+| Meme Offload | `app/agents/meme_offload/` | DOMAIN | Governed meme generation + render |
+

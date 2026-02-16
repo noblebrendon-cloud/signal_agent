@@ -1,0 +1,95 @@
+pack_metadata:
+  name: "content_meme_offload"
+  scope: "DOMAIN"
+  version: "1.0.0"
+  pack_hash: "sha256:ba1a5c44220dc318b9495f0b24c5d49c6a6c3cfa020417d5ba528a6096be2c58"
+  compatibility: "SIGNAL_AGENT_MODULES_V1"
+
+activation_conditions:
+  domain_match:
+    - "content"
+
+constraint_rules:
+  - constraint_id: "MEME_ALLOW_OFFLOAD"
+    scope: "DOMAIN"
+    intent: "Allow CONTENT_MEME_OFFLOAD action within content domain"
+    rule_type: "ALLOW"
+    trigger:
+      capability_id: "content:meme_offload"
+      risk_tier: "LOW"
+    predicate: {}
+    enforcement_action: "LOG_ONLY"
+    audit_event: "MEME_POLICY_EVALUATION"
+    rollback_behavior: "ABORT"
+
+  - constraint_id: "MEME_LIMIT_MAX_OUTPUTS"
+    scope: "DOMAIN"
+    intent: "Cap meme outputs per invocation"
+    rule_type: "LIMIT"
+    trigger:
+      capability_id: "content:meme_offload"
+      risk_tier: "ANY"
+    predicate: {}
+    parameters:
+      metric_id: "meme_output_count"
+      selector_key: "content:meme_offload"
+      max_value: 5
+    enforcement_action: "BLOCK"
+    audit_event: "MEME_POLICY_EVALUATION"
+    rollback_behavior: "ABORT"
+
+  - constraint_id: "MEME_DENY_NAMED_PERSON"
+    scope: "DOMAIN"
+    intent: "Block meme generation containing named persons"
+    rule_type: "DENY"
+    trigger:
+      capability_id: "content:meme_offload"
+      risk_tier: "HIGH"
+    predicate:
+      op: "EQ"
+      left: "snapshot.contains_named_person"
+      right: true
+    enforcement_action: "BLOCK"
+    audit_event: "MEME_POLICY_EVALUATION"
+    rollback_behavior: "ABORT"
+
+  - constraint_id: "MEME_DENY_DISALLOWED_TERMS"
+    scope: "DOMAIN"
+    intent: "Block meme generation containing disallowed terms"
+    rule_type: "DENY"
+    trigger:
+      capability_id: "content:meme_offload"
+      risk_tier: "HIGH"
+    predicate:
+      op: "EQ"
+      left: "snapshot.contains_disallowed_terms"
+      right: true
+    enforcement_action: "BLOCK"
+    audit_event: "MEME_POLICY_EVALUATION"
+    rollback_behavior: "ABORT"
+
+  - constraint_id: "MEME_DENY_PANEL_LENGTH"
+    scope: "DOMAIN"
+    intent: "Block panels exceeding character limits"
+    rule_type: "DENY"
+    trigger:
+      capability_id: "content:meme_offload"
+      risk_tier: "MEDIUM"
+    predicate:
+      op: "OR"
+      args:
+        - op: "GT"
+          left: "snapshot.top_chars"
+          right: 120
+        - op: "GT"
+          left: "snapshot.bottom_chars"
+          right: 120
+        - op: "GT"
+          left: "snapshot.title_chars"
+          right: 80
+        - op: "GT"
+          left: "snapshot.max_bullet_chars"
+          right: 100
+    enforcement_action: "BLOCK"
+    audit_event: "MEME_POLICY_EVALUATION"
+    rollback_behavior: "ABORT"
