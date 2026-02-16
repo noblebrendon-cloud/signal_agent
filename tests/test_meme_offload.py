@@ -1,13 +1,17 @@
 """
-Tests for CONTENT_MEME_OFFLOAD domain action.
+Tests for CONTENT_MEME_OFFLOAD domain action (v0.2).
 
 Covers:
   1. Deterministic meme_id generation
   2. LIMIT rule enforcement (max 5 outputs)
   3. DENY rule enforcement (named person, disallowed terms)
   4. Reprojection FAIL → ConstraintViolation + Φ₁ increment
-  5. Renderer produces PNG
+  5. Renderer produces PNG / import path validation
   6. Stable pack hash consistency
+  7. Strict spec_version enforcement (v0.2)
+  8. Telemetry includes pack provenance (v0.2)
+  9. Provider expansion requires policy gate (v0.2)
+ 10. Kernel signals for meme expansion (v0.2)
 """
 from __future__ import annotations
 
@@ -23,6 +27,7 @@ from unittest.mock import MagicMock, patch
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app.agents.meme_offload.schema import (
+    SPEC_VERSION_CANONICAL,
     MemeSpecV1, MemePackRef, MemeCanvas, MemeOutput, MemeProvenance,
     MemeTextTwoPanel, MemeTextInfographic, generate_meme_id,
 )
@@ -32,8 +37,15 @@ from app.utils.reprojection import (
 from app.utils.exceptions import ConstraintViolation
 
 
+PACK_PATH = str(
+    Path(__file__).resolve().parent.parent
+    / "constraints" / "packs" / "domain" / "content_meme"
+    / "CONTENT_MEME_OFFLOAD_v1.yaml"
+)
+
+
 class TestDeterministicMemeId(unittest.TestCase):
-    """Phase 10 — Test 1: Same inputs always produce same meme_id."""
+    """Test 1: Same inputs always produce same meme_id."""
 
     def test_same_inputs_same_id(self):
         id1 = generate_meme_id("abc123", "frame_0000", "hello world", "two_panel")
@@ -55,23 +67,18 @@ class TestDeterministicMemeId(unittest.TestCase):
 
 
 class TestLimitEnforcement(unittest.TestCase):
-    """Phase 10 — Test 2: LIMIT rule caps output at 5."""
+    """Test 2: LIMIT rule caps output at 5."""
 
     def test_limit_caps_output(self):
-        """Request 10, get at most 5 specs."""
         from app.agents.meme_offload.meme_offload import _extract_candidate_frames
 
-        # Generate 20 lines → 10 two-panel frames
         source = "\n".join([f"Line {i}" for i in range(20)])
         frames = _extract_candidate_frames(source, "two_panel")
         self.assertEqual(len(frames), 10)
 
-        # The engine caps at MAX_OUTPUTS_DEFAULT=5 internally.
-        # We verify the frame extraction is correct; engine test below.
-
 
 class TestDenyRules(unittest.TestCase):
-    """Phase 10 — Test 3: DENY rules for named person and disallowed terms."""
+    """Test 3: DENY rules for named person and disallowed terms."""
 
     def test_named_person_detected(self):
         spec = MemeSpecV1(
@@ -106,16 +113,10 @@ class TestDenyRules(unittest.TestCase):
 
 
 class TestReprojectionFail(unittest.TestCase):
-    """Phase 10 — Test 4: Reprojection FAIL triggers ConstraintViolation."""
+    """Test 4: Reprojection FAIL triggers ConstraintViolation."""
 
     def test_deny_named_person_raises(self):
-        """Reprojecting a spec with named person should raise ConstraintViolation."""
-        pack_path = str(
-            Path(__file__).resolve().parent.parent
-            / "constraints" / "packs" / "domain" / "content_meme"
-            / "CONTENT_MEME_OFFLOAD_v1.yaml"
-        )
-        if not Path(pack_path).exists():
+        if not Path(PACK_PATH).exists():
             self.skipTest("Pack file not found")
 
         spec = MemeSpecV1(
@@ -126,18 +127,11 @@ class TestReprojectionFail(unittest.TestCase):
             ),
             format="two_panel",
         )
-
         with self.assertRaises(ConstraintViolation):
-            reproject_checkpoint_meme(spec, pack_path)
+            reproject_checkpoint_meme(spec, PACK_PATH)
 
     def test_deny_disallowed_term_raises(self):
-        """Reprojecting with disallowed term should raise ConstraintViolation."""
-        pack_path = str(
-            Path(__file__).resolve().parent.parent
-            / "constraints" / "packs" / "domain" / "content_meme"
-            / "CONTENT_MEME_OFFLOAD_v1.yaml"
-        )
-        if not Path(pack_path).exists():
+        if not Path(PACK_PATH).exists():
             self.skipTest("Pack file not found")
 
         spec = MemeSpecV1(
@@ -148,20 +142,16 @@ class TestReprojectionFail(unittest.TestCase):
             ),
             format="two_panel",
         )
-
         with self.assertRaises(ConstraintViolation):
-            reproject_checkpoint_meme(spec, pack_path)
+            reproject_checkpoint_meme(spec, PACK_PATH)
 
     def test_kernel_phi1_increments_on_fail(self):
-        """Φ₁ should increment when record_constraint_violation is called."""
         from app.audit.coherence_kernel import CoherenceKernel
 
         kernel = CoherenceKernel()
-        # Record baseline
         snap_before = kernel.snapshot()
         phi1_before = snap_before.phi1
 
-        # Simulate a constraint violation
         kernel.record_constraint_violation()
         snap_after = kernel.snapshot()
         phi1_after = snap_after.phi1
@@ -170,7 +160,7 @@ class TestReprojectionFail(unittest.TestCase):
 
 
 class TestRenderer(unittest.TestCase):
-    """Phase 10 — Test 5: Renderer produces valid PNG."""
+    """Test 5: Renderer produces valid PNG."""
 
     def test_render_two_panel(self):
         try:
@@ -196,7 +186,6 @@ class TestRenderer(unittest.TestCase):
             self.assertTrue(out_path.exists())
             self.assertTrue(out_path.stat().st_size > 0)
 
-            # Verify it's a valid PNG
             img = Image.open(str(out_path))
             self.assertEqual(img.size, (540, 540))
 
@@ -227,30 +216,209 @@ class TestRenderer(unittest.TestCase):
             self.assertTrue(out_path.exists())
 
 
+class TestRendererImportPath(unittest.TestCase):
+    """Test 5b (v0.2): Validate render module is importable and callable."""
+
+    def test_render_meme_callable(self):
+        from app.agents.meme_offload.render import render_memes
+        self.assertTrue(callable(getattr(render_memes, "render_meme", None)))
+
+
 class TestStablePackHash(unittest.TestCase):
-    """Phase 10 — Test 6: Pack hash is deterministic across calls."""
+    """Test 6: Pack hash is deterministic across calls."""
 
     def test_hash_consistency(self):
         from app.utils.ir import stable_pack_hash
         from app.utils.reprojection import ConstraintPack
 
-        pack_path = (
-            Path(__file__).resolve().parent.parent
-            / "constraints" / "packs" / "domain" / "content_meme"
-            / "CONTENT_MEME_OFFLOAD_v1.yaml"
-        )
-        if not pack_path.exists():
+        if not Path(PACK_PATH).exists():
             self.skipTest("Pack file not found")
 
         import yaml
-        with open(pack_path, "r", encoding="utf-8") as f:
+        with open(PACK_PATH, "r", encoding="utf-8") as f:
             data = yaml.safe_load(f) or {}
 
         pack = ConstraintPack.from_dict(data)
         h1 = stable_pack_hash(pack)
         h2 = stable_pack_hash(pack)
         self.assertEqual(h1, h2)
-        self.assertEqual(len(h1), 64)  # SHA256 hex length
+        self.assertEqual(len(h1), 64)
+
+
+# ===================================================================
+# v0.2 NEW TESTS
+# ===================================================================
+
+class TestSpecVersionStrictness(unittest.TestCase):
+    """Test 7 (v0.2): spec_version MUST be "meme_spec_v1" exactly."""
+
+    def test_canonical_version_accepted(self):
+        """meme_spec_v1 is the only valid spec_version."""
+        spec = MemeSpecV1(spec_version="meme_spec_v1")
+        self.assertEqual(spec.spec_version, SPEC_VERSION_CANONICAL)
+
+    def test_semver_rejected(self):
+        """Semantic version strings must be rejected."""
+        with self.assertRaises(ValueError):
+            MemeSpecV1(spec_version="1.0.0")
+
+    def test_empty_rejected(self):
+        with self.assertRaises(ValueError):
+            MemeSpecV1(spec_version="")
+
+    def test_wrong_string_rejected(self):
+        with self.assertRaises(ValueError):
+            MemeSpecV1(spec_version="meme_spec_v2")
+
+    def test_default_is_canonical(self):
+        spec = MemeSpecV1()
+        self.assertEqual(spec.spec_version, "meme_spec_v1")
+
+    def test_validate_missing_pack_hash(self):
+        """validate() should raise on missing pack.pack_hash."""
+        spec = MemeSpecV1(pack=MemePackRef(pack_id="x", pack_version="1", pack_hash=""))
+        with self.assertRaises(ValueError):
+            spec.validate()
+
+    def test_validate_missing_pack_id(self):
+        spec = MemeSpecV1(pack=MemePackRef(pack_id="", pack_version="1", pack_hash="abc"))
+        with self.assertRaises(ValueError):
+            spec.validate()
+
+    def test_validate_missing_pack_version(self):
+        spec = MemeSpecV1(pack=MemePackRef(pack_id="x", pack_version="", pack_hash="abc"))
+        with self.assertRaises(ValueError):
+            spec.validate()
+
+    def test_validate_passes_with_all_fields(self):
+        spec = MemeSpecV1(pack=MemePackRef(pack_id="x", pack_version="1", pack_hash="abc"))
+        spec.validate()  # Should not raise
+
+
+class TestTelemetryIncludesPackMetadata(unittest.TestCase):
+    """Test 8 (v0.2): All telemetry events must include pack provenance."""
+
+    def test_meme_offload_start_has_provenance(self):
+        from app.agents.meme_offload.meme_offload import _pack_provenance, _get_rule_ids
+        from app.utils.reprojection import ConstraintPack
+
+        if not Path(PACK_PATH).exists():
+            self.skipTest("Pack file not found")
+
+        import yaml
+        with open(PACK_PATH, "r", encoding="utf-8") as f:
+            data = yaml.safe_load(f) or {}
+        pack = ConstraintPack.from_dict(data)
+
+        rule_ids = _get_rule_ids(pack)
+        self.assertIsInstance(rule_ids, list)
+        self.assertTrue(len(rule_ids) >= 5)  # At least 5 original + 1 expansion
+
+        pack_ref = MemePackRef(
+            pack_id="test", pack_version="1", pack_hash="sha256:abc",
+        )
+        prov = _pack_provenance(pack_ref, rule_ids)
+
+        # Verify all required keys
+        self.assertIn("pack_id", prov)
+        self.assertIn("pack_version", prov)
+        self.assertIn("pack_hash", prov)
+        self.assertIn("rule_ids", prov)
+        self.assertIn("action", prov)
+        self.assertEqual(prov["action"], "CONTENT_MEME_OFFLOAD")
+
+    def test_rule_ids_are_deterministic_order(self):
+        from app.agents.meme_offload.meme_offload import _get_rule_ids
+        from app.utils.reprojection import ConstraintPack
+
+        if not Path(PACK_PATH).exists():
+            self.skipTest("Pack file not found")
+
+        import yaml
+        with open(PACK_PATH, "r", encoding="utf-8") as f:
+            data = yaml.safe_load(f) or {}
+        pack = ConstraintPack.from_dict(data)
+
+        ids1 = _get_rule_ids(pack)
+        ids2 = _get_rule_ids(pack)
+        self.assertEqual(ids1, ids2)  # Same order every time
+
+
+class TestProviderExpansionRequiresPolicyGate(unittest.TestCase):
+    """Test 9 (v0.2): Provider expansion disabled by default (predicate: false)."""
+
+    def test_expansion_disabled_by_default(self):
+        from app.agents.meme_offload.meme_offload import _is_expansion_allowed
+        from app.utils.reprojection import ConstraintPack
+
+        if not Path(PACK_PATH).exists():
+            self.skipTest("Pack file not found")
+
+        import yaml
+        with open(PACK_PATH, "r", encoding="utf-8") as f:
+            data = yaml.safe_load(f) or {}
+        pack = ConstraintPack.from_dict(data)
+
+        self.assertFalse(_is_expansion_allowed(pack))
+
+    def test_expansion_disabled_without_rule(self):
+        """Pack with no expansion rule → expansion disabled."""
+        from app.agents.meme_offload.meme_offload import _is_expansion_allowed
+        from app.utils.reprojection import ConstraintPack
+
+        pack = ConstraintPack(scope="DOMAIN", constraint_rules=[])
+        self.assertFalse(_is_expansion_allowed(pack))
+
+    def test_expansion_enabled_with_empty_predicate(self):
+        """ALLOW rule with empty predicate → expansion enabled."""
+        from app.agents.meme_offload.meme_offload import _is_expansion_allowed
+        from app.utils.reprojection import ConstraintPack
+
+        pack = ConstraintPack(
+            scope="DOMAIN",
+            constraint_rules=[{
+                "constraint_id": "MEME_ALLOW_PROVIDER_EXPANSION",
+                "rule_type": "ALLOW",
+                "predicate": {},
+            }],
+        )
+        self.assertTrue(_is_expansion_allowed(pack))
+
+
+class TestKernelSignalsMemeExpansion(unittest.TestCase):
+    """Test 10 (v0.2): Kernel signal behavior for meme offload paths."""
+
+    def test_phi1_increments_on_constraint_violation(self):
+        """Φ₁ increments when record_constraint_violation called."""
+        from app.audit.coherence_kernel import CoherenceKernel
+
+        kernel = CoherenceKernel()
+        snap_before = kernel.snapshot()
+        kernel.record_constraint_violation()
+        snap_after = kernel.snapshot()
+        self.assertGreater(snap_after.phi1, snap_before.phi1)
+
+    def test_no_false_drift_in_rule_only_mode(self):
+        """Kernel signals should not change without explicit events."""
+        from app.audit.coherence_kernel import CoherenceKernel
+
+        kernel = CoherenceKernel()
+        snap1 = kernel.snapshot()
+        snap2 = kernel.snapshot()
+
+        self.assertEqual(snap1.phi1, snap2.phi1)
+        self.assertEqual(snap1.phi2, snap2.phi2)
+        self.assertEqual(snap1.phi3, snap2.phi3)
+        self.assertEqual(snap1.phi4, snap2.phi4)
+        self.assertEqual(snap1.regime, snap2.regime)
+
+    def test_regime_stable_without_violations(self):
+        """Kernel remains STABLE without any injected violations."""
+        from app.audit.coherence_kernel import CoherenceKernel
+
+        kernel = CoherenceKernel()
+        snap = kernel.snapshot()
+        self.assertEqual(snap.regime.value, "STABLE")
 
 
 if __name__ == "__main__":

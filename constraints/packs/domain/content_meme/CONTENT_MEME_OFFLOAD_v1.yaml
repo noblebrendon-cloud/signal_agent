@@ -1,7 +1,7 @@
 pack_metadata:
   name: "content_meme_offload"
   scope: "DOMAIN"
-  version: "1.0.0"
+  version: "1.1.0"
   pack_hash: "sha256:ba1a5c44220dc318b9495f0b24c5d49c6a6c3cfa020417d5ba528a6096be2c58"
   compatibility: "SIGNAL_AGENT_MODULES_V1"
 
@@ -91,5 +91,17 @@ constraint_rules:
           left: "snapshot.max_bullet_chars"
           right: 100
     enforcement_action: "BLOCK"
+    audit_event: "MEME_POLICY_EVALUATION"
+    rollback_behavior: "ABORT"
+
+  - constraint_id: "MEME_ALLOW_PROVIDER_EXPANSION"
+    scope: "DOMAIN"
+    intent: "Gate optional LLM caption expansion (disabled by default)"
+    rule_type: "ALLOW"
+    trigger:
+      capability_id: "content:meme_offload"
+      risk_tier: "MEDIUM"
+    predicate: "false"
+    enforcement_action: "LOG_ONLY"
     audit_event: "MEME_POLICY_EVALUATION"
     rollback_behavior: "ABORT"

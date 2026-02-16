@@ -58,7 +58,7 @@ def brn_meme_offload(
             source_text=source_text,
             pack_id=pack,
             n=n,
-            logger=logger,
+            logger_fn=logger,
             session_id="cli_session",
             source_artifact_id=artifact_id,
             fmt=fmt,
