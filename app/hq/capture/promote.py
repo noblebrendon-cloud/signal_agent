@@ -36,6 +36,8 @@ _STOPWORDS = frozenset({
     "been", "being", "did", "does", "doing", "what", "which", "who",
     "whom", "when", "where", "why", "how", "any", "some", "only",
     "other", "more", "most", "own", "same", "few", "many", "much",
+    "https", "http", "www", "com", "net", "org", "io", "html", "htm",
+    "article", "content", "page", "index",
 })
 
 _URL_RE = re.compile(r"https?://[^\s\)>\]\"']+", re.IGNORECASE)
@@ -251,18 +253,60 @@ def _cluster_docs(
     window_hours: float,
     strategy: str,
 ) -> List[_Cluster]:
-    """Greedy deterministic clustering. Docs must be sorted."""
+    """Greedy deterministic clustering with bridge-doc defense. Docs must be sorted."""
     clusters: List[_Cluster] = []
+    
     for doc in docs:
-        assigned = False
+        best_cluster = None
+        best_score = -1.0
+        
+        # Score against all existing clusters to detect bridges
+        candidates = []
         for cluster in clusters:
             s = _score(doc, cluster, window_hours, strategy)
             if s >= threshold:
-                cluster.add(doc)
-                assigned = True
-                break
-        if not assigned:
+                candidates.append((s, cluster))
+        
+        # Sort candidates by score descending
+        candidates.sort(key=lambda x: x[0], reverse=True)
+        
+        if not candidates:
+            # No match -> new cluster
             clusters.append(_Cluster(doc))
+            continue
+            
+        # Bridge detection
+        # If matches >= 2 clusters with high token overlap and low score difference
+        if len(candidates) >= 2:
+            s1, c1 = candidates[0]
+            s2, c2 = candidates[1]
+            
+            # Check score difference
+            if (s1 - s2) < 0.05:
+                # Check token overlap (>= 40%)
+                doc_tokens = set(doc.tokens)
+                if not doc_tokens:
+                     # Empty tokens? Just assign to best (unlikely to trigger high score anyway)
+                     c1.add(doc)
+                     continue
+
+                def calc_overlap(c):
+                    # Keys in cluster TF represent union of tokens in cluster
+                    c_tokens = set(c._tf_sum.keys())
+                    if not c_tokens: return 0.0
+                    return len(doc_tokens & c_tokens) / len(doc_tokens)
+
+                ov1 = calc_overlap(c1)
+                ov2 = calc_overlap(c2)
+                
+                if ov1 >= 0.4 and ov2 >= 0.4:
+                    # Bridge detected! Force new cluster to separate them
+                    clusters.append(_Cluster(doc))
+                    continue
+
+        # No bridge detected, assign to best
+        candidates[0][1].add(doc)
+            
     return clusters
 
 

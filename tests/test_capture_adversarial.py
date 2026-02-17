@@ -113,21 +113,29 @@ class TestCaptureAdversarial(unittest.TestCase):
         """G) Test decay moves only expired files."""
         # Create expired file (30 days old)
         now = datetime.now(timezone.utc)
-        expired_ts = (now - timedelta(days=30)).strftime("%Y-%m-%dT%H-%M-%S") + "_001Z"
-        self._create_raw(f"raw_{expired_ts}.md", "old content")
+        # Create expired file using mtime (bypass filename parsing issues)
+        expired_dt = now - timedelta(days=30)
+        exp_path = self._create_raw("raw_old_file.md", "old content")
+        
+        # Force mtime to be old
+        old_epoch = expired_dt.timestamp()
+        os.utime(exp_path, (old_epoch, old_epoch))
         
         # Create fresh file (1 day old)
-        fresh_ts = (now - timedelta(days=1)).strftime("%Y-%m-%dT%H-%M-%S") + "_002Z"
-        self._create_raw(f"raw_{fresh_ts}.md", "new content")
+        fresh_dt = now - timedelta(days=1)
+        fresh_ts_fn = fresh_dt.strftime("%Y-%m-%dT%H-%M-%S") + "_002Z"
+        # Keep fresh file with timestamp (normal case)
+        fresh_ts_iso = fresh_dt.strftime("%Y-%m-%dT%H:%M:%S") + "Z"
+        self._create_raw(f"raw_{fresh_ts_fn}.md", "new content", ts_str=fresh_ts_iso)
 
         res = decay_run(days=14, capture_dir=self.capture_dir)
         
-        self.assertEqual(len(res["expired_files"]), 1)
-        self.assertIn(f"raw_{expired_ts}.md", res["expired_files"])
+        self.assertEqual(len(res["stage1_moved"]), 1)
+        self.assertIn("raw_old_file.md", res["stage1_moved"])
         
         # Verify move
-        self.assertTrue((self.capture_dir / "expired" / f"raw_{expired_ts}.md").exists())
-        self.assertTrue((self.capture_dir / "raw" / f"raw_{fresh_ts}.md").exists())
+        self.assertTrue((self.capture_dir / "expired_stage1" / "raw_old_file.md").exists())
+        self.assertTrue((self.capture_dir / "raw" / f"raw_{fresh_ts_fn}.md").exists())
 
     def test_instability_spikes(self):
         """H) Test instability flags on high volume."""

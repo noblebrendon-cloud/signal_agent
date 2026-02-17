@@ -4,6 +4,12 @@ Instability Detector — flag volatile topic spikes in captured material.
 Maintains rolling counters in instability_state.json.
 Detects when today's capture volume for a topic exceeds baseline.
 Logs flags to instability_log.jsonl.
+
+Hardened Features:
+- Token cap alignment (max 5 references per doc)
+- UTC Day explicit key
+- Zero-day inclusion in baseline
+- Severity classification
 """
 from __future__ import annotations
 
@@ -20,6 +26,7 @@ from typing import Any, Dict, List, Optional
 
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
 _URL_RE = re.compile(r"https?://[^\s\)>\]\"']+", re.IGNORECASE)
+_MAX_TOKEN_COUNT = 5  # Alignment with promote.py
 
 _STOPWORDS = frozenset({
     "a", "an", "the", "and", "or", "but", "in", "on", "at", "to", "for",
@@ -30,6 +37,9 @@ _STOPWORDS = frozenset({
     "after", "before", "between", "under", "all", "each", "every", "both",
     "such", "through", "its", "my", "your", "our", "their", "he", "she",
     "we", "they", "me", "him", "her", "us", "them", "i", "you",
+    "been", "being", "did", "does", "doing", "what", "which", "who",
+    "whom", "when", "where", "why", "how", "any", "some", "only",
+    "other", "more", "most", "own", "same", "few", "many", "much",
 })
 
 
@@ -49,7 +59,15 @@ def _get_capture_dir() -> Path:
 
 def _extract_tokens(text: str) -> List[str]:
     words = _TOKEN_RE.findall(text.lower())
-    return [w for w in words if w not in _STOPWORDS and len(w) > 1]
+    # Cap token references to prevent keyword stuffing influence
+    counts = Counter(words)
+    capped_tokens = []
+    for w, c in counts.items():
+        if w not in _STOPWORDS and len(w) > 1:
+            # We add it min(c, 5) times to the list to represent capped frequency
+            for _ in range(min(c, _MAX_TOKEN_COUNT)):
+                capped_tokens.append(w)
+    return capped_tokens
 
 
 def _extract_domains(text: str) -> List[str]:
@@ -83,7 +101,6 @@ def _parse_frontmatter_ts(text: str) -> Optional[str]:
 
 
 def _load_state(state_path: Path) -> Dict[str, Any]:
-    """Load instability state from JSON."""
     if state_path.exists():
         try:
             return json.loads(state_path.read_text(encoding="utf-8"))
@@ -93,7 +110,6 @@ def _load_state(state_path: Path) -> Dict[str, Any]:
 
 
 def _save_state(state_path: Path, state: Dict[str, Any]) -> None:
-    """Save instability state to JSON."""
     with open(state_path, "w", encoding="utf-8", newline="\n") as f:
         json.dump(state, f, indent=2, sort_keys=True)
         f.write("\n")
@@ -118,7 +134,6 @@ def scan_instability(
 ) -> Dict[str, Any]:
     """
     Scan raw captures for topic spikes.
-
     Returns dict with instability flags.
     """
     base = capture_dir or _get_capture_dir()
@@ -136,9 +151,8 @@ def scan_instability(
     all_files.sort(key=lambda p: p.name)
 
     # Build per-day topic counts
-    # topic_id -> { date_str -> count }
     topic_daily: Dict[str, Dict[str, int]] = {}
-    topic_meta: Dict[str, Dict[str, Any]] = {}  # topic_id -> {top_tokens, domains}
+    topic_meta: Dict[str, Dict[str, Any]] = {}
 
     for rf in all_files:
         try:
@@ -156,7 +170,6 @@ def scan_instability(
         else:
             file_date = today_str
 
-        # Extract body (skip frontmatter)
         body = text
         if text.startswith("---"):
             parts = text.split("---", 2)
@@ -166,7 +179,6 @@ def scan_instability(
         tokens = _extract_tokens(body)
         domains = _extract_domains(body)
 
-        # Top tokens by frequency
         counts = Counter(tokens)
         top_tokens = [t for t, _ in counts.most_common(12)]
 
@@ -178,7 +190,6 @@ def scan_instability(
 
         topic_daily[tid][file_date] = topic_daily[tid].get(file_date, 0) + 1
 
-    # Compute spikes
     flags: List[Dict[str, Any]] = []
 
     # Generate last N day strings for baseline
@@ -190,25 +201,36 @@ def scan_instability(
     for tid, daily in sorted(topic_daily.items()):
         today_count = daily.get(today_str, 0)
 
-        # Baseline: mean of last N days excluding today
+        # Baseline: mean of last N days excluding today (INCLUDE ZEROS)
+        # Previously we might have used .get() which returns 0, but logic was:
+        # sum(baseline_days) / len(baseline_days).
+        # We ensure we iterate over ALL day_strings[1:] even if not in daily.
         baseline_days = [daily.get(ds, 0) for ds in day_strings[1:]]
         baseline = (sum(baseline_days) / max(len(baseline_days), 1)) + 1e-9
 
         ratio = today_count / baseline
 
-        # Flag conditions
         is_spike = (
             (today_count >= min_today and ratio >= spike_ratio) or
-            (today_count >= min_today * 2)  # absolute spike
+            (today_count >= min_today * 2.5)  # absolute spike check
         )
 
         if is_spike:
+            # Severity classification
+            severity = "minor"
+            if today_count >= 20:
+                severity = "extreme"
+            elif ratio >= 5.0:
+                severity = "major"
+
             meta = topic_meta.get(tid, {"top_tokens": [], "domains": []})
             flags.append({
                 "topic_id": tid,
+                "utc_day": today_str,
                 "today_count": today_count,
                 "baseline": round(baseline, 4),
                 "spike_ratio": round(ratio, 4),
+                "severity": severity,
                 "top_tokens": meta["top_tokens"],
                 "domains": meta["domains"],
             })
@@ -216,10 +238,15 @@ def scan_instability(
     # Update state
     state = _load_state(state_path)
     state["updated_utc"] = now.strftime("%Y-%m-%dT%H:%M:%SZ")
+    state["utc_day"] = today_str
+    
     for tid, daily in topic_daily.items():
+        # Keep last 7 days history relative to day_strings
         last_7 = [daily.get(ds, 0) for ds in reversed(day_strings)]
-        meta = topic_meta.get(tid, {"top_tokens": [], "domains": []})
+        
+        # Calculate new baseline for state storage
         baseline_vals = last_7[:-1] if len(last_7) > 1 else last_7
+        
         state["topics"][tid] = {
             "baseline_per_day": round(sum(baseline_vals) / max(len(baseline_vals), 1), 4),
             "last_7_days": last_7[-7:] if len(last_7) >= 7 else last_7,
@@ -231,6 +258,7 @@ def scan_instability(
     if flags:
         log_entry = {
             "timestamp_utc": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "utc_day": today_str,
             "flags": flags,
             "window_days": window_days,
             "min_today": min_today,
@@ -243,6 +271,7 @@ def scan_instability(
         "flags": flags,
         "total_topics": len(topic_daily),
         "scanned_files": len(all_files),
+        "utc_day": today_str,
     }
 
 
@@ -251,7 +280,6 @@ def scan_instability(
 # ---------------------------------------------------------------------------
 
 def main(argv: Optional[list] = None) -> int:
-    """CLI entrypoint for instability subcommand."""
     import argparse
 
     parser = argparse.ArgumentParser(

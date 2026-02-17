@@ -4,17 +4,19 @@ graph TB
         style VOLATILE fill:#1a1a2e33,stroke:#e94560,stroke-width:2px,stroke-dasharray: 5 5
         CLI["Capture CLI<br/>brn capture.add"]
         RAW["data/capture/raw/"]
-        EXPIRED["data/capture/expired/"]
+        STAGE1["expired_stage1/"]
+        STAGE2["expired_stage2/"]
         PROMO["Promote Engine<br/>best-effort"]
         PROMOTED["data/capture/promoted/"]
         ARCHIVE["data/capture/archive/"]
-        ROUTER["Spine Router<br/>router.py"]
+        ROUTER["Spine Router<br/>hash audit"]
         SPINES["constraints/spines/<name>/incoming/"]
-        INSTABILITY["Instability Detector<br/>instability.py"]
+        INSTABILITY["Instability Detector<br/>spike severity"]
         FLAGS["instability_flags"]
 
         CLI -->|writes raw fragment| RAW
-        RAW -->|decay policy (14d)| EXPIRED
+        RAW -->|stage1 (14d)| STAGE1
+        STAGE1 -->|stage 2 (30d)| STAGE2
         RAW -->|sorted docs| PROMO
         PROMO -->|bundle .md| PROMOTED
         PROMO -->|archive raw| ARCHIVE
@@ -23,6 +25,14 @@ graph TB
         RAW -->|scan spikes| INSTABILITY
         INSTABILITY -.->|flag| FLAGS
         PROMO -.->|include| FLAGS
+    end
+
+    subgraph STRESS["Falsification Harness (Testing)"]
+        style STRESS fill:#ffffff11,stroke:#e94560,stroke-width:2px,stroke-dasharray: 2 2
+        HARNESS["stress.py"]
+        HARNESS -.->|synthetic load| RAW
+        HARNESS -.->|verify| PROMO
+        HARNESS -.->|verify| INSTABILITY
     end
 
     subgraph CANONICAL["Canonical Boundary"]

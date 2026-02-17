@@ -152,8 +152,51 @@ def capture_status(capture_dir: Optional[Path] = None) -> dict:
     raw_count = len(list(raw_dir.glob("raw_*.md"))) if raw_dir.exists() else 0
     promoted_count = len(list(promoted_dir.glob("bundle_*.md"))) if promoted_dir.exists() else 0
     archived_count = len(list(archive_dir.glob("raw_*.md"))) if archive_dir.exists() else 0
-    expired_dir = base / "expired"
-    expired_count = len(list(expired_dir.glob("raw_*.md"))) if expired_dir.exists() else 0
+    expired_stage1_dir = base / "expired_stage1"
+    expired_stage1_count = len(list(expired_stage1_dir.glob("raw_*.md"))) if expired_stage1_dir.exists() else 0
+    
+    expired_stage2_dir = base / "expired_stage2"
+    expired_stage2_count = len(list(expired_stage2_dir.glob("raw_*.md"))) if expired_stage2_dir.exists() else 0
+    
+    # Fallback for legacy 'expired' dir
+    if base.joinpath("expired").exists():
+        expired_stage1_count += len(list(base.joinpath("expired").glob("raw_*.md")))
+
+    # Raw file ages
+    raw_oldest_age_days = None
+    raw_newest_age_minutes = None
+    raw_files = sorted(raw_dir.glob("raw_*.md")) if raw_dir.exists() else []
+    
+    if raw_files:
+        now = datetime.now(timezone.utc)
+        
+        def parse_ts(name):
+             # raw_2026-02-16T18-00-01_001Z.md
+             try:
+                 stem = name.replace("raw_", "").replace(".md", "")
+                 if stem.endswith("Z"): stem = stem[:-1]
+                 parts = stem.rsplit("_", 1)
+                 iso = parts[0].replace("-", ":").replace("T", " ") # close enough for sorting? 
+                 # Actually strictly:
+                 # 2026-02-16T18-00-01
+                 iso_clean = parts[0].replace("T", "T")
+                 # YYYY-MM-DDTHH-MM-SS
+                 # Reconstruct to YYYY-MM-DDTHH:MM:SS
+                 dt_str = iso_clean[:10] + "T" + iso_clean[11:].replace("-", ":") + "+00:00"
+                 return datetime.fromisoformat(dt_str)
+             except:
+                 return None
+
+        # Oldest
+        oldest_ts = parse_ts(raw_files[0].name)
+        if oldest_ts:
+            raw_oldest_age_days = round((now - oldest_ts).total_seconds() / 86400.0, 2)
+            
+        # Newest
+        newest_ts = parse_ts(raw_files[-1].name)
+        if newest_ts:
+            raw_newest_age_minutes = round((now - newest_ts).total_seconds() / 60.0, 2)
+
 
     # Last timestamps from logs
     last_capture_ts = None
@@ -196,11 +239,52 @@ def capture_status(capture_dir: Optional[Path] = None) -> dict:
             except (json.JSONDecodeError, IndexError):
                 pass
 
+    # Instability flags last 24h
+    instability_flags_last_24h = 0
+    if inst_log.exists():
+        try:
+            # Read last few lines (simplified) or scan all?
+            # Let's scan all for correctness, file shouldn't be too huge yet
+            # For robust production, would tail. Here, read all.
+            now = datetime.now(timezone.utc)
+            cutoff = now.timestamp() - 86400
+            
+            for line in inst_log.read_text(encoding="utf-8").strip().split("\n"):
+                if not line.strip(): continue
+                rec = json.loads(line)
+                ts_str = rec.get("timestamp_utc")
+                if ts_str:
+                    try:
+                        dt = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
+                        if dt.timestamp() >= cutoff:
+                            instability_flags_last_24h += len(rec.get("flags", []))
+                    except ValueError:
+                        pass
+        except Exception:
+            pass
+
+    # Router hash
+    router_ruleset_hash = None
+    promo_log = base / "promotion_log.jsonl" # Use promotion log? No, routing log.
+    routing_log = base / "routing_log.jsonl"
+    if routing_log.exists():
+         lines = routing_log.read_text(encoding="utf-8").strip().split("\n")
+         if lines and lines[-1].strip():
+             try:
+                 router_ruleset_hash = json.loads(lines[-1]).get("router_ruleset_hash")
+             except:
+                 pass
+
     return {
         "raw_count": raw_count,
         "promoted_count": promoted_count,
         "archived_count": archived_count,
-        "expired_count": expired_count,
+        "expired_stage1_count": expired_stage1_count,
+        "expired_stage2_count": expired_stage2_count,
+        "raw_oldest_age_days": raw_oldest_age_days,
+        "raw_newest_age_minutes": raw_newest_age_minutes,
+        "instability_flags_last_24h": instability_flags_last_24h,
+        "router_ruleset_hash": router_ruleset_hash,
         "last_capture_ts": last_capture_ts,
         "last_promotion_ts": last_promotion_ts,
         "last_decay_ts": last_decay_ts,
