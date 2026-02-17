@@ -177,6 +177,15 @@ def main() -> None:
         elif cmd == "capture.status":
             from app.hq.capture.capture import main as capture_main
             sys.exit(capture_main(["status"]))
+        elif cmd == "capture.decay":
+            from app.hq.capture.decay import main as decay_main
+            sys.exit(decay_main(sys.argv[2:]))
+        elif cmd == "capture.route":
+            from app.hq.capture.router import main as route_main
+            sys.exit(route_main(sys.argv[2:]))
+        elif cmd == "capture.instability":
+            from app.hq.capture.instability import main as instability_main
+            sys.exit(instability_main(sys.argv[2:]))
 
 
 if __name__ == "__main__":

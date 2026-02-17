@@ -1,0 +1,274 @@
+"""
+Spine Router — deterministic routing of promoted bundles into spine lanes.
+
+Routes bundles by keyword + domain scoring against YAML config.
+Copies (not moves) bundles into constraints/spines/<name>/incoming/.
+Logs events to routing_log.jsonl.
+"""
+from __future__ import annotations
+
+import json
+import os
+import re
+import shutil
+import sys
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
+
+
+_TOKEN_RE = re.compile(r"[a-z0-9]+")
+
+
+def _get_root() -> Path:
+    override = os.environ.get("SIGNAL_AGENT_ROOT")
+    if override:
+        return Path(override)
+    return Path(__file__).resolve().parents[3]
+
+
+def _get_capture_dir() -> Path:
+    override = os.environ.get("CAPTURE_DIR")
+    if override:
+        return Path(override)
+    return _get_root() / "data" / "capture"
+
+
+def _load_spine_config(config_path: Optional[Path] = None) -> List[Dict[str, Any]]:
+    """Load spine definitions from YAML config. Uses stdlib-only YAML parser."""
+    if config_path is None:
+        config_path = _get_root() / "config" / "spine_router.yaml"
+    if not config_path.exists():
+        return [{"name": "misc", "keywords": [], "domains": []}]
+
+    # Lightweight YAML parser (handles the simple structure we defined)
+    try:
+        import yaml
+        with open(config_path, "r", encoding="utf-8") as f:
+            data = yaml.safe_load(f)
+        return data.get("spines", [])
+    except ImportError:
+        # Fallback: parse simple YAML manually
+        return _parse_yaml_fallback(config_path)
+
+
+def _parse_yaml_fallback(path: Path) -> List[Dict[str, Any]]:
+    """Minimal YAML parser for spine config (no external deps)."""
+    text = path.read_text(encoding="utf-8")
+    spines = []
+    current: Optional[Dict[str, Any]] = None
+
+    for line in text.split("\n"):
+        stripped = line.strip()
+        if stripped.startswith("- name:"):
+            if current:
+                spines.append(current)
+            name = stripped.split(":", 1)[1].strip()
+            current = {"name": name, "keywords": [], "domains": []}
+        elif stripped.startswith("keywords:") and current is not None:
+            # Parse inline list: [a, b, c]
+            val = stripped.split(":", 1)[1].strip()
+            current["keywords"] = _parse_yaml_list(val)
+        elif stripped.startswith("domains:") and current is not None:
+            val = stripped.split(":", 1)[1].strip()
+            current["domains"] = _parse_yaml_list(val)
+
+    if current:
+        spines.append(current)
+    return spines
+
+
+def _parse_yaml_list(val: str) -> List[str]:
+    """Parse YAML inline list: [a, b, c] -> ['a', 'b', 'c']."""
+    val = val.strip()
+    if val.startswith("[") and val.endswith("]"):
+        inner = val[1:-1]
+        if not inner.strip():
+            return []
+        return [item.strip() for item in inner.split(",")]
+    return []
+
+
+def _extract_tokens(text: str) -> List[str]:
+    """Extract lowercase tokens."""
+    return _TOKEN_RE.findall(text.lower())
+
+
+def score_bundle(
+    tokens: List[str],
+    domains: List[str],
+    spine: Dict[str, Any],
+) -> Tuple[float, Dict[str, Any]]:
+    """
+    Score a bundle against a spine definition.
+    score = 0.65 * keyword_hit_rate + 0.35 * domain_hit_rate
+    Returns (score, rationale).
+    """
+    spine_keywords = set(spine.get("keywords", []))
+    spine_domains = set(spine.get("domains", []))
+
+    # Keyword hit rate
+    if spine_keywords:
+        token_set = set(tokens)
+        matched_keywords = sorted(spine_keywords & token_set)
+        keyword_rate = len(matched_keywords) / len(spine_keywords)
+    else:
+        matched_keywords = []
+        keyword_rate = 0.0
+
+    # Domain hit rate
+    if spine_domains:
+        domain_set = set(domains)
+        matched_domains = sorted(spine_domains & domain_set)
+        domain_rate = len(matched_domains) / len(spine_domains)
+    else:
+        matched_domains = []
+        domain_rate = 0.0
+
+    score = 0.65 * keyword_rate + 0.35 * domain_rate
+
+    rationale = {
+        "top_keywords": matched_keywords[:10],
+        "matched_domains": matched_domains[:10],
+    }
+    return score, rationale
+
+
+def route_bundle(
+    bundle_path: Path,
+    bundle_text: Optional[str] = None,
+    dry_run: bool = False,
+    config_path: Optional[Path] = None,
+    capture_dir: Optional[Path] = None,
+    spines_dir: Optional[Path] = None,
+) -> Dict[str, Any]:
+    """
+    Route a single bundle into the appropriate spine.
+
+    Returns routing result dict.
+    """
+    root = _get_root()
+    base = capture_dir or _get_capture_dir()
+
+    if bundle_text is None:
+        if not bundle_path.exists():
+            return {"status": "fail", "error": f"bundle not found: {bundle_path}"}
+        bundle_text = bundle_path.read_text(encoding="utf-8", errors="replace")
+
+    # Extract features
+    tokens = _extract_tokens(bundle_text)
+
+    # Extract domains from URLs
+    import re as _re
+    url_re = _re.compile(r"https?://[^\s\)>\]\"']+", _re.IGNORECASE)
+    urls = url_re.findall(bundle_text)
+    domains = []
+    for url in urls:
+        try:
+            rest = url.split("://", 1)[1] if "://" in url else url
+            domain = rest.split("/")[0].split("?")[0].split("#")[0]
+            domains.append(domain.lower())
+        except (IndexError, ValueError):
+            pass
+    domains = sorted(set(domains))
+
+    # Load spine config
+    spines = _load_spine_config(config_path)
+    if not spines:
+        spines = [{"name": "misc", "keywords": [], "domains": []}]
+
+    # Score each spine
+    scores: List[Tuple[float, str, Dict[str, Any]]] = []
+    for spine in spines:
+        s, rationale = score_bundle(tokens, domains, spine)
+        scores.append((s, spine["name"], rationale))
+
+    # Sort: highest score, then alphabetical name for tie-break
+    scores.sort(key=lambda x: (-x[0], x[1]))
+
+    best_score, best_name, best_rationale = scores[0]
+
+    # If best score < 0.12, route to misc
+    if best_score < 0.12:
+        best_name = "misc"
+        best_rationale = {"top_keywords": [], "matched_domains": []}
+
+    # Route: copy bundle into spine incoming
+    target_dir = spines_dir or (root / "constraints" / "spines")
+    incoming = target_dir / best_name / "incoming"
+    incoming.mkdir(parents=True, exist_ok=True)
+
+    status = "dry_run" if dry_run else "ok"
+    error = None
+
+    if not dry_run:
+        dest = incoming / bundle_path.name
+        try:
+            shutil.copy2(str(bundle_path), str(dest))
+        except OSError as e:
+            status = "fail"
+            error = str(e)
+
+    # Log
+    log_entry = {
+        "timestamp_utc": _now_utc(),
+        "bundle_filename": bundle_path.name,
+        "spine": best_name,
+        "score": round(best_score, 4),
+        "rationale": best_rationale,
+        "status": status,
+        "error": error,
+    }
+    _append_routing_log(base, log_entry)
+
+    return {
+        "bundle": bundle_path.name,
+        "spine": best_name,
+        "score": round(best_score, 4),
+        "rationale": best_rationale,
+        "status": status,
+        "error": error,
+    }
+
+
+def _now_utc() -> str:
+    from datetime import datetime, timezone
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _append_routing_log(
+    capture_dir: Path,
+    entry: Dict[str, Any],
+) -> None:
+    """Append to routing_log.jsonl."""
+    log_path = capture_dir / "routing_log.jsonl"
+    line = json.dumps(entry, sort_keys=True) + "\n"
+    with open(log_path, "a", encoding="utf-8", newline="\n") as f:
+        f.write(line)
+
+
+# ---------------------------------------------------------------------------
+# CLI entrypoint
+# ---------------------------------------------------------------------------
+
+def main(argv: Optional[list] = None) -> int:
+    """CLI entrypoint for route subcommand."""
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        prog="brn capture.route",
+        description="Route a promoted bundle into a spine lane.",
+    )
+    parser.add_argument("--bundle", required=True, help="Path to bundle file")
+    parser.add_argument("--dry-run", action="store_true", help="Preview without copying")
+
+    args = parser.parse_args(argv)
+    result = route_bundle(
+        bundle_path=Path(args.bundle),
+        dry_run=args.dry_run,
+    )
+    print(json.dumps(result, indent=2))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

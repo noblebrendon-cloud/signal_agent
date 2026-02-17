@@ -1,0 +1,153 @@
+"""
+Adversarial Stress Tests for Capture Layer v0.2.
+
+Covers:
+- Clustering hardening (keyword stuffing, stopword noise)
+- Spine routing logic
+- Decay policy
+- Instability detection
+- Determinism under perturbation
+"""
+import json
+import os
+import shutil
+import sys
+import unittest
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from unittest.mock import patch, MagicMock
+
+# Add repo root to path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from app.hq.capture.promote import promote_run, _build_tf, _STOPWORDS
+from app.hq.capture.decay import decay_run
+from app.hq.capture.instability import scan_instability
+from app.hq.capture.router import route_bundle
+
+
+class TestCaptureAdversarial(unittest.TestCase):
+    def setUp(self):
+        self.tmp_root = Path("tmp_capture_adv_test")
+        self.capture_dir = self.tmp_root / "data" / "capture"
+        self.config_dir = self.tmp_root / "config"
+        self.constraints_dir = self.tmp_root / "constraints"
+
+        # Clean start
+        if self.tmp_root.exists():
+            shutil.rmtree(self.tmp_root)
+        self.tmp_root.mkdir(parents=True)
+        (self.capture_dir / "raw").mkdir(parents=True)
+        self.config_dir.mkdir(parents=True)
+        (self.constraints_dir / "spines").mkdir(parents=True)
+        
+        # Setup env overrides
+        self.env_patcher = patch.dict(os.environ, {
+            "SIGNAL_AGENT_ROOT": str(self.tmp_root),
+            "CAPTURE_DIR": str(self.capture_dir)
+        })
+        self.env_patcher.start()
+
+    def tearDown(self):
+        self.env_patcher.stop()
+        if self.tmp_root.exists():
+            try:
+                shutil.rmtree(self.tmp_root)
+            except OSError:
+                pass
+
+    def _create_raw(self, filename: str, content: str, ts_str: str = None):
+        path = self.capture_dir / "raw" / filename
+        ts = ts_str or "2026-02-16T12:00:00Z"
+        full = f"---\ntimestamp_utc: {ts}\ninput_type: text\n---\n{content}"
+        path.write_text(full, encoding="utf-8")
+        return path
+
+    def test_tf_token_capping(self):
+        """A) Prove keyword stuffing is capped (max 5 per doc)."""
+        # "crypto" repeated 100 times, "stable" 2 times
+        text = "crypto " * 100 + "stable " * 2
+        tokens = text.strip().split()
+        tf = _build_tf(tokens)
+        
+        # crypto should be capped at 5, stable at 2
+        # total capped count = 5 + 2 = 7
+        # tf[crypto] = 5/7 ~ 0.71, tf[stable] = 2/7 ~ 0.28
+        self.assertAlmostEqual(tf["crypto"], 5/7, places=2)
+        self.assertAlmostEqual(tf["stable"], 2/7, places=2)
+
+    @patch("app.hq.capture.promote._try_curate", return_value=(False, None))
+    def test_near_duplicate_perturbations(self, _mock_curate):
+        """B) Near-duplicates cluster together despite minor changes."""
+        self._create_raw("raw_a.md", "The quick brown fox jumps over the lazy dog.")
+        self._create_raw("raw_b.md", "The quick brown fox jumps over the lazy dog!") # punct
+        self._create_raw("raw_c.md", "The quick brown fox jumps over lazy dog") # missing stopword
+        
+        # Threshold 0.18 is very permissive, should group these easily
+        res = promote_run(threshold=0.18, capture_dir=self.capture_dir)
+        self.assertEqual(res["clusters"], 1)
+        self.assertEqual(len(res["bundles"]), 1)
+
+    def test_router_assigns_spine(self):
+        """F) Test deterministic routing from YAML rules."""
+        yaml_content = "spines:\n  - name: test_spine\n    keywords: [alpha, beta]\n    domains: [example.com]"
+        (self.config_dir / "spine_router.yaml").write_text(yaml_content, encoding="utf-8")
+
+        # Create a bundle file (mocking what promote creates)
+        bundle_path = self.capture_dir / "test_bundle.md"
+        bundle_path.write_text("alpha beta gamma https://example.com/foo", encoding="utf-8")
+
+        # Route
+        spines_dir = self.constraints_dir / "spines"
+        res = route_bundle(
+            bundle_path, 
+            config_path=self.config_dir / "spine_router.yaml",
+            spines_dir=spines_dir
+        )
+
+        self.assertEqual(res["spine"], "test_spine")
+        self.assertEqual(res["status"], "ok")
+        self.assertTrue((spines_dir / "test_spine" / "incoming" / "test_bundle.md").exists())
+
+    def test_decay_policy(self):
+        """G) Test decay moves only expired files."""
+        # Create expired file (30 days old)
+        now = datetime.now(timezone.utc)
+        expired_ts = (now - timedelta(days=30)).strftime("%Y-%m-%dT%H-%M-%S") + "_001Z"
+        self._create_raw(f"raw_{expired_ts}.md", "old content")
+        
+        # Create fresh file (1 day old)
+        fresh_ts = (now - timedelta(days=1)).strftime("%Y-%m-%dT%H-%M-%S") + "_002Z"
+        self._create_raw(f"raw_{fresh_ts}.md", "new content")
+
+        res = decay_run(days=14, capture_dir=self.capture_dir)
+        
+        self.assertEqual(len(res["expired_files"]), 1)
+        self.assertIn(f"raw_{expired_ts}.md", res["expired_files"])
+        
+        # Verify move
+        self.assertTrue((self.capture_dir / "expired" / f"raw_{expired_ts}.md").exists())
+        self.assertTrue((self.capture_dir / "raw" / f"raw_{fresh_ts}.md").exists())
+
+    def test_instability_spikes(self):
+        """H) Test instability flags on high volume."""
+        now = datetime.now(timezone.utc)
+        ts_str = now.strftime("%Y-%m-%dT%H:%M:%SZ")
+        
+        # Create 10 docs with "panic" token for today
+        for i in range(10):
+            # Unique filename so they are counted separately
+            ts_safe = now.strftime("%Y-%m-%dT%H-%M-%S") + f"_{i:03d}Z"
+            self._create_raw(f"raw_{ts_safe}.md", f"panic mode enabled {i}", ts_str=ts_str)
+
+        # First run: baseline is 0 (handled as 1e-9). Today=10. 
+        # min_today=5. 10 >= 5 and 10/1e-9 >> 3.0. Should flag.
+        res = scan_instability(min_today=5, capture_dir=self.capture_dir)
+        
+        self.assertEqual(len(res["flags"]), 1)
+        self.assertEqual(res["flags"][0]["today_count"], 10)
+        self.assertIn("panic", res["flags"][0]["top_tokens"])
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -152,6 +152,8 @@ def capture_status(capture_dir: Optional[Path] = None) -> dict:
     raw_count = len(list(raw_dir.glob("raw_*.md"))) if raw_dir.exists() else 0
     promoted_count = len(list(promoted_dir.glob("bundle_*.md"))) if promoted_dir.exists() else 0
     archived_count = len(list(archive_dir.glob("raw_*.md"))) if archive_dir.exists() else 0
+    expired_dir = base / "expired"
+    expired_count = len(list(expired_dir.glob("raw_*.md"))) if expired_dir.exists() else 0
 
     # Last timestamps from logs
     last_capture_ts = None
@@ -174,12 +176,35 @@ def capture_status(capture_dir: Optional[Path] = None) -> dict:
             except (json.JSONDecodeError, IndexError):
                 pass
 
+    last_decay_ts = None
+    decay_log = base / "decay_log.jsonl"
+    if decay_log.exists():
+        lines = decay_log.read_text(encoding="utf-8").strip().split("\n")
+        if lines and lines[-1].strip():
+            try:
+                last_decay_ts = json.loads(lines[-1]).get("timestamp_utc")
+            except (json.JSONDecodeError, IndexError):
+                pass
+
+    last_instability_ts = None
+    inst_log = base / "instability_log.jsonl"
+    if inst_log.exists():
+        lines = inst_log.read_text(encoding="utf-8").strip().split("\n")
+        if lines and lines[-1].strip():
+            try:
+                last_instability_ts = json.loads(lines[-1]).get("timestamp_utc")
+            except (json.JSONDecodeError, IndexError):
+                pass
+
     return {
         "raw_count": raw_count,
         "promoted_count": promoted_count,
         "archived_count": archived_count,
+        "expired_count": expired_count,
         "last_capture_ts": last_capture_ts,
         "last_promotion_ts": last_promotion_ts,
+        "last_decay_ts": last_decay_ts,
+        "last_instability_ts": last_instability_ts,
     }
 
 

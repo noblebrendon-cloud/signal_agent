@@ -4,13 +4,25 @@ graph TB
         style VOLATILE fill:#1a1a2e33,stroke:#e94560,stroke-width:2px,stroke-dasharray: 5 5
         CLI["Capture CLI<br/>brn capture.add"]
         RAW["data/capture/raw/"]
-        PROMO["Promote Engine<br/>promote.py"]
+        EXPIRED["data/capture/expired/"]
+        PROMO["Promote Engine<br/>best-effort"]
         PROMOTED["data/capture/promoted/"]
         ARCHIVE["data/capture/archive/"]
+        ROUTER["Spine Router<br/>router.py"]
+        SPINES["constraints/spines/<name>/incoming/"]
+        INSTABILITY["Instability Detector<br/>instability.py"]
+        FLAGS["instability_flags"]
+
         CLI -->|writes raw fragment| RAW
+        RAW -->|decay policy (14d)| EXPIRED
         RAW -->|sorted docs| PROMO
         PROMO -->|bundle .md| PROMOTED
         PROMO -->|archive raw| ARCHIVE
+        PROMOTED -->|route bundle| ROUTER
+        ROUTER -->|copy bundle| SPINES
+        RAW -->|scan spikes| INSTABILITY
+        INSTABILITY -.->|flag| FLAGS
+        PROMO -.->|include| FLAGS
     end
 
     subgraph CANONICAL["Canonical Boundary"]
@@ -33,20 +45,14 @@ graph TB
         SIGNAL -->|stage| RELEASE
     end
 
-    subgraph EXTERNAL["External (Optional)"]
-        style EXTERNAL fill:#2d2d2d33,stroke:#666,stroke-dasharray: 3 3
-        NOTEBOOK["NotebookLM<br/>(Synthesis - optional)"]
-    end
-
     PROMOTED -->|curate handoff| CURATE
+    SPINES -.->|input| POLICY
     PROCESSED -->|input| POLICY
     REGISTRY -->|provenance| DOWNSTREAM
-    NOTEBOOK -.->|human review| CURATE
-    NOTEBOOK -.->|NOT canonical storage| EXTERNAL
 
     classDef volatile fill:#e9456022,stroke:#e94560,color:#fff
     classDef canonical fill:#00d2ff22,stroke:#00d2ff,color:#fff
     classDef downstream fill:#7b68ee22,stroke:#7b68ee,color:#fff
-    class CLI,RAW,PROMO,PROMOTED,ARCHIVE volatile
+    class CLI,RAW,PROMO,PROMOTED,ARCHIVE,EXPIRED,ROUTER,SPINES,INSTABILITY,FLAGS volatile
     class CURATE,REGISTRY,PROCESSED canonical
     class POLICY,KERNEL,SIGNAL,RELEASE downstream

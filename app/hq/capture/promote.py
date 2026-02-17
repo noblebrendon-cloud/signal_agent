@@ -33,11 +33,15 @@ _STOPWORDS = frozenset({
     "after", "before", "between", "under", "all", "each", "every", "both",
     "such", "through", "its", "my", "your", "our", "their", "he", "she",
     "we", "they", "me", "him", "her", "us", "them", "i", "you",
+    "been", "being", "did", "does", "doing", "what", "which", "who",
+    "whom", "when", "where", "why", "how", "any", "some", "only",
+    "other", "more", "most", "own", "same", "few", "many", "much",
 })
 
 _URL_RE = re.compile(r"https?://[^\s\)>\]\"']+", re.IGNORECASE)
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
 _TOP_K = 64
+_MAX_TOKEN_COUNT = 5  # cap per-doc token frequency to resist keyword stuffing
 
 
 # ===================================================================
@@ -101,11 +105,13 @@ def _extract_domains(urls: List[str]) -> List[str]:
 
 
 def _build_tf(tokens: List[str]) -> Dict[str, float]:
-    """Build term-frequency map capped to top K."""
+    """Build term-frequency map capped to top K, with per-token cap."""
     counts = Counter(tokens)
-    total = len(tokens) if tokens else 1
-    # Take top K
-    top = counts.most_common(_TOP_K)
+    # Cap each token count to resist keyword stuffing
+    capped = {word: min(count, _MAX_TOKEN_COUNT) for word, count in counts.items()}
+    total = sum(capped.values()) if capped else 1
+    # Take top K by capped count (deterministic: sort by -count then alpha)
+    top = sorted(capped.items(), key=lambda x: (-x[1], x[0]))[:_TOP_K]
     return {word: count / total for word, count in top}
 
 
@@ -415,6 +421,9 @@ def promote_run(
         # Curate handoff
         curated, curated_ref = _try_curate(bundle_path)
 
+        # Spine router handoff (best-effort)
+        route_result = _try_route(bundle_path)
+
         # Archive raw files
         for doc in cluster.docs:
             dest = archive_dir / doc.name
@@ -435,6 +444,7 @@ def promote_run(
             "threshold": threshold,
             "curate_invoked": curated,
             "curated_artifact_ref": curated_ref,
+            "routed_spine": route_result.get("spine") if route_result else None,
             "status": "ok" if curated else "partial",
             "error": None,
         }
@@ -450,9 +460,35 @@ def promote_run(
 
     return {
         "status": "ok",
+        "instability_flags": _try_instability(base),
         "clusters": len(viable),
         "bundles": bundles,
     }
+
+
+# Spine router + instability helpers
+# ===================================================================
+
+
+def _try_route(bundle_path: Path) -> Optional[Dict[str, Any]]:
+    """Best-effort spine routing after bundle creation."""
+    try:
+        from app.hq.capture.router import route_bundle
+        return route_bundle(bundle_path=bundle_path)
+    except Exception as e:
+        print(f"  [WARN] route failed: {e}", file=sys.stderr)
+        return None
+
+
+def _try_instability(capture_dir: Path) -> List[Dict[str, Any]]:
+    """Best-effort instability scan after promotion."""
+    try:
+        from app.hq.capture.instability import scan_instability
+        result = scan_instability(capture_dir=capture_dir)
+        return result.get("flags", [])
+    except Exception as e:
+        print(f"  [WARN] instability scan failed: {e}", file=sys.stderr)
+        return []
 
 
 # ===================================================================
