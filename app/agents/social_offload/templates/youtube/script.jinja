@@ -1,0 +1,28 @@
+[INTRO]
+{% set hook_text = sections.get('hook') or sections.get('preamble') or 'Welcome back to the channel.' %}
+{{ hook_text }}
+
+[BODY / MAIN POINTS]
+{% if sections.get('body') %}
+{{ sections.get('body') }}
+{% else %}
+{% for text in sections.values() %}
+{% if loop.index > 1 %}{{ text }}
+
+{% endif %}
+{% endfor %}
+{% endif %}
+
+[KEY CLAIMS (FOR GRAPHICS)]
+{% if claims %}
+{% for claim in claims %}
+- {{ claim }}
+{% endfor %}
+{% endif %}
+
+[OUTRO]
+{% if sections.get('conclusion') %}
+{{ sections.get('conclusion') }}
+{% else %}
+Thanks for watching. Don't forget to like and subscribe.
+{% endif %}

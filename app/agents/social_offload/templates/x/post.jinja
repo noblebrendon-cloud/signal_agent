@@ -1,0 +1,6 @@
+{% set hook_text = sections.get('hook') or sections.get('preamble') or '' %}
+{{ hook_text }}
+
+{% if claims %}
+{{ claims[0] }}
+{% endif %}

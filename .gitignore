@@ -1,0 +1,16 @@
+﻿# Python
+__pycache__/
+*.pyc
+
+# Virtual env
+.venv/
+
+# Local runs / outputs
+logs/
+data/
+out*.txt
+winget_*.txt
+
+# OS
+.DS_Store
+Thumbs.db
