@@ -1,81 +1,137 @@
+from __future__ import annotations
+
+import contextlib
 import json
 import os
-import tempfile
 import time
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict
+from uuid import uuid4
 
 
-def atomic_write_text(final_path: Path, text: str) -> Dict[str, Path]:
-    """
-    Writes text to a temporary sibling file, flushes/fsyncs, and atomically
-    renames it to final_path.
-    Returns the paths involved for tracking.
-    """
-    final_path.parent.mkdir(parents=True, exist_ok=True)
-    
-    # Create temp file in the same directory to ensure it's on the same mount/filesystem
-    # This guarantees os.replace is atomic.
-    fd, tmp_path_str = tempfile.mkstemp(prefix=final_path.name + ".", suffix=".tmp", dir=str(final_path.parent))
-    tmp_path = Path(tmp_path_str)
-    
-    try:
-        # Write bytes
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            f.write(text)
-            f.flush()
-            os.fsync(f.fileno())
-            
-        # Atomically replace (with Windows AV/Concurrency retry)
-        for attempt in range(10):
+@dataclass(frozen=True)
+class AtomicWriteResult:
+    final_path: Path
+    tmp_path: Path
+    bytes_written: int
+
+
+def ensure_parent_dir(path: Path) -> None:
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+
+
+def atomic_write_text(final_path: Path, text: str, encoding: str = "utf-8") -> AtomicWriteResult:
+    final_path = Path(final_path)
+    ensure_parent_dir(final_path)
+
+    tmp_path = final_path.with_name(f".{final_path.name}.{uuid4().hex}.tmp")
+    payload = text.encode(encoding)
+
+    with open(tmp_path, "wb") as f:
+        f.write(payload)
+        f.flush()
+        os.fsync(f.fileno())
+
+    os.replace(tmp_path, final_path)
+    return AtomicWriteResult(final_path=final_path, tmp_path=tmp_path, bytes_written=len(payload))
+
+
+class _FileLock:
+    def __init__(self, path: Path, retries: int, base_sleep_s: float) -> None:
+        self.path = Path(path)
+        self.retries = retries
+        self.base_sleep_s = base_sleep_s
+        self._fh = None
+
+    def __enter__(self) -> "_FileLock":
+        ensure_parent_dir(self.path)
+        self._fh = open(self.path, "a+b")
+        if self._fh.tell() == 0:
+            self._fh.write(b"\0")
+            self._fh.flush()
+            os.fsync(self._fh.fileno())
+
+        for attempt in range(self.retries):
             try:
-                os.replace(tmp_path, final_path)
-                break
-            except PermissionError:
-                if attempt == 9:
-                    raise
-                time.sleep(0.02)
-    except Exception as e:
-        # Best effort cleanup if atomic rename fails
-        if tmp_path.exists():
-            try:
-                tmp_path.unlink()
+                self._try_lock_nonblocking()
+                return self
             except OSError:
-                pass
-        raise e
-        
-    return {"final_path": final_path, "tmp_path": tmp_path}
+                if attempt == self.retries - 1:
+                    raise TimeoutError(f"Unable to acquire lock: {self.path}")
+                time.sleep(self.base_sleep_s * (attempt + 1))
+        raise TimeoutError(f"Unable to acquire lock: {self.path}")
+
+    def __exit__(self, exc_type, exc, tb) -> None:
+        try:
+            self._unlock()
+        finally:
+            if self._fh is not None:
+                self._fh.close()
+                self._fh = None
+
+    def _try_lock_nonblocking(self) -> None:
+        if self._fh is None:
+            raise RuntimeError("Lock handle not initialized")
+
+        if os.name == "nt":
+            import msvcrt
+
+            self._fh.seek(0)
+            msvcrt.locking(self._fh.fileno(), msvcrt.LK_NBLCK, 1)
+            return
+
+        import fcntl
+
+        fcntl.flock(self._fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+
+    def _unlock(self) -> None:
+        if self._fh is None:
+            return
+
+        if os.name == "nt":
+            import msvcrt
+
+            self._fh.seek(0)
+            msvcrt.locking(self._fh.fileno(), msvcrt.LK_UNLCK, 1)
+            return
+
+        import fcntl
+
+        fcntl.flock(self._fh.fileno(), fcntl.LOCK_UN)
 
 
-def append_jsonl_atomic(jsonl_path: Path, record: Dict[str, Any], lock_path: Path | None = None, retries: int = 30, base_sleep_s: float = 0.02) -> None:
-    """
-    Appends a JSON record to a JSONL file using a basic lockfile for concurrency.
-    Supports Windows where fcntl is not available.
-    """
-    jsonl_path.parent.mkdir(parents=True, exist_ok=True)
+def append_jsonl_atomic(
+    jsonl_path: Path,
+    record: dict,
+    lock_path: Path | None = None,
+    retries: int = 30,
+    base_sleep_s: float = 0.02,
+) -> None:
+    jsonl_path = Path(jsonl_path)
+    ensure_parent_dir(jsonl_path)
+
     if lock_path is None:
         lock_path = jsonl_path.with_suffix(jsonl_path.suffix + ".lock")
-        
-    for attempt in range(retries):
-        try:
-            # Atomic lock acquisition using open(..., x) - fails if exists
-            fd = os.open(str(lock_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-            os.close(fd)
-            break
-        except FileExistsError:
-            if attempt == retries - 1:
-                raise TimeoutError(f"Failed to acquire lock {lock_path} after {retries} attempts.")
-            time.sleep(base_sleep_s)
-            
-    try:
-        # Now we have the lock, append to file
-        with open(jsonl_path, "a", encoding="utf-8") as f:
-            f.write(json.dumps(record) + "\n")
-            f.flush()
-            os.fsync(f.fileno())
-    finally:
-        # Release lock
-        try:
-            lock_path.unlink(missing_ok=True)
-        except OSError:
-            pass
+    lock_path = Path(lock_path)
+    ensure_parent_dir(lock_path)
+
+    line = json.dumps(record, separators=(",", ":"), ensure_ascii=False) + "\n"
+    payload = line.encode("utf-8")
+
+    with _FileLock(lock_path, retries=retries, base_sleep_s=base_sleep_s):
+        with open(jsonl_path, "ab+") as f:
+            f.seek(0, os.SEEK_END)
+            start_pos = f.tell()
+            try:
+                written = f.write(payload)
+                if written != len(payload):
+                    raise OSError(f"Short write for {jsonl_path}: wrote {written} of {len(payload)} bytes")
+                f.flush()
+                os.fsync(f.fileno())
+            except Exception:
+                with contextlib.suppress(Exception):
+                    f.seek(start_pos)
+                    f.truncate(start_pos)
+                    f.flush()
+                    os.fsync(f.fileno())
+                raise
