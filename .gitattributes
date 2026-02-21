@@ -1,0 +1,10 @@
+﻿# Normalize line endings in repo; allow Windows working tree CRLF
+* text=auto
+
+# Force LF for source files in repo
+*.py   text eol=lf
+*.md   text eol=lf
+*.yaml text eol=lf
+*.yml  text eol=lf
+*.jinja text eol=lf
+*.j2   text eol=lf
