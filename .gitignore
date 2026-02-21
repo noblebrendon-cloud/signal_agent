@@ -5,9 +5,16 @@ __pycache__/
 # Virtual env
 .venv/
 
-# Local runs / outputs
+# Local runs / outputs (keep repo data/ tracked; ignore only generated subpaths)
 logs/
-data/
+data/logs/
+data/state/
+data/social_offload/
+data/capture/raw/
+data/capture/archive/
+data/capture/promoted/
+data/docs/processed/.tmp_*
+
 out*.txt
 winget_*.txt
 
