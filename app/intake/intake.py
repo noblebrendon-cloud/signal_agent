@@ -50,8 +50,10 @@ def normalize_text(text: str) -> str:
     return text.strip()
 
 class IntakeSystem:
-    def __init__(self, mode: str = "NORMAL"):
+    def __init__(self, mode: str = "NORMAL", scan_roots: Optional[List[Path]] = None, only_ext: Optional[str] = None):
         self.mode = mode
+        self.scan_roots = [p.resolve() for p in (scan_roots or [ROOT])]
+        self.only_ext = only_ext.lower() if only_ext else None
         self.ledger_cache: Dict[str, str] = {} # path -> source_sha256
         self.stats = {
             "total": 0, "supported": 0, "ingested": 0,
@@ -263,11 +265,16 @@ class IntakeSystem:
 
     def run(self):
         print(f"Starting Intake v2 Scan... Mode: {self.mode}")
-        print(f"Scanning ROOT: {ROOT}")
+        for scan_root in self.scan_roots:
+            print(f"Scanning ROOT: {scan_root}")
 
         # Recursive walk
-        for path in ROOT.rglob("*"):
-            if path.is_file():
+        for scan_root in self.scan_roots:
+            for path in scan_root.rglob("*"):
+                if not path.is_file():
+                    continue
+                if self.only_ext and path.suffix.lower() != self.only_ext:
+                    continue
                 self.process_file(path)
 
         print("\n--- Scan Complete ---")
@@ -293,7 +300,24 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="SignalAgent Intake System")
     parser.add_argument("--mode", default="NORMAL", choices=["NORMAL", "MOD"], help="Execution Mode (NORMAL or MOD)")
+    parser.add_argument("--root", action="append", help="Optional scan root path (repeatable)")
+    parser.add_argument("--only-ext", choices=["pdf"], help="Optional extension filter")
     args = parser.parse_args()
 
-    agent = IntakeSystem(mode=args.mode)
+    scan_roots: List[Path] = [ROOT]
+    if args.root:
+        scan_roots = []
+        for raw_root in args.root:
+            resolved_root = Path(raw_root).expanduser().resolve()
+            if not resolved_root.exists():
+                parser.error(f"--root path does not exist: {resolved_root}")
+            if not resolved_root.is_dir():
+                parser.error(f"--root path is not a directory: {resolved_root}")
+            scan_roots.append(resolved_root)
+
+    only_ext = None
+    if args.only_ext:
+        only_ext = f".{args.only_ext.lower()}"
+
+    agent = IntakeSystem(mode=args.mode, scan_roots=scan_roots, only_ext=only_ext)
     agent.run()
