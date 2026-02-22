@@ -1,0 +1,261 @@
+import tkinter as tk
+from tkinter import messagebox
+import sys
+import os
+import time
+import json
+from datetime import datetime
+from pathlib import Path
+
+# Try to import the main app to launch it later
+try:
+    # Adjust path if running from subfolder
+    if str(Path(__file__).resolve().parents[2]) not in sys.path:
+        sys.path.append(str(Path(__file__).resolve().parents[2]))
+
+    from app.bookgen.print_gui import main as launch_print_gui
+    from app.bookgen.theme import get_mode
+except ImportError:
+    # Fallback/Error handling
+    print("Could not import app modules. Ensure you are running from the project root or app package.")
+    sys.exit(1)
+
+class GateController:
+    def __init__(self, on_unlock_hq, timeout_s=3.0):
+        self.on_unlock_hq = on_unlock_hq
+        self.timeout_s = timeout_s
+        self.v_held = False
+        self.digit_buf = ""
+        self.last_input_ts = 0.0
+
+    def _reset_digits(self):
+        self.digit_buf = ""
+        self.last_input_ts = 0.0
+
+    def on_key_down(self, keysym: str):
+        k = (keysym or "").lower()
+
+        if k == "v":
+            self.v_held = True
+            # start a fresh capture window
+            self._reset_digits()
+            return
+
+        # Only capture digits while V is held
+        if not self.v_held:
+            return
+
+        # Timeout window
+        now = time.time()
+        if self.last_input_ts and (now - self.last_input_ts) > self.timeout_s:
+            self._reset_digits()
+
+        # Capture digits 0-9
+        if k.isdigit() and len(k) == 1:
+            self.last_input_ts = now
+            self.digit_buf = (self.digit_buf + k)[-4:]
+
+            if self.digit_buf == "1993":
+                self._reset_digits()
+                self.on_unlock_hq()
+
+    def on_key_up(self, keysym: str):
+        k = (keysym or "").lower()
+        if k == "v":
+            self.v_held = False
+            self._reset_digits()
+
+class LoginGUI(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.title("Signal Agent - Login")
+        self.geometry("600x400")
+        self.configure(bg="#f0f0f0")
+
+        self.mode = "NORMAL"
+        self.secret_mode = False
+        self.keystroke_buffer = []
+        self.key_buttons = {}
+
+        # Gate Controller (V+1993)
+        self.gate = GateController(on_unlock_hq=self.activate_hq_dev, timeout_s=3.0)
+        self.bind_all("<KeyPress>", self._on_keypress)
+        self.bind_all("<KeyRelease>", self._on_keyrelease)
+
+        # Header
+        self.header_frame = tk.Frame(self, bg="#f0f0f0")
+        self.header_frame.pack(pady=20)
+
+        self.title_label = tk.Label(self.header_frame, text="System Login", font=("Arial", 24), bg="#f0f0f0", fg="#333")
+        self.title_label.pack()
+
+        # Center Area
+        self.center_frame = tk.Frame(self, bg="#f0f0f0")
+        self.center_frame.pack(expand=True, fill="both", padx=20)
+
+        # Keyboard Toggle
+        self.kb_toggle_btn = tk.Button(self.center_frame, text="Show Onscreen Keyboard", command=self.toggle_keyboard)
+        self.kb_toggle_btn.pack(pady=10)
+
+        # Keyboard Frame (Hidden by default)
+        self.keyboard_frame = tk.Frame(self.center_frame, bg="#f0f0f0")
+
+        # Standard "Enter" Button
+        self.enter_btn = tk.Button(self, text="ENTER SYSTEM", command=self.on_enter,
+                                   font=("Arial", 14, "bold"), bg="#0078d7", fg="white", height=2, width=20)
+        self.enter_btn.pack(pady=30, side=tk.BOTTOM)
+
+        # DM Option (Hidden)
+        self.dm_btn = tk.Button(self.center_frame, text="∞ DM OPTION ∞", command=self.on_dm,
+                                font=("Courier", 12), bg="black", fg="#00ff00", bd=0)
+
+        # Define Keyboard Layout
+        self.keyboard_layout = [
+            'QWERTYUIOP',
+            'ASDFGHJKL',
+            'ZXCVBNM'
+        ]
+        self.create_keyboard()
+
+    def _on_keypress(self, event):
+        self.gate.on_key_down(event.keysym)
+        if event.char.isalnum():
+             self.on_key_press(event.char)
+
+    def _on_keyrelease(self, event):
+        self.gate.on_key_up(event.keysym)
+
+    def create_keyboard(self):
+        for r, row_keys in enumerate(self.keyboard_layout):
+            row_frame = tk.Frame(self.keyboard_frame, bg="#f0f0f0")
+            row_frame.pack()
+            for char in row_keys:
+                # Special handling for B, R, N visually?
+                # User said: "which are the only key that turn, turn black , flash as its pressed"
+                # We will handle the flash logic in the command
+                btn = tk.Button(row_frame, text=char, width=4, height=2,
+                                command=lambda c=char: self.on_key_press(c))
+                btn.pack(side=tk.LEFT, padx=2, pady=2)
+                self.key_buttons[char] = btn
+
+    def toggle_keyboard(self):
+        if self.keyboard_frame.winfo_ismapped():
+            self.keyboard_frame.pack_forget()
+            self.kb_toggle_btn.config(text="Show Onscreen Keyboard")
+        else:
+            self.keyboard_frame.pack(pady=10)
+            self.kb_toggle_btn.config(text="Hide Keyboard")
+
+    def on_key_press(self, char):
+        char = char.upper()
+
+        # Flash Effect for B, R, N
+        if char in ['B', 'R', 'N']:
+            self.flash_key(char)
+
+        # Buffer Logic
+        self.keystroke_buffer.append(char)
+        if len(self.keystroke_buffer) > 3:
+            self.keystroke_buffer.pop(0)
+
+        # Check Sequence "BRN"
+        if "".join(self.keystroke_buffer) == "BRN":
+            self.activate_secret_mode()
+            
+    def on_dm(self):
+         # Unlock DM panel logic if needed
+         pass
+
+    def flash_key(self, char):
+        if char in self.key_buttons:
+            btn = self.key_buttons[char]
+            original_bg = btn.cget("bg")
+            # Flash Black
+            btn.config(bg="black", fg="white")
+            self.after(200, lambda: btn.config(bg=original_bg, fg="black"))
+
+    def apply_mode(self, mode_name: str):
+        profile = get_mode(mode_name)
+        tokens = profile.tokens
+
+        self.configure(bg=tokens["bg"])
+        self.header_frame.configure(bg=tokens["bg"])
+        self.center_frame.configure(bg=tokens["bg"])
+        self.keyboard_frame.configure(bg=tokens["bg"])
+
+        # Title
+        title_text = "System Login"
+        if mode_name != "STANDARD":
+            title_text = f"SIGNAL AGENT // {profile.name}"
+
+        self.title_label.configure(text=title_text, bg=tokens["bg"], fg=tokens["fg"], font=(tokens["font"], 24, "bold"))
+        self.kb_toggle_btn.configure(bg="gray", fg="black") # Keep generic or map to accent?
+
+        # Keyboard Keys
+        for row in self.keyboard_frame.winfo_children():
+            row.configure(bg=tokens["bg"])
+            for btn in row.winfo_children():
+                btn.configure(bg="#222" if mode_name != "STANDARD" else "#e1e1e1",
+                           fg=tokens["fg"],
+                           activebackground=tokens["active_bg"],
+                           activeforeground=tokens["active_fg"],
+                           font=(tokens["font"], 10))
+
+        # DM Option
+        if profile.features["dm_panel"]:
+            self.dm_btn.pack(pady=20)
+            self.enter_btn.config(text="ENTER SYSTEM (ROOT)", bg="#333", fg="white")
+        else:
+            self.dm_btn.pack_forget()
+            self.enter_btn.config(text="ENTER SYSTEM", bg=tokens["accent"], fg="white")
+
+    def activate_secret_mode(self):
+        if self.secret_mode:
+            return # Already active (could be MOD or HQ)
+
+        self.secret_mode = True
+        if self.mode == "NORMAL":
+            self.mode = "MOD"
+
+        self.apply_mode(self.mode)
+
+    def activate_hq_dev(self):
+        if self.mode == "HQ_DEV":
+            return
+
+        prev_mode = self.mode
+        self.mode = "HQ_DEV"
+        self.secret_mode = True
+
+        self.apply_mode(self.mode)
+
+        print(f"PHASE_SHIFT: HQ_DEV (V+1993)")
+
+        # Log to Ledger
+        try:
+            ledger_path = Path("data/intake/intake.jsonl")
+            if ledger_path.exists():
+                event = {
+                    "timestamp": datetime.now().isoformat(),
+                    "event_type": "PHASE_SHIFT",
+                    "from_mode": prev_mode,
+                    "to_mode": "HQ_DEV",
+                    "gate": "V+1993",
+                    "integrity_check": "explicit_logging"
+                }
+                with open(ledger_path, "a", encoding="utf-8") as f:
+                    f.write(json.dumps(event) + "\n")
+        except Exception as e:
+            print(f"Failed to log phase shift: {e}")
+
+    def on_enter(self):
+        self.destroy()
+        # Launch main app
+        try:
+            launch_print_gui(secret_mode=self.secret_mode)
+        except Exception as e:
+            messagebox.showerror("Error", f"Could not launch app: {e}")
+
+if __name__ == "__main__":
+    app = LoginGUI()
+    app.mainloop()

@@ -1,0 +1,44 @@
+﻿Found Antigravity [Google.Antigravity]
+Version: 1.18.3
+Publisher: Google
+Publisher Url: https://www.google.com/
+Publisher Support Url: https://antigravity.google/support
+Author: Google LLC
+Description: Google Antigravity is an agentic development platform, evolving the IDE into the agent-first era. Antigravity enables developers to operate at a higher, task-oriented level managing agents across workspaces, while retaining a familiar AI IDE experience at its core. Antigravity extracts agents into their own surface and provides them the tools needed to autonomously operate across the editor, terminal, and browser emphasizing verification and higher-level communication via tasks and artifacts. This capability enables agents to plan and execute more complex, end-to-end software tasks, elevating all aspects of development, from building features, UI iteration, and fixing bugs to research and generating reports.
+Homepage: https://antigravity.google/
+License: Proprietary
+License Url: https://antigravity.google/terms
+Privacy Url: https://policies.google.com/privacy
+Copyright Url: https://antigravity.google/terms
+Release Notes:
+  Settings, Artifacts, and Stability
+  New settings screens for models and terminal integration, artifact download support, and various stability and UI fixes across platforms.
+  Improvements (5)
+  - Added Models screen to settings, providing more visibility into quota usage.
+  - Added a setting to enable or disable terminal integration.
+  - Support for downloading artifacts from the chat UI.
+  - Up/down arrow key navigation for input box history.
+  - Improved UI responsiveness for chat interactions, including creating conversations, sending messages, and reverting changes.
+  Fixes (3)
+  - Resolved an issue where external plugins could fail to load on macOS due to signing problems.
+  - Fixed certain artifact files not being recognized as artifacts and missing the 'Proceed' button in the chat UI on Windows.
+  - Fixed an issue where reverting could occasionally delete files edited by the agent.
+  Patches (0)
+Release Notes Url: https://antigravity.google/changelog
+Purchase Url: https://antigravity.google/pricing
+Documentation:
+  Docs: https://antigravity.google/docs
+Tags:
+  code
+  coding
+  develop
+  development
+  editing
+  editor
+  programming
+Installer:
+  Installer Type: inno
+  Installer Url: https://edgedl.me.gvt1.com/edgedl/release2/j0qc3/antigravity/stable/1.18.3-4739469533380608/windows-x64/Antigravity.exe
+  Installer SHA256: 6e1ff051a061b595daede6f0177b390a9239dc094c39ee6992f69f9d19377ea6
+  Release Date: 2026-02-19
+  Offline Distribution Supported: true

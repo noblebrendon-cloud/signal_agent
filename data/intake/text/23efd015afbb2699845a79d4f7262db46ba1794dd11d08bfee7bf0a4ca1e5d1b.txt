@@ -1,0 +1,62 @@
+﻿from __future__ import annotations
+
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Dict
+
+import yaml
+from jinja2 import Environment, FileSystemLoader, select_autoescape
+
+
+@dataclass
+class RenderOutputs:
+    out_dir: Path
+    book_md: Path
+    cover_front_txt: Path
+    letter_one_sentence_txt: Path
+
+
+def load_spec(spec_path: Path) -> Dict[str, Any]:
+    with spec_path.open("r", encoding="utf-8") as f:
+        data = yaml.safe_load(f)
+    if not isinstance(data, dict):
+        raise ValueError("Spec file must be a YAML mapping/object at the top level.")
+    return data
+
+
+def render_from_spec(spec: Dict[str, Any], templates_dir: Path, out_dir: Path) -> RenderOutputs:
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    env = Environment(
+        loader=FileSystemLoader(str(templates_dir)),
+        autoescape=select_autoescape(enabled_extensions=()),
+        trim_blocks=True,
+        lstrip_blocks=True,
+    )
+
+    ctx = {
+        "meta": spec.get("meta", {}),
+        "front_matter": spec.get("front_matter", {}),
+        "chapters": spec.get("chapters", []),
+        "end_matter": spec.get("end_matter", {}),
+        "letter": spec.get("letter", {}),
+    }
+
+    book_md_path = out_dir / "book.md"
+    cover_front_path = out_dir / "cover_front.txt"
+    letter_path = out_dir / "letter_one_sentence.txt"
+
+    book_tpl = env.get_template("book.md.j2")
+    cover_tpl = env.get_template("cover_front.txt.j2")
+    letter_tpl = env.get_template("letter_one_sentence.txt.j2")
+
+    book_md_path.write_text(book_tpl.render(**ctx).strip() + "\n", encoding="utf-8")
+    cover_front_path.write_text(cover_tpl.render(**ctx).strip() + "\n", encoding="utf-8")
+    letter_path.write_text(letter_tpl.render(**ctx).strip() + "\n", encoding="utf-8")
+
+    return RenderOutputs(
+        out_dir=out_dir,
+        book_md=book_md_path,
+        cover_front_txt=cover_front_path,
+        letter_one_sentence_txt=letter_path,
+    )

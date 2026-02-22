@@ -1,0 +1,290 @@
+import hashlib
+import random
+import sys
+import time
+import uuid
+from pathlib import Path
+from typing import Any, Dict, List
+
+# Add app to path
+root = Path(__file__).resolve().parents[1]
+if str(root) not in sys.path:
+    sys.path.append(str(root))
+
+from app.utils.resilience import CircuitBreaker, call_with_resilience
+
+class MockLogger:
+    def __init__(self):
+        self.events: List[Dict[str, Any]] = []
+
+    def log(self, event: Dict[str, Any]):
+        self.events.append(event)
+    
+    def has_event(self, event_name: str) -> bool:
+        return any(e.get("event") == event_name for e in self.events)
+    
+    def get_event(self, event_name: str) -> Dict[str, Any]:
+        for e in self.events:
+            if e.get("event") == event_name:
+                return e
+        return {}
+
+class MockTime:
+    def __init__(self, start: float = 1000.0):
+        self.current = start
+        self.sleeps: List[float] = []
+
+    def time(self) -> float:
+        return self.current
+
+    def sleep(self, duration: float):
+        self.sleeps.append(duration)
+        self.current += duration
+
+def test_deterministic_jitter():
+    """Verify deterministic backoff sequence and jitter seeding"""
+    # Setup
+    def fail_always(_):
+        raise RuntimeError("UNAVAILABLE (code 503)")
+    
+    # 1. Run with specific request_id
+    mock_time1 = MockTime()
+    logger1 = MockLogger()
+    request_id_1 = "req-123"
+    
+    try:
+        call_with_resilience(
+            call_model=fail_always,
+            models=["p1:m1"],
+            request_id=request_id_1,
+            max_attempts_per_model=3,
+            base_delay_s=1.0, 
+            max_delay_s=10.0,
+            multiplier=2.0,
+            log=logger1.log,
+            time_fn=mock_time1.time,
+            sleep_fn=mock_time1.sleep
+        )
+    except RuntimeError:
+        pass
+        
+    sleeps1 = list(mock_time1.sleeps)
+    
+    # 2. Run EXACT same request_id -> Should expect EXACT same sleeps
+    mock_time2 = MockTime()
+    logger2 = MockLogger()
+    
+    try:
+        call_with_resilience(
+            call_model=fail_always,
+            models=["p1:m1"],
+            request_id=request_id_1,
+            max_attempts_per_model=3,
+            base_delay_s=1.0, 
+            max_delay_s=10.0,
+            multiplier=2.0,
+            log=logger2.log,
+            time_fn=mock_time2.time,
+            sleep_fn=mock_time2.sleep
+        )
+    except RuntimeError:
+        pass
+        
+    sleeps2 = list(mock_time2.sleeps)
+    
+    assert len(sleeps1) == 2, f"Expected 2 sleeps for 3 attempts, got {len(sleeps1)}"
+    assert sleeps1 == sleeps2, f"Expected deterministic sleeps. Got {sleeps1} vs {sleeps2}"
+    
+    # 3. Run DIFFERENT request_id -> Should expect different sleeps
+    mock_time3 = MockTime()
+    logger3 = MockLogger()
+    request_id_3 = "req-456"
+    
+    try:
+        call_with_resilience(
+            call_model=fail_always,
+            models=["p1:m1"],
+            request_id=request_id_3, # DIFFERENT
+            max_attempts_per_model=3,
+            base_delay_s=1.0, 
+            max_delay_s=10.0,
+            multiplier=2.0,
+            log=logger3.log,
+            time_fn=mock_time3.time,
+            sleep_fn=mock_time3.sleep
+        )
+    except RuntimeError:
+        pass
+        
+    sleeps3 = list(mock_time3.sleeps)
+    assert sleeps1 != sleeps3, f"Expected different sleeps for different request ID. Got {sleeps1} vs {sleeps3}"
+
+def test_telemetry_call_chain():
+    """Verify call_chain_completed and fields"""
+    mock_time = MockTime(start=2000.0)
+    logger = MockLogger()
+    
+    def fail_twice(key):
+        fail_twice.calls += 1
+        if fail_twice.calls <= 2:
+            raise RuntimeError("UNAVAILABLE (503)")
+        return "OK"
+    fail_twice.calls = 0
+    
+    # Run
+    res = call_with_resilience(
+        call_model=fail_twice,
+        models=["p1:m1"],
+        request_id="my-trace-id",
+        max_attempts_per_model=5, 
+        base_delay_s=0.1,
+        log=logger.log,
+        time_fn=mock_time.time,
+        sleep_fn=mock_time.sleep
+    )
+    
+    assert res == "OK"
+    
+    # Verify call_chain_completed
+    assert logger.has_event("call_chain_completed")
+    evt = logger.get_event("call_chain_completed")
+    
+    assert evt["call_chain_id"] is not None
+    assert evt["request_id"] == "my-trace-id"
+    assert evt["start_ts"] == 2000.0
+    assert evt["duration_ms"] > 0
+    assert evt["total_attempts"] == 3 # 1 fail, 2 fail, 3 success
+    assert evt["final_provider"] == "p1"
+    assert evt["terminal_state"] == "success"
+
+def test_attempts_counting_only_real_calls():
+    """Verify total_attempts does not include circuit blocked calls"""
+    mock_time = MockTime()
+    logger = MockLogger()
+    breaker = CircuitBreaker()
+    # Trip the breaker manually
+    breaker.record_failure(mock_time.time(), open_after=1, open_for_seconds=100)
+    assert breaker.get_state(mock_time.time()) == "OPEN"
+    
+    breakers = {"p1:m1": breaker}
+    
+    def fail_always(_):
+        raise RuntimeError("Should not be called")
+        
+    try:
+        call_with_resilience(
+            call_model=fail_always,
+            models=["p1:m1"],
+            max_attempts_per_model=3, 
+            breakers=breakers,
+            log=logger.log,
+            time_fn=mock_time.time,
+            sleep_fn=mock_time.sleep
+        )
+    except RuntimeError:
+        pass
+        
+    # Check telemetry
+    assert logger.has_event("call_chain_completed")
+    evt = logger.get_event("call_chain_completed")
+    
+    # Should have 0 attempts because circuit corrupted everything
+    assert evt["total_attempts"] == 0
+    assert evt["terminal_state"] == "exhausted" # fallback exhausted
+
+def test_circuit_half_open_logic():
+    """Verify: CLOSED -> OPEN -> HALF_OPEN (1 probe) -> OPEN (fail) or CLOSED (success)"""
+    mock_time = MockTime()
+    logger = MockLogger()
+    breaker = CircuitBreaker()
+    breakers = {"p1:m1": breaker}
+    
+    def fail_always(_):
+        raise RuntimeError("UNAVAILABLE (code 503)")
+
+    try:
+        call_with_resilience(
+            call_model=fail_always,
+            models=["p1:m1"],
+            max_attempts_per_model=2, # Exactly enough to open?
+            base_delay_s=0.1,
+            max_delay_s=0.1,
+            breakers=breakers,
+            log=logger.log,
+            time_fn=mock_time.time,
+            sleep_fn=mock_time.sleep
+        )
+    except RuntimeError:
+        pass
+    
+    # Manually check state
+    breaker.record_failure(mock_time.time(), open_after=2, open_for_seconds=100)
+    assert breaker.get_state(mock_time.time()) == "OPEN"
+    
+    # Advance time -> HALF_OPEN
+    mock_time.sleep(101) 
+    assert breaker.get_state(mock_time.time()) == "HALF_OPEN"
+    
+    # Probe Failure
+    calls = 0
+    def fail_probe(_):
+        nonlocal calls
+        calls += 1
+        raise RuntimeError("UNAVAILABLE (503)")
+
+    try:
+        call_with_resilience(
+            call_model=fail_probe,
+            models=["p1:m1"],
+            max_attempts_per_model=1, 
+            breakers=breakers,
+            log=logger.log,
+            time_fn=mock_time.time,
+            sleep_fn=mock_time.sleep
+        )
+    except RuntimeError:
+        pass
+
+    assert calls == 1
+    assert breaker.get_state(mock_time.time()) == "OPEN"
+    
+    # Advance again -> HALF_OPEN -> Success
+    mock_time.sleep(601) 
+    assert breaker.get_state(mock_time.time()) == "HALF_OPEN"
+    
+    def succeed(_):
+        return "OK"
+
+    out = call_with_resilience(
+        call_model=succeed,
+        models=["p1:m1"],
+        max_attempts_per_model=1,
+        breakers=breakers,
+        log=logger.log,
+        time_fn=mock_time.time,
+        sleep_fn=mock_time.sleep
+    )
+    
+    assert out == "OK"
+    assert breaker.get_state(mock_time.time()) == "CLOSED"
+
+if __name__ == "__main__":
+    try:
+        test_deterministic_jitter()
+        print("PASS: test_deterministic_jitter")
+        
+        test_telemetry_call_chain()
+        print("PASS: test_telemetry_call_chain")
+        
+        test_attempts_counting_only_real_calls()
+        print("PASS: test_attempts_counting_only_real_calls")
+        
+        test_circuit_half_open_logic()
+        print("PASS: test_circuit_half_open_logic")
+        
+        print("ALL TESTS PASSED")
+    except Exception as e:
+        print(f"FAIL: {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)

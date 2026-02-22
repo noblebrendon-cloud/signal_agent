@@ -1,0 +1,37 @@
+from dataclasses import dataclass
+from typing import Any
+
+@dataclass
+class ConstraintViolation(Exception):
+    """
+    Raised when a hard constraint violation occurs during re-projection.
+    Carries the DeltaReport detailing the failure.
+    """
+    report: Any  # untyped here to avoid circular import, effectively DeltaReport
+    message: str = "Hard constraint violation detected."
+
+    def __post_init__(self):
+        super().__init__(self.message)
+
+
+@dataclass
+class SystemHalt(Exception):
+    """
+    Raised when the Coherence Kernel detects a FAILURE regime.
+    System must stop processing immediately.
+    """
+    message: str = "System halted due to Coherence Collapse (FAILURE regime)."
+
+    def __post_init__(self):
+        super().__init__(self.message)
+
+
+@dataclass
+class LoadShed(Exception):
+    """
+    Raised when simpler requests are shed due to UNSTABLE regime pressure.
+    """
+    message: str = "Request shed due to load pressure (UNSTABLE regime)."
+
+    def __post_init__(self):
+        super().__init__(self.message)

@@ -1,0 +1,8 @@
+---
+timestamp_utc: 2026-02-15T08:45:15Z
+input_type: stress_test
+source: synthetic_ai_stability_diagnostic
+---
+signal diagnostic kernel coherence coherence vector stability kernel signal align metric stability diagnostic coherence embedding embedding metric kernel drift coherence stability drift diagnostic metric coherence vector align coherence embedding metric vector signal stability drift vector metric embedding metric signal diagnostic align signal vector stability diagnostic align coherence stability signal embedding stability align metric metric metric signal align coherence drift kernel kernel embedding align diagnostic signal signal vector metric signal stability metric drift embedding stability
+
+https://alignment-forum.net/article/3526

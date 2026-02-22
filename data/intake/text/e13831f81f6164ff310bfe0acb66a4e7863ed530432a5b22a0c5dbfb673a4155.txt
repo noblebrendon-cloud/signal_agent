@@ -1,0 +1,52 @@
+import os
+import time
+import contextlib
+
+class FileLock:
+    """
+    A simple cross-platform file lock using os.open with O_CREAT | O_EXCL.
+    This relies on the OS guaranteeing that O_EXCL file creation is atomic.
+    """
+    def __init__(self, lock_file: str, timeout: float = 10.0, poll_interval: float = 0.1):
+        self.lock_file = lock_file
+        self.timeout = timeout
+        self.poll_interval = poll_interval
+        self._fd = None
+
+    def acquire(self):
+        start_time = time.time()
+        while True:
+            try:
+                # O_CREAT | O_EXCL ensures atomic creation. Fails if file exists.
+                self._fd = os.open(self.lock_file, os.O_CREAT | os.O_EXCL | os.O_RDWR)
+                return
+            except FileExistsError:
+                # Lock is held by another process
+                if time.time() - start_time > self.timeout:
+                    raise TimeoutError(f"Could not acquire lock on {self.lock_file} within {self.timeout} seconds")
+                time.sleep(self.poll_interval)
+            except OSError as e:
+                # Handle other OS errors (e.g., permissions)
+                raise RuntimeError(f"Failed to acquire lock: {e}")
+
+    def release(self):
+        if self._fd is not None:
+            try:
+                os.close(self._fd)
+                os.remove(self.lock_file)
+            except OSError:
+                # File might differ or already deleted, best effort
+                pass
+            self._fd = None
+
+    @contextlib.contextmanager
+    def context(self):
+        self.acquire()
+        try:
+            yield
+        finally:
+            self.release()
+
+def path_lock(path: str):
+    """Helper to return a FileLock for a given path."""
+    return FileLock(str(path) + ".lock")

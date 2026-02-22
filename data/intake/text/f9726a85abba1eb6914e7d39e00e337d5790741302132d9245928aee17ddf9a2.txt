@@ -1,0 +1,79 @@
+python : 2026-02-20 
+
+15:15:01,867 [INFO] 
+
+Starting linkedin 
+
+social offload for 
+
+artifact e:\signal_agen
+
+t\tests\fixtures\social
+
+_offload\core_artifact.
+
+md
+
+At line:1 char:1
+
++ python e:\signal_agen
+
+t\app\agents\social_off
+
+load\social_offload.py 
+
+-- ...
+
++ ~~~~~~~~~~~~~~~~~~~~~
+
+~~~~~~~~~~~~~~~~~~~~~~~
+
+~~~~~~~~~~~~~~~~~~~~~~~
+
+~~
+
+    + CategoryInfo     
+
+         : NotSpecifi  
+
+  ed: (2026-02-20 15   
+
+ :1...ore_artifact.    
+
+md:String) [], Rem    
+
+oteException
+
+    + FullyQualifiedEr 
+
+   rorId : NativeComm  
+
+  andError
+
+ 
+
+2026-02-20 
+
+15:15:01,868 [INFO] 
+
+Artifact ID: 
+
+6492300701b9 | Render 
+
+ID: ad74d7cddb98
+
+2026-02-20 
+
+15:15:01,872 [ERROR] 
+
+Failing closed due to 
+
+constraint violation: 
+
+Constraint violation 
+
+in e:\signal_agent\cons
+
+traints\packs\domain\li
+
+nkedin_pack.yaml

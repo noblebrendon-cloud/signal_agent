@@ -95,7 +95,6 @@ def _extract_domains(urls: List[str]) -> List[str]:
     """Extract domains from URLs."""
     domains = []
     for url in urls:
-        # Simple domain extraction
         try:
             # Remove protocol
             rest = url.split("://", 1)[1] if "://" in url else url
@@ -252,15 +251,20 @@ def _cluster_docs(
     threshold: float,
     window_hours: float,
     strategy: str,
-) -> List[_Cluster]:
-    """Greedy deterministic clustering with bridge-doc defense. Docs must be sorted."""
+) -> Tuple[List[_Cluster], int]:
+    """Greedy deterministic clustering with bridge-doc defense. Docs must be sorted. Returns (clusters, bridge_forced_count)."""
     clusters: List[_Cluster] = []
+    bridge_forced_count = 0
     
     for doc in docs:
+        if not clusters:
+            clusters.append(_Cluster(doc))
+            continue
+
         best_cluster = None
         best_score = -1.0
         
-        # Score against all existing clusters to detect bridges
+        # Score against all existing clusters
         candidates = []
         for cluster in clusters:
             s = _score(doc, cluster, window_hours, strategy)
@@ -277,37 +281,36 @@ def _cluster_docs(
             
         # Bridge detection
         # If matches >= 2 clusters with high token overlap and low score difference
+        # overlap_ratio = |intersection| / max(1, |doc_set|)
         if len(candidates) >= 2:
             s1, c1 = candidates[0]
             s2, c2 = candidates[1]
             
-            # Check score difference
+            # Check score difference < 0.05
             if (s1 - s2) < 0.05:
-                # Check token overlap (>= 40%)
                 doc_tokens = set(doc.tokens)
-                if not doc_tokens:
-                     # Empty tokens? Just assign to best (unlikely to trigger high score anyway)
-                     c1.add(doc)
-                     continue
-
+                
+                # Helper to calculate overlap
                 def calc_overlap(c):
                     # Keys in cluster TF represent union of tokens in cluster
                     c_tokens = set(c._tf_sum.keys())
                     if not c_tokens: return 0.0
-                    return len(doc_tokens & c_tokens) / len(doc_tokens)
+                    return len(doc_tokens & c_tokens) / max(1, len(doc_tokens))
 
                 ov1 = calc_overlap(c1)
                 ov2 = calc_overlap(c2)
                 
-                if ov1 >= 0.4 and ov2 >= 0.4:
+                # If high overlap with both (>= 0.40)
+                if ov1 >= 0.40 and ov2 >= 0.40:
                     # Bridge detected! Force new cluster to separate them
                     clusters.append(_Cluster(doc))
+                    bridge_forced_count += 1
                     continue
 
         # No bridge detected, assign to best
         candidates[0][1].add(doc)
             
-    return clusters
+    return clusters, bridge_forced_count
 
 
 # ===================================================================
@@ -380,9 +383,12 @@ def _append_promo_log(
 ) -> None:
     """Append to promotion_log.jsonl."""
     log_path = capture_dir / "promotion_log.jsonl"
-    line = json.dumps(entry, sort_keys=True) + "\n"
-    with open(log_path, "a", encoding="utf-8", newline="\n") as f:
-        f.write(line)
+    try:
+        line = json.dumps(entry, sort_keys=True) + "\n"
+        with open(log_path, "a", encoding="utf-8", newline="\n") as f:
+            f.write(line)
+    except OSError:
+        pass
 
 
 def promote_run(
@@ -411,7 +417,7 @@ def promote_run(
     # 1) Read raw files (sorted ascending for determinism)
     raw_files = sorted(raw_dir.glob("raw_*.md"))[:max_files]
     if not raw_files:
-        return {"status": "no_raw_files", "clusters": 0, "bundles": []}
+        return {"status": "no_raw_files", "clusters": 0, "bundles": [], "bridge_forced_count": 0}
 
     # 2) Parse into docs
     docs: List[_Doc] = []
@@ -424,10 +430,10 @@ def promote_run(
             continue
 
     if not docs:
-        return {"status": "no_parseable_docs", "clusters": 0, "bundles": []}
+        return {"status": "no_parseable_docs", "clusters": 0, "bundles": [], "bridge_forced_count": 0}
 
     # 3) Cluster
-    clusters = _cluster_docs(docs, threshold, window_hours, strategy)
+    clusters, bridge_forced_count = _cluster_docs(docs, threshold, window_hours, strategy)
 
     # 4) Filter by min size
     viable = [c for c in clusters if len(c.docs) >= min_cluster_size]
@@ -441,7 +447,12 @@ def promote_run(
                 "size": len(c.docs),
                 "files": [d.name for d in c.docs],
             })
-        return {"status": "dry_run", "clusters": len(viable), "bundles": summary}
+        return {
+            "status": "dry_run", 
+            "clusters": len(viable), 
+            "bundles": summary,
+            "bridge_forced_count": bridge_forced_count
+        }
 
     # 5) Promote each viable cluster
     bundles = []
@@ -462,11 +473,13 @@ def promote_run(
         with open(bundle_path, "w", encoding="utf-8", newline="\n") as f:
             f.write(content)
 
-        # Curate handoff
-        curated, curated_ref = _try_curate(bundle_path)
-
         # Spine router handoff (best-effort)
         route_result = _try_route(bundle_path)
+
+        # Curate handoff (DISABLED for Capture Layer Invariant Compliance)
+        # curated, curated_ref = _try_curate(bundle_path)
+        curated = False
+        curated_ref = None
 
         # Archive raw files
         for doc in cluster.docs:
@@ -489,6 +502,7 @@ def promote_run(
             "curate_invoked": curated,
             "curated_artifact_ref": curated_ref,
             "routed_spine": route_result.get("spine") if route_result else None,
+            "bridge_forced": bridge_forced_count > 0,
             "status": "ok" if curated else "partial",
             "error": None,
         }
@@ -507,6 +521,7 @@ def promote_run(
         "instability_flags": _try_instability(base),
         "clusters": len(viable),
         "bundles": bundles,
+        "bridge_forced_count": bridge_forced_count,
     }
 
 
@@ -568,7 +583,7 @@ def main(argv: Optional[list] = None) -> int:
     parser.add_argument(
         "--force", action="store_true",
         help="Overwrite existing bundles")
-
+ 
     args = parser.parse_args(argv)
 
     result = promote_run(

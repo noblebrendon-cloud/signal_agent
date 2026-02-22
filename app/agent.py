@@ -147,45 +147,146 @@ class SignalAgent:
 
 
 def main() -> None:
-    agent = SignalAgent()
-    try:
-        print(agent.generate("hello from SignalAgent"))
-    except Exception as e:
-        print(f"Generation failed: {e}")
-
-
-    # Example CLI hooks (would be in a proper CLI wrapper)
+    import argparse
     import sys
-    if len(sys.argv) > 1:
-        cmd = sys.argv[1]
-        if cmd == "curate":
-            from app.hq.curation import brn_cmds
-            target = sys.argv[2] if len(sys.argv) > 2 else "."
-            brn_cmds.brn_curate_path(target)
-        elif cmd == "curate.backfill":
-            from app.hq.curation import brn_cmds
-            brn_cmds.brn_curate_backfill()
-        elif cmd == "meme.offload":
-            from app.cli.brn_cmds_meme import main as meme_main
-            sys.exit(meme_main(sys.argv[2:]))
-        elif cmd == "capture.add":
-            from app.hq.capture.capture import main as capture_main
-            sys.exit(capture_main(["add"] + sys.argv[2:]))
-        elif cmd == "capture.promote":
-            from app.hq.capture.promote import main as promote_main
-            sys.exit(promote_main(sys.argv[2:]))
-        elif cmd == "capture.status":
-            from app.hq.capture.capture import main as capture_main
-            sys.exit(capture_main(["status"]))
-        elif cmd == "capture.decay":
-            from app.hq.capture.decay import main as decay_main
-            sys.exit(decay_main(sys.argv[2:]))
-        elif cmd == "capture.route":
-            from app.hq.capture.router import main as route_main
-            sys.exit(route_main(sys.argv[2:]))
-        elif cmd == "capture.instability":
-            from app.hq.capture.instability import main as instability_main
-            sys.exit(instability_main(sys.argv[2:]))
+
+    def _scope_for_command(cmd: str) -> str:
+        scope_map = {
+            "curate": "curate.run",
+            "curate.backfill": "curate.run",
+            "social_offload.run": "social_offload.run",
+        }
+        return scope_map.get(cmd, cmd)
+
+    def _is_read_only_command(cmd: str) -> bool:
+        return cmd in {"capture.status"}
+
+    def _requires_governor_check(cmd: str) -> bool:
+        non_mutating = {"governor.status", "governor.review", "governor.override"}
+        return cmd not in non_mutating and not _is_read_only_command(cmd)
+
+    def _print_governor_block(scope: str, decision: dict[str, Any]) -> None:
+        reason = decision.get("reason", "blocked")
+        hint = decision.get("remediation_hint", "")
+        lock_id = decision.get("lock_id", "")
+        drift = decision.get("drift_status", "unknown")
+        print(f"ERROR: Activation Governor blocked scope '{scope}'", file=sys.stderr)
+        print(f"reason={reason} lock_id={lock_id} drift_status={drift}", file=sys.stderr)
+        if hint:
+            print(f"remediation={hint}", file=sys.stderr)
+
+    if len(sys.argv) <= 1:
+        return
+
+    cmd = sys.argv[1]
+
+    if cmd == "governor.status":
+        from app.governor import governor_status
+
+        status = governor_status()
+        print(json.dumps(status, indent=2))
+        sys.exit(0 if status.get("status") == "ok" else 1)
+
+    if cmd == "governor.review":
+        from app.governor import governor_review
+
+        parser = argparse.ArgumentParser(prog="governor.review")
+        parser.add_argument("--init", action="store_true")
+        parser.add_argument("--lock-hours", type=int, default=24)
+        parser.add_argument("--review-hours", type=int, default=24)
+        parser.add_argument("--allow", action="append", default=[])
+        parser.add_argument("--watch-root", action="append", default=[])
+        parser.add_argument("--primary-scope", default="capture_pipeline")
+        parser.add_argument("--selection-rule", default="manual")
+        parser.add_argument("--selection-score", type=float, default=1.0)
+        parser.add_argument("--disable-enforcement", action="store_true")
+        args = parser.parse_args(sys.argv[2:])
+
+        result = governor_review(
+            init=args.init,
+            lock_hours=args.lock_hours,
+            review_hours=args.review_hours,
+            authorized_scopes=args.allow or None,
+            watch_roots=args.watch_root or None,
+            enforcement_enabled=not args.disable_enforcement,
+            primary_scope=args.primary_scope,
+            selection_rule=args.selection_rule,
+            selection_score=args.selection_score,
+        )
+        print(json.dumps(result, indent=2))
+        sys.exit(0)
+
+    if cmd == "governor.override":
+        from app.governor import governor_override
+
+        parser = argparse.ArgumentParser(prog="governor.override")
+        parser.add_argument("--scope", required=True)
+        parser.add_argument("--reason", required=True)
+        parser.add_argument("--ttl-min", type=int, default=30)
+        args = parser.parse_args(sys.argv[2:])
+
+        result = governor_override(
+            scope=args.scope,
+            reason=args.reason,
+            ttl_minutes=args.ttl_min,
+        )
+        print(json.dumps(result, indent=2))
+        sys.exit(0)
+
+    if _requires_governor_check(cmd):
+        from app.governor import enforce as governor_enforce
+
+        scope = _scope_for_command(cmd)
+        decision = governor_enforce(scope=scope)
+        if decision.get("decision") == "BLOCK":
+            _print_governor_block(scope, decision)
+            sys.exit(2)
+
+    if cmd == "curate":
+        from app.hq.curation import brn_cmds
+
+        target = sys.argv[2] if len(sys.argv) > 2 else "."
+        brn_cmds.brn_curate_path(target)
+    elif cmd == "curate.backfill":
+        from app.hq.curation import brn_cmds
+
+        brn_cmds.brn_curate_backfill()
+    elif cmd == "meme.offload":
+        from app.cli.brn_cmds_meme import main as meme_main
+
+        sys.exit(meme_main(sys.argv[2:]))
+    elif cmd == "capture.add":
+        from app.hq.capture.capture import main as capture_main
+
+        sys.exit(capture_main(["add"] + sys.argv[2:]))
+    elif cmd == "capture.promote":
+        from app.hq.capture.promote import main as promote_main
+
+        sys.exit(promote_main(sys.argv[2:]))
+    elif cmd == "capture.status":
+        from app.hq.capture.capture import main as capture_main
+
+        sys.exit(capture_main(["status"]))
+    elif cmd == "capture.decay":
+        from app.hq.capture.decay import main as decay_main
+
+        sys.exit(decay_main(sys.argv[2:]))
+    elif cmd == "capture.route":
+        from app.hq.capture.router import main as route_main
+
+        sys.exit(route_main(sys.argv[2:]))
+    elif cmd == "capture.instability":
+        from app.hq.capture.instability import main as instability_main
+
+        sys.exit(instability_main(sys.argv[2:]))
+    elif cmd == "capture.stress":
+        from app.hq.capture.stress import main as stress_main
+
+        sys.exit(stress_main(sys.argv[2:]))
+    elif cmd == "social_offload.run":
+        from app.agents.social_offload.social_offload import main as social_offload_main
+
+        sys.exit(social_offload_main(sys.argv[2:]))
 
 
 if __name__ == "__main__":

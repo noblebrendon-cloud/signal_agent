@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent.parent))
 from jinja2 import Environment, FileSystemLoader
 import yaml
 
+from app.governor import enforce as governor_enforce
 from app.utils.reprojection import reproject_checkpoint, extract_artifact_state
 from app.utils.exceptions import ConstraintViolation
 from app.utils.io_contract import atomic_write_text, append_jsonl_atomic
@@ -58,11 +59,33 @@ def render_linkedin_output(state, template_dir: Path) -> str:
     rendered = template.render(sections=state.sections, claims=state.claims, word_count=state.word_count)
     return rendered.strip()
 
-def run_social_offload(artifact_path: Path, channel: str, out_dir: Path, pack_path: Path, log_path: Path, dry_run: bool) -> int:
+def run_social_offload(
+    artifact_path: Path,
+    channel: str,
+    out_dir: Path,
+    pack_path: Path,
+    log_path: Path,
+    dry_run: bool,
+    enforce_governor: bool = True,
+) -> int:
     artifact_path = artifact_path.resolve()
     pack_path = pack_path.resolve()
     out_dir = out_dir.resolve()
     log_path = log_path.resolve()
+
+    if enforce_governor:
+        decision = governor_enforce(scope="social_offload.run")
+        if decision.get("decision") == "BLOCK":
+            logger.error(
+                "Activation Governor blocked social_offload.run reason=%s lock_id=%s drift_status=%s",
+                decision.get("reason"),
+                decision.get("lock_id"),
+                decision.get("drift_status"),
+            )
+            hint = decision.get("remediation_hint")
+            if hint:
+                logger.error("Remediation: %s", hint)
+            return 2
 
     pack_version = _load_pack_version(pack_path)
     template_version = TEMPLATE_VERSION
@@ -85,6 +108,7 @@ def run_social_offload(artifact_path: Path, channel: str, out_dir: Path, pack_pa
             template_version=template_version,
             render_id=render_id,
             run_id=run_id,
+            dry_run=dry_run,
             fault_details=["artifact_not_found"],
         )
         return 1
@@ -112,6 +136,7 @@ def run_social_offload(artifact_path: Path, channel: str, out_dir: Path, pack_pa
             template_version=template_version,
             render_id=render_id,
             run_id=run_id,
+            dry_run=dry_run,
             fault_details=[str(e)],
         )
         return 1
@@ -131,6 +156,7 @@ def run_social_offload(artifact_path: Path, channel: str, out_dir: Path, pack_pa
             template_version=template_version,
             render_id=render_id,
             run_id=run_id,
+            dry_run=dry_run,
             fault_details=[f"Template Error: {e}"],
         )
         return 1
@@ -155,6 +181,7 @@ def run_social_offload(artifact_path: Path, channel: str, out_dir: Path, pack_pa
                 template_version=template_version,
                 render_id=render_id,
                 run_id=run_id,
+                dry_run=dry_run,
                 fault_details=["empty_or_missing_output"],
             )
             return 1
@@ -170,6 +197,7 @@ def run_social_offload(artifact_path: Path, channel: str, out_dir: Path, pack_pa
         "pack_version": pack_version,
         "template_version": template_version,
         "status": "ok",
+        "dry_run": dry_run,
         "word_count": state.word_count,
         "claim_count": len(state.claims),
     }
@@ -187,8 +215,20 @@ def write_fault_report(
     template_version: str,
     render_id: str,
     run_id: str,
-    fault_details: list[str],
+    dry_run: bool,
+    fault_details: Any,
 ) -> None:
+    if fault_details is None:
+        fault_codes: list[str] = []
+    elif isinstance(fault_details, list):
+        fault_codes = [str(item) for item in fault_details if item is not None]
+    elif isinstance(fault_details, tuple):
+        fault_codes = [str(item) for item in fault_details if item is not None]
+    elif isinstance(fault_details, str):
+        fault_codes = [fault_details]
+    else:
+        fault_codes = [str(fault_details)]
+
     log_entry = {
         "timestamp": time.time(),
         "run_id": run_id,
@@ -199,11 +239,12 @@ def write_fault_report(
         "pack_version": pack_version,
         "template_version": template_version,
         "status": "fault",
-        "fault_codes": fault_details,
+        "dry_run": dry_run,
+        "fault_codes": fault_codes,
     }
     _append_run_log(log_path, log_entry)
 
-if __name__ == "__main__":
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Deterministic Social Offload")
     parser.add_argument("--artifact", required=True, type=Path, help="Core artifact path")
     parser.add_argument("--channel", required=True, choices=["linkedin"], help="Target channel")
@@ -211,6 +252,19 @@ if __name__ == "__main__":
     parser.add_argument("--log", type=Path, default=DEFAULT_LOG_PATH, help="Canonical JSONL log path")
     parser.add_argument("--pack", type=Path, required=True, help="Constraint pack path")
     parser.add_argument("--dry-run", action="store_true", help="Do not write file")
+    parser.add_argument("--no-governor", action="store_true", help="Disable Activation Governor enforcement")
 
-    args = parser.parse_args()
-    raise SystemExit(run_social_offload(args.artifact, args.channel, args.out, args.pack, args.log, args.dry_run))
+    args = parser.parse_args(argv)
+    return run_social_offload(
+        args.artifact,
+        args.channel,
+        args.out,
+        args.pack,
+        args.log,
+        args.dry_run,
+        enforce_governor=not args.no_governor,
+    )
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

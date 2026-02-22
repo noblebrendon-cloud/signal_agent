@@ -9,6 +9,8 @@ from pathlib import Path
 from datetime import datetime
 from typing import Dict, Any, Optional
 
+from app.governor import enforce as governor_enforce
+
 # Setup Logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -16,6 +18,13 @@ logger = logging.getLogger(__name__)
 REGISTRY_PATH = Path("e:\\signal_agent\\data\\artifact_registry.jsonl")
 INDEX_PATH = Path("e:\\signal_agent\\data\\INDEX_ARTIFACTS.md")
 CONFIG_PATH = Path("e:\\signal_agent\\app\\hq\\curation\\rules.yaml")
+
+
+def _enforce_curate_governor() -> Optional[dict]:
+    decision = governor_enforce(scope="curate.run")
+    if decision.get("decision") == "BLOCK":
+        return decision
+    return None
 
 def load_config() -> Dict[str, Any]:
     if not CONFIG_PATH.exists():
@@ -99,9 +108,18 @@ def sanitize_stem(stem):
     keep = "".join(c for c in stem if c.isalnum() or c in "._-")
     return keep.strip()
 
-def curate_file(file_path):
+def curate_file(file_path, enforce_governor: bool = True):
     config: Dict[str, Any] = load_config()
     file_path = Path(file_path).resolve()
+
+    if enforce_governor:
+        blocked = _enforce_curate_governor()
+        if blocked is not None:
+            return {
+                "action": "blocked",
+                "reason": blocked.get("reason"),
+                "governor": blocked,
+            }
     
     if not file_path.exists() or not file_path.is_file():
         logger.error(f"Invalid file: {file_path}")
@@ -227,7 +245,16 @@ def curate_file(file_path):
                 pass
         return {"action": "error", "reason": str(e)}
 
-def curate_backfill():
+def curate_backfill(enforce_governor: bool = True):
+    if enforce_governor:
+        blocked = _enforce_curate_governor()
+        if blocked is not None:
+            return [{
+                "action": "blocked",
+                "reason": blocked.get("reason"),
+                "governor": blocked,
+            }]
+
     config = load_config()
     roots = config.get("intake_roots", [])
     results = []
@@ -241,7 +268,7 @@ def curate_backfill():
             if item.is_file():
                 # Avoid processing our own output/staging if nested?
                 # User config defines intake_roots.
-                res = curate_file(item)
+                res = curate_file(item, enforce_governor=False)
                 results.append(res)
                 
     return results
@@ -253,22 +280,23 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--path", help="Path to file or directory to curate")
     parser.add_argument("--backfill", action="store_true", help="Process all intake roots")
+    parser.add_argument("--no-governor", action="store_true", help="Disable Activation Governor enforcement")
     args = parser.parse_args()
     
     if args.backfill:
-        res = curate_backfill()
+        res = curate_backfill(enforce_governor=not args.no_governor)
         print(json.dumps(res, indent=2))
     elif args.path:
         p = Path(args.path)
         if p.is_file():
-            res = curate_file(p)
+            res = curate_file(p, enforce_governor=not args.no_governor)
             print(json.dumps(res, indent=2))
         elif p.is_dir():
              # Recurse dir
              final_res = []
              for item in p.rglob("*"):
                 if item.is_file():
-                    final_res.append(curate_file(item))
+                    final_res.append(curate_file(item, enforce_governor=not args.no_governor))
              print(json.dumps(final_res, indent=2))
     else:
         print("Usage: curate.py --path <path> OR --backfill")

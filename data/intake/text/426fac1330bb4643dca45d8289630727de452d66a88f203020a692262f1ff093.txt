@@ -1,0 +1,41 @@
+# Capture Layer v0.3 Operator Walkthrough
+
+## 1. Daily Operations
+
+### Status Check
+```powershell
+python -m app.agent capture.status
+```
+*Verify `router_ruleset_hash` matches your config.*
+
+### Decay (Cleanup)
+```powershell
+python -m app.agent capture.decay --days 14 --purge-days 30
+```
+*Moves items to expired_stage1/2 directories.*
+
+### Instability Scanning
+```powershell
+python -m app.agent capture.instability --window-days 7 --min-today 6
+```
+**Interpreting Results:**
+- **Cold Start**: `baseline: 0.0`. Topic is new or dormant. Not a true anomaly.
+- **True Spike**: `ratio > 3.0` (Minor) or `> 5.0` (Major). Action required.
+
+## 2. Validation & Security
+
+### Invariant Checks
+The system strictly enforces that `artifact_registry.jsonl` is **read-only** for capture tools.
+
+### Bridge Defense
+To test bridge verification:
+```powershell
+python -m app.agent capture.stress --docs 60 --themes 2 --bridge
+python -m app.agent capture.promote --min-cluster-size 1
+```
+**Interpreting Bridge Defense:**
+- **PASS**: `bridge_forced_count >= 1`. The system detected ambiguity and forced a split.
+- **FAIL**: `bridge_forced_count == 0` (even if isolated). Ambiguity was not actively detected.
+
+### Determinism
+All tools accept a `--seed` for reproducible testing.

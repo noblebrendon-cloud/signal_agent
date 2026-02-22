@@ -1,0 +1,96 @@
+"""
+CLI commands for CONTENT_MEME_OFFLOAD.
+
+Usage:
+    brn meme.offload --in <artifact_id> --pack <pack_name> --n 5
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+from typing import Optional
+
+from app.agents.meme_offload.meme_offload import meme_offload_generate
+
+
+def brn_meme_offload(
+    artifact_id: str,
+    pack: str = "CONTENT_MEME_OFFLOAD_v1",
+    n: int = 5,
+    fmt: str = "two_panel",
+) -> int:
+    """
+    CLI entry point for meme offload.
+    Returns 0 on success, 1 on failure.
+    """
+    # Validate pack existence
+    pack_path = Path(f"constraints/packs/domain/content_meme/{pack}.yaml")
+    if not pack_path.exists():
+        print(f"ERROR: Pack not found: {pack_path}", file=sys.stderr)
+        return 1
+
+    # Load source artifact text
+    # artifact_id could be a path or a data reference
+    artifact_path = Path(artifact_id)
+    if artifact_path.exists():
+        source_text = artifact_path.read_text(encoding="utf-8")
+    else:
+        # Try data directory
+        data_path = Path(f"data/{artifact_id}")
+        if data_path.exists():
+            source_text = data_path.read_text(encoding="utf-8")
+        else:
+            print(f"ERROR: Artifact not found: {artifact_id}", file=sys.stderr)
+            return 1
+
+    # JSONL logger
+    log_path = Path("data/state/meme_events.jsonl")
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+
+    def logger(event):
+        with log_path.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(event, default=str) + "\n")
+
+    try:
+        specs = meme_offload_generate(
+            source_text=source_text,
+            pack_id=pack,
+            n=n,
+            logger_fn=logger,
+            session_id="cli_session",
+            source_artifact_id=artifact_id,
+            fmt=fmt,
+        )
+        print(f"SUCCESS: Generated {len(specs)} meme(s)")
+        for s in specs:
+            print(f"  → {s.meme_id}: {s.output.filename}")
+        return 0
+
+    except Exception as e:
+        print(f"FAILURE: {e}", file=sys.stderr)
+        return 1
+
+
+def main(argv: Optional[list] = None) -> int:
+    parser = argparse.ArgumentParser(
+        prog="brn meme.offload",
+        description="Generate meme offload artifacts from source text."
+    )
+    parser.add_argument("--in", dest="artifact_id", required=True, help="Source artifact path or ID")
+    parser.add_argument("--pack", default="CONTENT_MEME_OFFLOAD_v1", help="Constraint pack name")
+    parser.add_argument("--n", type=int, default=5, help="Max outputs")
+    parser.add_argument("--format", dest="fmt", default="two_panel", choices=["two_panel", "infographic_list"])
+
+    args = parser.parse_args(argv)
+    return brn_meme_offload(
+        artifact_id=args.artifact_id,
+        pack=args.pack,
+        n=args.n,
+        fmt=args.fmt,
+    )
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -1,0 +1,552 @@
+{
+  "topics": {
+    "02ec38a097dd": {
+      "baseline_per_day": 0.1667,
+      "last_7_days": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      "last_seen_utc": "2026-02-17T11:45:16Z"
+    },
+    "0688a90d8a15": {
+      "baseline_per_day": 0.0,
+      "last_7_days": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "last_seen_utc": "2026-02-17T11:45:16Z"
+    },
+    "06ff8d7a94e9": {
+      "baseline_per_day": 0.6667,
+      "last_7_days": [
+        0,
+        0,
+        0,
+        1,
+        2,
+        1,
+        1
+      ],
+      "last_seen_utc": "2026-02-17T11:45:16Z"
+    },
+    "0c99bb1e8986": {
+      "baseline_per_day": 0.0,
+      "last_7_days": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "last_seen_utc": "2026-02-17T11:45:16Z"
+    },
+    "18945dab80d6": {
+      "baseline_per_day": 0.0,
+      "last_7_days": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "last_seen_utc": "2026-02-17T11:45:16Z"
+    },
+    "1ce012ec2a6b": {
+      "baseline_per_day": 0.1667,
+      "last_7_days": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0
+      ],
+      "last_seen_utc": "2026-02-17T11:45:16Z"
+    },
+    "2342288d4048": {
+      "baseline_per_day": 0.1667,
+      "last_7_days": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0
+      ],
+      "last_seen_utc": "2026-02-17T11:45:16Z"
+    },
+    "314b0619cff3": {
+      "baseline_per_day": 0.1667,
+      "last_7_days": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      "last_seen_utc": "2026-02-17T11:45:16Z"
+    },
+    "3659a7d199ef": {
+      "baseline_per_day": 0.1667,
+      "last_7_days": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      "last_seen_utc": "2026-02-17T11:45:16Z"
+    },
+    "3b366b92471b": {
+      "baseline_per_day": 0.0,
+      "last_7_days": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "last_seen_utc": "2026-02-17T11:45:16Z"
+    },
+    "3ffa73007de7": {
+      "baseline_per_day": 0.3333,
+      "last_7_days": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        0,
+        0
+      ],
+      "last_seen_utc": "2026-02-17T11:45:16Z"
+    },
+    "42804ec9858d": {
+      "baseline_per_day": 0.0,
+      "last_7_days": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "last_seen_utc": "2026-02-17T11:45:16Z"
+    },
+    "4cc053b5d4d2": {
+      "baseline_per_day": 0.0,
+      "last_7_days": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "last_seen_utc": "2026-02-17T11:45:16Z"
+    },
+    "4f31e86b2669": {
+      "baseline_per_day": 0.1667,
+      "last_7_days": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      "last_seen_utc": "2026-02-17T11:45:16Z"
+    },
+    "59a795ead708": {
+      "baseline_per_day": 0.1667,
+      "last_7_days": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0
+      ],
+      "last_seen_utc": "2026-02-17T11:45:16Z"
+    },
+    "64ac3d3b6ca7": {
+      "baseline_per_day": 0.3333,
+      "last_7_days": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        0
+      ],
+      "last_seen_utc": "2026-02-17T11:45:16Z"
+    },
+    "69f4b77700f8": {
+      "baseline_per_day": 0.1667,
+      "last_7_days": [
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      "last_seen_utc": "2026-02-17T11:45:16Z"
+    },
+    "6eefabac529d": {
+      "baseline_per_day": 0.0,
+      "last_7_days": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "last_seen_utc": "2026-02-17T11:45:16Z"
+    },
+    "715a3d41e86d": {
+      "baseline_per_day": 0.1667,
+      "last_7_days": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        1
+      ],
+      "last_seen_utc": "2026-02-17T11:45:16Z"
+    },
+    "7175cd6370e1": {
+      "baseline_per_day": 0.0,
+      "last_7_days": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "last_seen_utc": "2026-02-17T11:45:16Z"
+    },
+    "7d822230390d": {
+      "baseline_per_day": 0.0,
+      "last_7_days": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "last_seen_utc": "2026-02-17T11:45:16Z"
+    },
+    "7ff8dff2ff1d": {
+      "baseline_per_day": 0.3333,
+      "last_7_days": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      "last_seen_utc": "2026-02-17T11:45:16Z"
+    },
+    "83aad5a9fad3": {
+      "baseline_per_day": 0.6667,
+      "last_7_days": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        3,
+        0
+      ],
+      "last_seen_utc": "2026-02-17T11:45:16Z"
+    },
+    "852bd8bc3c68": {
+      "baseline_per_day": 0.1667,
+      "last_7_days": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0
+      ],
+      "last_seen_utc": "2026-02-17T11:45:16Z"
+    },
+    "8579006ef219": {
+      "baseline_per_day": 0.1667,
+      "last_7_days": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0
+      ],
+      "last_seen_utc": "2026-02-17T11:45:16Z"
+    },
+    "86d6d106a366": {
+      "baseline_per_day": 0.1667,
+      "last_7_days": [
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      "last_seen_utc": "2026-02-17T11:45:16Z"
+    },
+    "8ebab2782829": {
+      "baseline_per_day": 0.1667,
+      "last_7_days": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      "last_seen_utc": "2026-02-17T11:45:16Z"
+    },
+    "8ef69d212553": {
+      "baseline_per_day": 0.1667,
+      "last_7_days": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      "last_seen_utc": "2026-02-17T11:45:16Z"
+    },
+    "903653c5d451": {
+      "baseline_per_day": 0.3333,
+      "last_7_days": [
+        0,
+        0,
+        0,
+        0,
+        2,
+        0,
+        0
+      ],
+      "last_seen_utc": "2026-02-17T11:45:16Z"
+    },
+    "961fe4db24e3": {
+      "baseline_per_day": 0.1667,
+      "last_7_days": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0
+      ],
+      "last_seen_utc": "2026-02-17T11:45:16Z"
+    },
+    "aa8bdc43ee8c": {
+      "baseline_per_day": 0.1667,
+      "last_7_days": [
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      "last_seen_utc": "2026-02-17T11:45:16Z"
+    },
+    "ab267854c960": {
+      "baseline_per_day": 0.3333,
+      "last_7_days": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        0,
+        0
+      ],
+      "last_seen_utc": "2026-02-17T11:45:16Z"
+    },
+    "acdab16a65c3": {
+      "baseline_per_day": 0.1667,
+      "last_7_days": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0
+      ],
+      "last_seen_utc": "2026-02-17T11:45:16Z"
+    },
+    "c4a4d4bc8e6c": {
+      "baseline_per_day": 0.1667,
+      "last_7_days": [
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      "last_seen_utc": "2026-02-17T11:45:16Z"
+    },
+    "d0608059e6c3": {
+      "baseline_per_day": 0.0,
+      "last_7_days": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "last_seen_utc": "2026-02-17T11:45:16Z"
+    },
+    "d86ad5392744": {
+      "baseline_per_day": 0.3333,
+      "last_7_days": [
+        0,
+        0,
+        0,
+        0,
+        2,
+        0,
+        0
+      ],
+      "last_seen_utc": "2026-02-17T11:45:16Z"
+    },
+    "dfcb35ce403e": {
+      "baseline_per_day": 0.1667,
+      "last_7_days": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      "last_seen_utc": "2026-02-17T11:45:16Z"
+    },
+    "edd9dadd4ee6": {
+      "baseline_per_day": 0.6667,
+      "last_7_days": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        3,
+        2
+      ],
+      "last_seen_utc": "2026-02-17T11:45:16Z"
+    },
+    "f18e512ecf5d": {
+      "baseline_per_day": 0.1667,
+      "last_7_days": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0
+      ],
+      "last_seen_utc": "2026-02-17T11:45:16Z"
+    },
+    "f5fcd9f7efd1": {
+      "baseline_per_day": 0.1667,
+      "last_7_days": [
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      "last_seen_utc": "2026-02-17T11:45:16Z"
+    },
+    "feeb68fbb7c4": {
+      "baseline_per_day": 0.1667,
+      "last_7_days": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      "last_seen_utc": "2026-02-17T11:45:16Z"
+    },
+    "ff41f0272031": {
+      "baseline_per_day": 0.0,
+      "last_7_days": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "last_seen_utc": "2026-02-17T11:45:16Z"
+    }
+  },
+  "updated_utc": "2026-02-17T11:45:16Z",
+  "utc_day": "2026-02-17"
+}

@@ -1,0 +1,18 @@
+---
+cluster_id: 76f8fc62e3be
+file_count: 2
+created_utc: 2026-02-16T23:09:00Z
+---
+
+## Included Files
+
+- raw_2026-02-16T18-00-01_001Z.md
+- raw_2026-02-16T18-00-02_002Z.md
+
+## Content
+
+Deterministic capture systems use hashing for integrity
+
+---
+
+Deterministic capture and hashing ensure integrity

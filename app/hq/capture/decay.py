@@ -58,24 +58,23 @@ def _load_archived_files(capture_dir: Path) -> Set[str]:
 
 
 def _parse_file_timestamp(filename: str) -> Optional[datetime]:
-    """Extract UTC timestamp from raw_YYYY-MM-DDTHH-MM-SS_mmmZ.md filename."""
-    # raw_2026-02-16T18-00-01_001Z.md
+    """
+    Extract UTC timestamp from raw_YYYY-MM-DDTHH-MM-SS_mmmZ.md filename.
+    Returns timezone.utc datetime or None.
+    """
+    # Expected format: raw_2026-02-16T18-00-01_001Z.md
     try:
         stem = filename.replace("raw_", "").replace(".md", "")
-        # Remove milliseconds suffix: _001Z
-        if stem.endswith("Z"):
-            stem = stem[:-1]  # drop Z
-        parts = stem.rsplit("_", 1)
-        ts_part = parts[0]  # 2026-02-16T18-00-01
-        # Convert back to ISO
-        iso = ts_part.replace("T", "T").replace("-", "-")
-        # The time part uses - instead of :
-        # Format: YYYY-MM-DDTHH-MM-SS
-        date_part = iso[:10]  # YYYY-MM-DD
-        time_part = iso[11:]  # HH-MM-SS
-        time_iso = time_part.replace("-", ":")
-        full = f"{date_part}T{time_iso}+00:00"
-        return datetime.fromisoformat(full)
+        # Remove suffix like _001Z or _bridgeZ
+        if "_" in stem:
+            parts = stem.rsplit("_", 1)
+            ts_part = parts[0]
+        else:
+            ts_part = stem
+            
+        # Parse time part which uses dashes: YYYY-MM-DDTHH-MM-SS
+        dt = datetime.strptime(ts_part, "%Y-%m-%dT%H-%M-%S")
+        return dt.replace(tzinfo=timezone.utc)
     except (ValueError, IndexError):
         return None
 
@@ -86,9 +85,12 @@ def _append_decay_log(
 ) -> None:
     """Append to decay_log.jsonl."""
     log_path = capture_dir / "decay_log.jsonl"
-    line = json.dumps(entry, sort_keys=True) + "\n"
-    with open(log_path, "a", encoding="utf-8", newline="\n") as f:
-        f.write(line)
+    try:
+        line = json.dumps(entry, sort_keys=True) + "\n"
+        with open(log_path, "a", encoding="utf-8", newline="\n") as f:
+            f.write(line)
+    except OSError:
+        pass
 
 
 def decay_run(
@@ -102,7 +104,7 @@ def decay_run(
     """
     Two-stage decay policy.
     Stage 1: raw -> expired_stage1 (older than days)
-    Stage 2: expired_stage1 -> expired_stage2 (older than purge_days)
+    Stage 2: expired_stage1 -> expired_stage2 (older than purge_days in stage1)
     """
     base = capture_dir or _get_capture_dir()
     raw_dir = base / "raw"
@@ -122,6 +124,7 @@ def decay_run(
 
     now = now_utc or datetime.now(timezone.utc)
     cutoff_stage1 = now - timedelta(days=days)
+    # cutoff_stage2 is relative to file mtime in stage1
     cutoff_stage2 = now - timedelta(days=purge_days)
 
     # Load exempt files (only relevant for raw -> stage1)
@@ -148,7 +151,7 @@ def decay_run(
                 if ts < cutoff_stage1:
                     is_expired = True
             else:
-                # Fallback to mtime
+                # Fallback to mtime if parsing fails
                 try:
                     mtime = datetime.fromtimestamp(rf.stat().st_mtime, tz=timezone.utc)
                     if mtime < cutoff_stage1:
@@ -163,6 +166,8 @@ def decay_run(
                     if not dest.exists():
                         try:
                             shutil.move(str(rf), str(dest))
+                            # Update mtime to NOW to mark entry into stage 1
+                            os.utime(dest, None)
                         except OSError:
                             pass
 
@@ -172,19 +177,14 @@ def decay_run(
     # Scan stage1 files
     stage1_files = sorted(stage1_dir.glob("raw_*.md"))[:max_files]
     for sf in stage1_files:
-        ts = _parse_file_timestamp(sf.name)
+        # Check mtime (time since entered stage 1)
         is_purged = False
-        
-        if ts:
-            if ts < cutoff_stage2:
+        try:
+            mtime = datetime.fromtimestamp(sf.stat().st_mtime, tz=timezone.utc)
+            if mtime < cutoff_stage2:
                 is_purged = True
-        else:
-            try:
-                mtime = datetime.fromtimestamp(sf.stat().st_mtime, tz=timezone.utc)
-                if mtime < cutoff_stage2:
-                    is_purged = True
-            except OSError:
-                pass
+        except OSError:
+            pass
 
         if is_purged:
             stage2_moved.append(sf.name)
@@ -201,8 +201,8 @@ def decay_run(
         "timestamp_utc": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "days": days,
         "purge_days": purge_days,
-        "stage1_moved": stage1_moved,
-        "stage2_moved": stage2_moved,
+        "stage1_moved": sorted(stage1_moved),
+        "stage2_moved": sorted(stage2_moved),
         "status": "dry_run" if dry_run else "ok",
         "error": None,
     }
@@ -214,14 +214,10 @@ def decay_run(
         "purge_days": purge_days,
         "stage1_count": len(stage1_moved),
         "stage2_count": len(stage2_moved),
-        "stage1_moved": stage1_moved,
-        "stage2_moved": stage2_moved,
+        "stage1_moved": sorted(stage1_moved),
+        "stage2_moved": sorted(stage2_moved),
     }
 
-
-# ---------------------------------------------------------------------------
-# CLI entrypoint
-# ---------------------------------------------------------------------------
 
 def main(argv: Optional[list] = None) -> int:
     """CLI entrypoint for decay subcommand."""

@@ -35,6 +35,50 @@ def _get_capture_dir() -> Path:
     return _get_root() / "data" / "capture"
 
 
+def _now_utc() -> str:
+    from datetime import datetime, timezone
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _parse_yaml_list(val: str) -> List[str]:
+    """Parse YAML inline list: [a, b, c]."""
+    val = val.strip()
+    if val.startswith("[") and val.endswith("]"):
+        inner = val[1:-1]
+        if not inner.strip():
+            return []
+        items = [item.strip() for item in inner.split(",")]
+        return [i for i in items if i]
+    return []
+
+
+def _parse_yaml_text_fallback(text: str) -> List[Dict[str, Any]]:
+    """Minimal YAML parser for spine config text (no external deps)."""
+    spines = []
+    current: Optional[Dict[str, Any]] = None
+
+    for line in text.split("\n"):
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+            
+        if stripped.startswith("- name:"):
+            if current:
+                spines.append(current)
+            name = stripped.split(":", 1)[1].strip()
+            current = {"name": name, "keywords": [], "domains": []}
+        elif stripped.startswith("keywords:") and current is not None:
+            val = stripped.split(":", 1)[1].strip()
+            current["keywords"] = _parse_yaml_list(val)
+        elif stripped.startswith("domains:") and current is not None:
+            val = stripped.split(":", 1)[1].strip()
+            current["domains"] = _parse_yaml_list(val)
+
+    if current:
+        spines.append(current)
+    return spines
+
+
 def _load_spine_config(config_path: Optional[Path] = None) -> Tuple[List[Dict[str, Any]], str]:
     """
     Load spine definitions from YAML config.
@@ -54,53 +98,13 @@ def _load_spine_config(config_path: Optional[Path] = None) -> Tuple[List[Dict[st
     except OSError:
         return [{"name": "misc", "keywords": [], "domains": []}], "error"
 
-    # Lightweight YAML parser
-    spines = []
-    try:
-        import yaml
-        data = yaml.safe_load(text_content)
-        spines = data.get("spines", [])
-    except ImportError:
-        spines = _parse_yaml_text_fallback(text_content)
+    # Use internal fallback parser (no PyYAML dependency)
+    spines = _parse_yaml_text_fallback(text_content)
     
     if not spines:
         spines = [{"name": "misc", "keywords": [], "domains": []}]
         
     return spines, config_hash
-
-
-def _parse_yaml_text_fallback(text: str) -> List[Dict[str, Any]]:
-    """Minimal YAML parser for spine config text (no external deps)."""
-    spines = []
-    current: Optional[Dict[str, Any]] = None
-
-    for line in text.split("\n"):
-        stripped = line.strip()
-        if stripped.startswith("- name:"):
-            if current:
-                spines.append(current)
-            name = stripped.split(":", 1)[1].strip()
-            current = {"name": name, "keywords": [], "domains": []}
-        elif stripped.startswith("keywords:") and current is not None:
-            val = stripped.split(":", 1)[1].strip()
-            current["keywords"] = _parse_yaml_list(val)
-        elif stripped.startswith("domains:") and current is not None:
-            val = stripped.split(":", 1)[1].strip()
-            current["domains"] = _parse_yaml_list(val)
-
-    if current:
-        spines.append(current)
-    return spines
-
-
-def _parse_yaml_list(val: str) -> List[str]:
-    val = val.strip()
-    if val.startswith("[") and val.endswith("]"):
-        inner = val[1:-1]
-        if not inner.strip():
-            return []
-        return [item.strip() for item in inner.split(",")]
-    return []
 
 
 def _extract_tokens(text: str) -> List[str]:
@@ -189,7 +193,7 @@ def route_bundle(
         s, rationale = score_bundle(tokens, domains, spine)
         scores.append((s, spine["name"], rationale))
 
-    # Sort: highest score, then alphabetical name
+    # Sort: highest score, then alphabetical name (stable tie-break)
     scores.sort(key=lambda x: (-x[0], x[1]))
 
     best_score, best_name, best_rationale = scores[0]
@@ -239,24 +243,18 @@ def route_bundle(
     }
 
 
-def _now_utc() -> str:
-    from datetime import datetime, timezone
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-
-
 def _append_routing_log(
     capture_dir: Path,
     entry: Dict[str, Any],
 ) -> None:
     log_path = capture_dir / "routing_log.jsonl"
-    line = json.dumps(entry, sort_keys=True) + "\n"
-    with open(log_path, "a", encoding="utf-8", newline="\n") as f:
-        f.write(line)
+    try:
+        line = json.dumps(entry, sort_keys=True) + "\n"
+        with open(log_path, "a", encoding="utf-8", newline="\n") as f:
+            f.write(line)
+    except OSError:
+        pass
 
-
-# ---------------------------------------------------------------------------
-# CLI entrypoint
-# ---------------------------------------------------------------------------
 
 def main(argv: Optional[list] = None) -> int:
     import argparse
