@@ -45,10 +45,17 @@ def normalize_text(text: str) -> str:
     return text.strip()
 
 class IntakeSystem:
-    def __init__(self, mode: str = "NORMAL", scan_roots: Optional[List[Path]] = None, only_ext: Optional[str] = None):
+    def __init__(
+        self,
+        mode: str = "NORMAL",
+        scan_roots: Optional[List[Path]] = None,
+        only_ext: Optional[str] = None,
+        explicit_roots: bool = False,
+    ):
         self.mode = mode
         self.scan_roots = [p.resolve() for p in (scan_roots or [ROOT])]
         self.only_ext = only_ext.lower() if only_ext else None
+        self.explicit_roots = explicit_roots
         self.ledger_cache: Dict[str, str] = {} # path -> source_sha256
         self.stats = {
             "total": 0, "supported": 0, "ingested": 0,
@@ -105,13 +112,14 @@ class IntakeSystem:
 
     def should_skip_path(self, path: Path) -> bool:
         """Check against exclude directories."""
-        try:
-            rel = path.relative_to(ROOT)
-            for part in rel.parts:
-                if part in EXCLUDE_DIRS:
-                    return True
-        except ValueError:
-            pass # path not relative to root
+        if not self.explicit_roots:
+            try:
+                rel = path.relative_to(ROOT)
+                for part in rel.parts:
+                    if part in EXCLUDE_DIRS:
+                        return True
+            except ValueError:
+                pass # path not relative to root
         return False
 
     def extract_pdf(self, path: Path) -> str:
@@ -324,5 +332,10 @@ if __name__ == "__main__":
     if args.only_ext:
         only_ext = f".{args.only_ext.lower()}"
 
-    agent = IntakeSystem(mode=args.mode, scan_roots=scan_roots, only_ext=only_ext)
+    agent = IntakeSystem(
+        mode=args.mode,
+        scan_roots=scan_roots,
+        only_ext=only_ext,
+        explicit_roots=bool(args.root),
+    )
     agent.run()
