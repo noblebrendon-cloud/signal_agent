@@ -7,11 +7,6 @@ from pathlib import Path
 from typing import Dict, Any, Optional, List, Set
 
 import yaml
-import docx
-from pypdf import PdfReader
-import ebooklib
-from ebooklib import epub
-from bs4 import BeautifulSoup
 
 # --- Configuration ---
 ROOT = Path(__file__).resolve().parents[2] # Adjusted for app/intake/intake.py
@@ -129,11 +124,18 @@ class IntakeSystem:
              raise RuntimeError("pdfminer extraction module not found")
 
     def extract_docx(self, path: Path) -> str:
+        try:
+            import docx
+        except ImportError as e:
+            raise RuntimeError("DOCX extraction requires python-docx. Install with: pip install python-docx") from e
         doc = docx.Document(path)
         # Simple paragraph extraction; could expand to tables if needed
         return "\n".join([p.text for p in doc.paragraphs])
 
     def extract_epub(self, path: Path) -> str:
+        import ebooklib
+        from ebooklib import epub
+        from bs4 import BeautifulSoup
         book = epub.read_epub(path)
         chapters = []
         # Attempt to iterate in spine order
@@ -255,13 +257,16 @@ class IntakeSystem:
         except Exception as e:
             self.stats["errors"] += 1
             print(f"Error processing {rel_path}: {e}")
-            self.append_event({
+            error_event: Dict[str, Any] = {
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "source_path": rel_path,
                 "status": "error",
                 "error_message": str(e),
                 "mode": self.mode
-            })
+            }
+            if path.suffix.lower() == ".docx":
+                error_event["extractor"] = "docx_v1"
+            self.append_event(error_event)
 
     def run(self):
         print(f"Starting Intake v2 Scan... Mode: {self.mode}")
