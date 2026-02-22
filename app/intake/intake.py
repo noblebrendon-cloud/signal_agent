@@ -124,12 +124,13 @@ class IntakeSystem:
 
     def extract_pdf(self, path: Path) -> str:
         try:
-             from app.intake.extract_pdf_text import extract_pdf_text
-             return extract_pdf_text(path)
-        except ImportError:
-             # Fallback to pypdf if module missing (or raise, user chose pdfminer path)
-             # But user said "don't mix". So let's stick to the new module.
-             raise RuntimeError("pdfminer extraction module not found")
+            from app.intake.extract_pdf_text import extract_pdf_text
+        except ModuleNotFoundError as e:
+            if e.name == "app":
+                from extract_pdf_text import extract_pdf_text
+            else:
+                raise
+        return extract_pdf_text(path)
 
     def extract_docx(self, path: Path) -> str:
         try:
