@@ -21,3 +21,10 @@ winget_*.txt
 # OS
 .DS_Store
 Thumbs.db
+
+# Repo-local pytest / temp isolation
+.tmp/
+.tmp/**
+*.tmp
+
+data/capture/*.ndjson
