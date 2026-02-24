@@ -169,6 +169,8 @@ def call_with_resilience(
                     "event": "coherence_collapse_halt",
                     "phi_risk": snap.phi_risk,
                     "E": snap.E,
+                    "V_raw": getattr(snap, "V_raw", -1.0),
+                    "V_report": getattr(snap, "V_report", -1.0),
                     "regime": "FAILURE"
                 })
             raise SystemHalt()
