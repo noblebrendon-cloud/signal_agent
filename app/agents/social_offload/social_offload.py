@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent.parent))
 from jinja2 import Environment, FileSystemLoader
 import yaml
 
-from app.governor import enforce as governor_enforce
+from app.governor import enforce as governor_enforce, governor_review
 from app.utils.reprojection import reproject_checkpoint, extract_artifact_state
 from app.utils.exceptions import ConstraintViolation
 from app.utils.io_contract import atomic_write_text, append_jsonl_atomic
@@ -25,6 +25,8 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_OUTPUT_ROOT = REPO_ROOT / "data" / "social_offload" / "outputs"
 DEFAULT_LOG_PATH = REPO_ROOT / "data" / "social_offload" / "logs" / "social_offload_runs.jsonl"
 TEMPLATE_VERSION = "1.0.0"
+GOVERNOR_SCOPE = "social_offload.run"
+GOVERNOR_BOOTSTRAP_SCOPES = ["capture.*", "governor.*", GOVERNOR_SCOPE]
 
 def sha256_hash(data: str) -> str:
     return hashlib.sha256(data.encode("utf-8")).hexdigest()
@@ -50,7 +52,25 @@ def _build_ids(artifact_path: Path, content: str | None, pack_version: str, temp
 
 
 def _append_run_log(log_path: Path, log_entry: dict[str, Any]) -> None:
+    log_path.parent.mkdir(parents=True, exist_ok=True)
     append_jsonl_atomic(jsonl_path=log_path, record=log_entry)
+
+
+def _enforce_social_offload_governor() -> dict[str, Any]:
+    decision = governor_enforce(scope=GOVERNOR_SCOPE)
+    if decision.get("decision") != "BLOCK":
+        return decision
+
+    if decision.get("reason") != "state_missing_or_invalid":
+        return decision
+
+    try:
+        governor_review(init=True, authorized_scopes=GOVERNOR_BOOTSTRAP_SCOPES)
+    except Exception as exc:
+        logger.error("Activation Governor bootstrap failed: %s", exc)
+        return decision
+
+    return governor_enforce(scope=GOVERNOR_SCOPE)
 
 
 def render_linkedin_output(state, template_dir: Path) -> str:
@@ -73,8 +93,13 @@ def run_social_offload(
     out_dir = out_dir.resolve()
     log_path = log_path.resolve()
 
+    pack_version = _load_pack_version(pack_path)
+    template_version = TEMPLATE_VERSION
+    run_id = uuid.uuid4().hex
+    artifact_id, render_id = _build_ids(artifact_path, content=None, pack_version=pack_version, template_version=template_version)
+
     if enforce_governor:
-        decision = governor_enforce(scope="social_offload.run")
+        decision = _enforce_social_offload_governor()
         if decision.get("decision") == "BLOCK":
             logger.error(
                 "Activation Governor blocked social_offload.run reason=%s lock_id=%s drift_status=%s",
@@ -85,12 +110,19 @@ def run_social_offload(
             hint = decision.get("remediation_hint")
             if hint:
                 logger.error("Remediation: %s", hint)
+            write_fault_report(
+                log_path=log_path,
+                artifact_path=artifact_path,
+                artifact_id=artifact_id,
+                channel=channel,
+                pack_version=pack_version,
+                template_version=template_version,
+                render_id=render_id,
+                run_id=run_id,
+                dry_run=dry_run,
+                fault_details=[f"governor_blocked:{decision.get('reason', 'unknown')}"],
+            )
             return 2
-
-    pack_version = _load_pack_version(pack_path)
-    template_version = TEMPLATE_VERSION
-    run_id = uuid.uuid4().hex
-    artifact_id, render_id = _build_ids(artifact_path, content=None, pack_version=pack_version, template_version=template_version)
 
     logger.info(f"Starting {channel} social offload for artifact {artifact_path} (Run ID: {run_id})")
 

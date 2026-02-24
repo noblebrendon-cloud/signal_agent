@@ -59,7 +59,7 @@ def _run_social_offload(artifact_path: Path, out_dir: Path, log_jsonl_path: Path
     ]
     return subprocess.run(
         cmd,
-        cwd=str(REPO_ROOT),
+        cwd=str(out_dir.parent),
         text=True,
         capture_output=True,
         check=False,
