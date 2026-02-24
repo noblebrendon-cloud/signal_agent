@@ -1,0 +1,31 @@
+LAVIATHON SYSTEM PROPRIETARY LICENSE
+
+Copyright (c) 2026 Brendon R. Coleman. 
+All Rights Reserved.
+
+1. PERMITTED USE
+This software and associated documentation (the "Software") is proprietary. 
+Use of this Software is strictly limited to authorized environments explicitly
+managed or approved by Brendon R. Coleman.
+
+2. RESTRICTIONS
+You may not:
+a. Copy, modify, or distribute the Software codebase without written consent.
+b. Reverse engineer, decompile, or disassemble the Software to extract 
+   protected expression or operational schemas.
+c. Remove or alter any copyright notices or proprietary markings.
+
+3. DISCLAIMER OF WARRANTY
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+4. EXCLUSIONS
+This license covers original human-authored expression (code, text, and structure).
+It expressly excludes raw input data processed by the system, overarching 
+mathematical algorithms (e.g., standard bounded hysteresis transitions), and 
+third-party open-source components, which retain their respective licenses.

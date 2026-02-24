@@ -28,3 +28,11 @@ Thumbs.db
 *.tmp
 
 data/capture/*.ndjson
+
+# --- Hermetic ignores (auto-added) ---
+.pytest_cache/
+**/__pycache__/
+
+# Dynamic runtime bundles/logs (do not commit)
+constraints/spines/misc/incoming/bundle_*
+
