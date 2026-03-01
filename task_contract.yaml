@@ -1,0 +1,15 @@
+objective: "Describe the production task being executed."
+constraints:
+  - "No network access"
+  - "Do not modify unrelated files"
+acceptance:
+  - "path_exists:data/state/preflight.json"
+  - "path_exists:data/state/postflight.json"
+required_artifacts:
+  - "data/state/preflight.json"
+  - "data/state/postflight.json"
+stop_conditions:
+  phi_threshold: 0.8
+  breaker_open: true
+  max_retries: 3
+run_mode: "one_shot"

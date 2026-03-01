@@ -1,0 +1,18 @@
+{
+    "incident_or_change_id": "",
+    "timestamp": "",
+    "hypothesis_id": "",
+    "hypothesis_text": "",
+    "scope": "",
+    "trigger": "",
+    "cause_candidate": "",
+    "mechanism": "",
+    "evidence_for": [],
+    "evidence_against": [],
+    "tests_run": [],
+    "counterfactual": "",
+    "confidence": 0.0,
+    "status": "open",
+    "owner": "",
+    "version": "1.0"
+}

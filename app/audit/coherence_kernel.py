@@ -91,6 +91,7 @@ class KernelSnapshot:
     regime: Regime
     V_raw: float = 0.0
     V_report: float = 0.0
+    version: str = "0.4.0"
 
 
 class CoherenceKernel:
@@ -311,6 +312,7 @@ def persist_panic_log(snap: KernelSnapshot, request_id: Optional[str] = None, ev
             "regime": snap.regime.value,
             "request_id": request_id,
             "events_summary": events_summary or {},
+            "version": snap.version,
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(snap.ts))
         }
         

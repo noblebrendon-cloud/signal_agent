@@ -1,0 +1,13 @@
+[
+  {
+    "run_id": "732c4e5a2a5600b4",
+    "created_utc": "2026-02-28T07:37:30Z",
+    "fingerprint_id": "dab4a2fbc3a1075f",
+    "origin_service": "SVC_03",
+    "confidence": 0.977619,
+    "action_category": "investigate",
+    "final_outcome_kind": "",
+    "inputs_digest": "sha256:66864f428b0706cd7c01f2715623229710a2adf1ea3df9bcecd50f7c35cf5d45",
+    "verification_status": "incident_digest_mismatch"
+  }
+]

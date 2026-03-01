@@ -1,7 +1,7 @@
 # Signal Agent / Laviathon — Legal Freeze Evidence (v0.1)
 
 Legal Freeze Tag: v0.1-legal-freeze
-Legal Freeze Commit: 40486fc39463fdf9d6d85900a6f5eb22e05d3647
+Legal Freeze Commit: 40486fc39463fdf9d6d85900a6f5eb2e05d36470
 
 ## What this folder contains
 - Copyright registration packet (MASTER + WORK_*.md)

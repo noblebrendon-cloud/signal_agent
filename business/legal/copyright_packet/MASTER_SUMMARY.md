@@ -1,7 +1,7 @@
 # MASTER COPYRIGHT REGISTRATION SUMMARY
 
 Legal Freeze Tag: v0.1-legal-freeze
-Legal Freeze Commit: 40486fc39463fdf9d6d85900a6f5eb22e05d3647
+Legal Freeze Commit: 40486fc39463fdf9d6d85900a6f5eb2e05d36470
 
 **Project Name:** Laviathon System (Public/Internal: Signal Agent)
 **Author:** Brendon R. Coleman

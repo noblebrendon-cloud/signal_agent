@@ -1,0 +1,9 @@
+OIL DIAGNOSTIC EXPORT SUMMARY
+========================================
+total_exported:      1
+verified:            0
+avg_confidence:      97.76%
+date_from:           2026-02-28T07:37:30Z
+date_to:             2026-02-28T07:37:30Z
+most_common_origin:  SVC_03
+most_common_action:  investigate

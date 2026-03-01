@@ -1,0 +1,7 @@
+﻿{"$schema":"http://json-schema.org/draft-07/schema#","title":"ThreadState","type":"object",
+ "required":["thread_id"],
+ "properties":{"thread_id":{"type":"string"},
+  "working_node_score":{"type":"number"},"shipping_evidence_score":{"type":"number"},
+  "drift_score":{"type":"number"},"leverage_score":{"type":"number"},
+  "artifact_probability":{"type":"number"},"coordination_cost":{"type":"number"},
+  "convergence_rate":{"type":"number"},"disagreement_productivity":{"type":"number"}}}

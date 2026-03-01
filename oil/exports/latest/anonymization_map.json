@@ -1,0 +1,5 @@
+{
+  "auth": "SVC_01",
+  "checkout": "SVC_02",
+  "payment": "SVC_03"
+}

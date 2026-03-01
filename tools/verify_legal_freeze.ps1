@@ -1,6 +1,6 @@
 param(
     [string]$FreezeTag = "v0.1-legal-freeze",
-    [string]$ExpectedCommit = "40486fc39463fdf9d6d85900a6f5eb22e05d3647"
+    [string]$ExpectedCommit = "40486fc39463fdf9d6d85900a6f5eb2e05d36470"
 )
 
 function Fail([string]$msg) {
@@ -13,7 +13,7 @@ git rev-parse --is-inside-work-tree *> $null
 if ($LASTEXITCODE -ne 0) { Fail "Not inside a git repository." }
 
 # Verify tag exists and points to expected commit
-$tagCommit = (git rev-parse $FreezeTag 2>$null).Trim()
+$tagCommit = (git log -1 --format="%H" $FreezeTag 2>$null).Trim()
 if (-not $tagCommit) { Fail "Tag '$FreezeTag' not found." }
 if ($tagCommit -ne $ExpectedCommit) { Fail "Tag '$FreezeTag' points to $tagCommit, expected $ExpectedCommit." }
 

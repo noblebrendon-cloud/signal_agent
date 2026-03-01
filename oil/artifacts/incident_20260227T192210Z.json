@@ -1,0 +1,37 @@
+{
+  "incident_summary": "Incident detected in 'checkout'. Top suspected origin: 'payment' (confidence 0.95).",
+  "primary_technical_impact": "checkout / revenue_per_minute: delta -420.00 [metric]",
+  "business_effect_estimate": "Impact domain: 'revenue' (affected: 'checkout'). Suspected origin domain: 'transactions' (origin: 'payment').",
+  "top_ranked_cause": "'payment' — 1 hop(s) from 'checkout', 3.0 min before reference timestamp.",
+  "confidence_score": 0.947619,
+  "recommended_human_action": "Investigate recent changes to 'payment'. Check deployment logs and rollback options if applicable.",
+  "evidence": [
+    {
+      "event_id": "evt-001",
+      "service": "checkout",
+      "metric_name": "revenue_per_minute",
+      "metric_kind": "business_kpi",
+      "delta": -420.0,
+      "event_type": "metric",
+      "reason": "highest delta magnitude in batch"
+    },
+    {
+      "event_id": "evt-003",
+      "service": "payment",
+      "metric_name": "p99_latency_ms",
+      "metric_kind": "latency",
+      "delta": 310.0,
+      "event_type": "latency",
+      "reason": "metric_kind='latency' with significant delta"
+    },
+    {
+      "event_id": "evt-005",
+      "service": "auth",
+      "metric_name": "cpu_utilization",
+      "metric_kind": "saturation",
+      "delta": 0.35,
+      "event_type": "metric",
+      "reason": "metric_kind='saturation' with significant delta"
+    }
+  ]
+}

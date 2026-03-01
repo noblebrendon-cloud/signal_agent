@@ -1,7 +1,7 @@
 # WORK 1: Signal Agent Core System Software
 
 Legal Freeze Tag: v0.1-legal-freeze
-Legal Freeze Commit: 40486fc39463fdf9d6d85900a6f5eb22e05d3647
+Legal Freeze Commit: 40486fc39463fdf9d6d85900a6f5eb2e05d36470
 
 **1) Title of Work:** Signal Agent Core System Software
 **2) Nature of Work:** Software (Computer Program / Literary Work)

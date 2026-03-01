@@ -1,0 +1,33 @@
+{
+    "checkout": {
+        "upstream": [],
+        "downstream": [
+            "payment",
+            "inventory"
+        ],
+        "business_function": "revenue"
+    },
+    "payment": {
+        "upstream": [
+            "checkout"
+        ],
+        "downstream": [
+            "auth"
+        ],
+        "business_function": "transactions"
+    },
+    "auth": {
+        "upstream": [
+            "payment"
+        ],
+        "downstream": [],
+        "business_function": "access"
+    },
+    "inventory": {
+        "upstream": [
+            "checkout"
+        ],
+        "downstream": [],
+        "business_function": "fulfillment"
+    }
+}

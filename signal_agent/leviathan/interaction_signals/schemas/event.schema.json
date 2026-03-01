@@ -1,0 +1,5 @@
+﻿{"$schema":"http://json-schema.org/draft-07/schema#","title":"Event","type":"object",
+ "required":["event_id","actor_id","thread_id","timestamp","text"],
+ "properties":{"event_id":{"type":"string"},"actor_id":{"type":"string"},
+  "thread_id":{"type":"string"},"timestamp":{"type":"string","format":"date-time"},
+  "text":{"type":"string"},"meta":{"type":"object"}}}
