@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
 
 from app.utils.resilience import CircuitBreaker, call_with_resilience
+from app.utils.breaker_store import SqliteBreakerStore
 from app.utils.reprojection import reproject_checkpoint, ConstraintPack
 from app.utils.exceptions import ConstraintViolation
 from app.audit.coherence_kernel import CoherenceKernel, Regime
@@ -27,6 +28,7 @@ class AgentConfig:
     max_delay_s: float = 4.0
     multiplier: float = 2.0
     analytics_log: Path = Path("data/state/provider_events.jsonl")
+    breaker_db_path: Path = Path("data/state/breakers.sqlite")
 
 
 class JsonlLogger:
@@ -36,7 +38,7 @@ class JsonlLogger:
 
     def track(self, event: Dict[str, Any]) -> None:
         if "timestamp" not in event:
-            event["timestamp"] = datetime.utcnow().isoformat()
+            event["timestamp"] = datetime.now(timezone.utc).isoformat()
         with self.path.open("a", encoding="utf-8") as f:
             f.write(json.dumps(event) + "\n")
 
@@ -46,6 +48,9 @@ class SignalAgent:
         self.config = config or AgentConfig()
         # Per-model circuit breakers, keyed by provider:model
         self.breakers = {m: CircuitBreaker() for m in self.config.models}
+        self.breaker_store = SqliteBreakerStore(self.config.breaker_db_path)
+        for model_key, breaker in self.breakers.items():
+            self.breaker_store.load_state_into_breaker(model_key, breaker)
         self.logger = JsonlLogger(self.config.analytics_log)
         
         # Wiring providers (simulating configuration or dependency injection)
@@ -88,7 +93,7 @@ class SignalAgent:
 
     def generate(self, prompt: str, constraint_pack_path: Optional[str] = None, request_id: Optional[str] = None) -> str:
         # 1. Entropy Sealing: Use or generate deterministic request_id
-        rid = request_id or datetime.utcnow().strftime("req_%Y%m%d_%H%M%S_%f")
+        rid = request_id or datetime.now(timezone.utc).strftime("req_%Y%m%d_%H%M%S_%f")
         track_evt = {"event": "AGENT_GENERATE_START", "prompt_chars": len(prompt), "request_id": rid}
         self.logger.track(track_evt)
         
@@ -123,6 +128,7 @@ class SignalAgent:
             max_delay_s=self.config.max_delay_s,
             multiplier=self.config.multiplier,
             breakers=self.breakers,
+            breaker_store=self.breaker_store,
             log=self.logger.track,
             kernel=self.kernel,
         )
@@ -130,7 +136,7 @@ class SignalAgent:
         # Re-Project (Constraint Check)
         if constraint_pack_path:
             # Generate a context ID for logging if one isn't available
-            ctx_id = f"gen_{datetime.utcnow().strftime('%Y%m%d_%H%M%S_%f')}"
+            ctx_id = f"gen_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S_%f')}"
             
             # 1. Delta Check (Simulate rollback by raising on FAIL)
             # This raises ConstraintViolation on FAIL
@@ -179,6 +185,14 @@ def main() -> None:
         return
 
     cmd = sys.argv[1]
+
+    if cmd in ("--version", "-v"):
+        try:
+            from app import __version__
+            print(__version__)
+        except ImportError:
+            print("0.4.0")
+        sys.exit(0)
 
     if cmd == "governor.status":
         from app.governor import governor_status
@@ -231,6 +245,81 @@ def main() -> None:
             ttl_minutes=args.ttl_min,
         )
         print(json.dumps(result, indent=2))
+        sys.exit(0)
+
+    if cmd == "audit.preflight":
+        from app.audit.runtime_audit import run_preflight
+
+        parser = argparse.ArgumentParser(prog="audit.preflight")
+        parser.add_argument("--repo-root", default=".")
+        parser.add_argument("--contract", default="task_contract.yaml")
+        parser.add_argument("--output", default="data/state/preflight.json")
+        parser.add_argument("--codex-home", default=str(Path.home() / ".codex"))
+        args = parser.parse_args(sys.argv[2:])
+
+        result = run_preflight(
+            repo_root=Path(args.repo_root),
+            contract_path=Path(args.contract),
+            output_path=Path(args.output),
+            codex_home=Path(args.codex_home),
+        )
+        print(json.dumps(result, indent=2, sort_keys=True))
+        sys.exit(0)
+
+    if cmd == "audit.postflight":
+        from app.audit.runtime_audit import run_postflight
+
+        parser = argparse.ArgumentParser(prog="audit.postflight")
+        parser.add_argument("--repo-root", default=".")
+        parser.add_argument("--contract", default="task_contract.yaml")
+        parser.add_argument("--preflight", default="data/state/preflight.json")
+        parser.add_argument("--postflight", default="data/state/postflight.json")
+        parser.add_argument("--contract-eval", default="data/state/contract_eval.json")
+        parser.add_argument("--codex-home", default=str(Path.home() / ".codex"))
+        args = parser.parse_args(sys.argv[2:])
+
+        postflight, contract_eval = run_postflight(
+            repo_root=Path(args.repo_root),
+            contract_path=Path(args.contract),
+            preflight_path=Path(args.preflight),
+            postflight_path=Path(args.postflight),
+            contract_eval_path=Path(args.contract_eval),
+            codex_home=Path(args.codex_home),
+        )
+        print(
+            json.dumps(
+                {"postflight": postflight, "contract_eval": contract_eval},
+                indent=2,
+                sort_keys=True,
+            )
+        )
+        sys.exit(0)
+
+    if cmd == "daemon.run":
+        from app.daemon.clock import run_loop
+        parser = argparse.ArgumentParser(prog="daemon.run")
+        parser.add_argument("--repo-root", default=".")
+        parser.add_argument("--contract", default="task_contract.yaml")
+        parser.add_argument("--state-dir", default="data/state")
+        parser.add_argument("--codex-home", default=str(Path.home() / ".codex"))
+        parser.add_argument("--mode", default="interval")  # interval
+        parser.add_argument("--interval-s", type=int, default=60)
+        parser.add_argument("--max-ticks", type=int, default=0)  # 0 = forever
+        parser.add_argument("--lock-path", default="data/state/clock.lock")
+        parser.add_argument("--lock-stale-after-s", type=int, default=3600)
+        args = parser.parse_args(sys.argv[2:])
+        run_loop(
+            repo_root=Path(args.repo_root),
+            contract_path=Path(args.contract),
+            state_dir=Path(args.state_dir),
+            codex_home=Path(args.codex_home),
+            lock_path=Path(args.lock_path),
+            mode=str(args.mode),
+            interval_s=int(args.interval_s),
+            max_ticks=int(args.max_ticks),
+            lock_stale_after_s=int(args.lock_stale_after_s),
+        )
+        print(json.dumps({"status": "ok"}, indent=2, sort_keys=True))
         sys.exit(0)
 
     if _requires_governor_check(cmd):

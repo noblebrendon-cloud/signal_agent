@@ -1,4 +1,4 @@
-﻿# Python
+# Python
 __pycache__/
 *.pyc
 
@@ -35,4 +35,10 @@ data/capture/*.ndjson
 
 # Dynamic runtime bundles/logs (do not commit)
 constraints/spines/misc/incoming/bundle_*
+data/state/clock.lock
 
+# pytest / local test artifacts
+test_results.txt
+test_results_utf8.txt
+*.log
+*.out
