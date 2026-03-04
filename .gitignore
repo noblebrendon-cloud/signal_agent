@@ -1,11 +1,11 @@
-# Python
+﻿# Python
 __pycache__/
 *.pyc
-
-# Virtual env
+.pytest_cache/
 .venv/
+venv/
 
-# Local runs / outputs (keep repo data/ tracked; ignore only generated subpaths)
+# Runtime outputs
 logs/
 data/logs/
 data/state/
@@ -13,32 +13,31 @@ data/social_offload/
 data/capture/raw/
 data/capture/archive/
 data/capture/promoted/
-data/docs/processed/.tmp_*
-
+data/capture/*.ndjson
+data/capture/instability_state.json
+data/capture/routing_log.jsonl
+repro_out/
+repro_out/run*.jsonl
+repro_out/summary.json
 out*.txt
-winget_*.txt
+test_out.txt
+*.log
+*.out
 
-# OS
-.DS_Store
-Thumbs.db
-
-# Repo-local pytest / temp isolation
+# Temporary files
 .tmp/
 .tmp/**
 *.tmp
+.tmp_offload_out/
 
-data/capture/*.ndjson
-
-# --- Hermetic ignores (auto-added) ---
-.pytest_cache/
-**/__pycache__/
-
-# Dynamic runtime bundles/logs (do not commit)
+# Incoming/generated artifacts
 constraints/spines/misc/incoming/bundle_*
 data/state/clock.lock
+data/**/incoming/
+constraints/**/incoming/
+SYSTEM_STATE/
 
-# pytest / local test artifacts
-test_results.txt
-test_results_utf8.txt
-*.log
-*.out
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
