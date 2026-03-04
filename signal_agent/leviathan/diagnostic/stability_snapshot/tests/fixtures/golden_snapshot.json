@@ -1,0 +1,97 @@
+{
+  "score": 10,
+  "max_score": 15,
+  "interpretation": "Emerging causal drift or process documentation gaps",
+  "answers": [
+    {
+      "id": "q1",
+      "answer": true,
+      "expected": true,
+      "points": 1
+    },
+    {
+      "id": "q2",
+      "answer": false,
+      "expected": false,
+      "points": 1
+    },
+    {
+      "id": "q3",
+      "answer": true,
+      "expected": true,
+      "points": 1
+    },
+    {
+      "id": "q4",
+      "answer": false,
+      "expected": true,
+      "points": 0
+    },
+    {
+      "id": "q5",
+      "answer": true,
+      "expected": true,
+      "points": 1
+    },
+    {
+      "id": "q6",
+      "answer": false,
+      "expected": false,
+      "points": 1
+    },
+    {
+      "id": "q7",
+      "answer": true,
+      "expected": true,
+      "points": 1
+    },
+    {
+      "id": "q8",
+      "answer": false,
+      "expected": true,
+      "points": 0
+    },
+    {
+      "id": "q9",
+      "answer": true,
+      "expected": true,
+      "points": 1
+    },
+    {
+      "id": "q10",
+      "answer": false,
+      "expected": true,
+      "points": 0
+    },
+    {
+      "id": "q11",
+      "answer": true,
+      "expected": true,
+      "points": 1
+    },
+    {
+      "id": "q12",
+      "answer": false,
+      "expected": true,
+      "points": 0
+    },
+    {
+      "id": "q13",
+      "answer": true,
+      "expected": true,
+      "points": 1
+    },
+    {
+      "id": "q14",
+      "answer": false,
+      "expected": true,
+      "points": 0
+    },
+    {
+      "id": "q15",
+      "answer": true,
+      "expected": true,
+      "points": 1
+    }
+  ]
+}
