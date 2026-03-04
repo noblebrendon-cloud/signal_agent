@@ -41,3 +41,8 @@ SYSTEM_STATE/
 .DS_Store
 Thumbs.db
 .vscode/
+
+# local scratch
+winget_info.txt
+winget_out.txt
+
