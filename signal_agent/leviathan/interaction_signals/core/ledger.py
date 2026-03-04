@@ -10,7 +10,7 @@ from .types import (
 
 if TYPE_CHECKING:
     from .policy import PolicyAction
-    from .types import PhasePoint, PhaseVelocity, DyadState, ControllerParams, TuningMetrics
+    from .types import PhasePoint, PhaseVelocity, DyadState
 
 _DEFAULT = Path(__file__).resolve().parent.parent / "ledger.jsonl"
 

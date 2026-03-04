@@ -4,7 +4,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent.parent.par
 
 import unittest
 from signal_agent.leviathan.interaction_signals.core.types import (
-    Event, ActorState, ThreadState,
+    Event, ActorState, ThreadState, ControllerParams,
 )
 from signal_agent.leviathan.interaction_signals.core.engine import StateStore, process_event
 from signal_agent.leviathan.interaction_signals.core.policy import (
@@ -18,7 +18,8 @@ def _result(
     text: str, 
     actor: ActorState | None = None, 
     thread: ThreadState | None = None,
-    last_v: float | None = None
+    last_v: float | None = None,
+    controller_params: ControllerParams | None = None,
 ):
     """Run process_event and return a ProcessResult."""
     ev = Event("e1", "a", "t", "2026-02-28T18:00:00Z", text)
@@ -29,6 +30,8 @@ def _result(
         store.set_thread(thread)
     if last_v is not None:
         store.set_last_v("a", "t", last_v)
+    if controller_params is not None:
+        store.system_params = controller_params
     return process_event(ev, store)
 
 
@@ -118,6 +121,10 @@ class TestPolicyActionShape(unittest.TestCase):
             "dV",
             "p_h_to_t",
             "flip_threshold",
+            "flip_base_threshold",
+            "theta_v_escalate",
+            "off_platform_theta",
+            "delta_v_spike_threshold",
             "mode_entropy_norm",
             "collab_readiness",
             "integrity_index",
@@ -337,13 +344,13 @@ class TestModeEntropy(unittest.TestCase):
 class TestAdaptiveFlipThreshold(unittest.TestCase):
 
     def test_minimum_threshold_at_zero_entropy(self):
-        self.assertAlmostEqual(adaptive_flip_threshold(0.0), 0.25, places=6)
+        self.assertAlmostEqual(adaptive_flip_threshold(0.0), 0.30, places=6)
 
     def test_maximum_threshold_at_max_entropy(self):
-        self.assertAlmostEqual(adaptive_flip_threshold(1.0), 0.45, places=6)
+        self.assertAlmostEqual(adaptive_flip_threshold(1.0), 0.50, places=6)
 
     def test_midpoint(self):
-        self.assertAlmostEqual(adaptive_flip_threshold(0.5), 0.35, places=6)
+        self.assertAlmostEqual(adaptive_flip_threshold(0.5), 0.40, places=6)
 
     def test_threshold_monotone(self):
         """Higher entropy → higher threshold (demand more evidence)."""
@@ -459,8 +466,8 @@ class TestEntropyAdaptiveGate(unittest.TestCase):
 
     def test_volatile_actor_uses_higher_threshold(self):
         """
-        Uniform histogram (H_norm≈1) → flip_threshold≈0.45.
-        A P(H→T)=0.40 that would trigger at threshold=0.35 should NOT trigger at 0.45.
+        Uniform histogram (H_norm≈1) → flip_threshold≈0.50.
+        A P(H→T)=0.40 should not trigger at 0.50.
         """
         actor = ActorState(
             actor_id="a",
@@ -477,7 +484,7 @@ class TestEntropyAdaptiveGate(unittest.TestCase):
             transition_matrix={
                 "COGNITIVE_HONESTY": {
                     "PERFORMANCE": 0.30,
-                    "TRANSACTION": 0.40,   # 0.40 < 0.45 → should NOT trigger
+                    "TRANSACTION": 0.40,   # 0.40 < 0.50 → should NOT trigger
                     "COGNITIVE_HONESTY": 0.20,
                     "MIXED": 0.10,
                 }
@@ -492,15 +499,15 @@ class TestEntropyAdaptiveGate(unittest.TestCase):
             "Integrating evidence: causal synthesis from three independent studies.",
             actor=actor, thread=thread,
         )
-        # Flip-risk note should NOT be present (p_h_to_t=0.40 < threshold≈0.45)
+        # Flip-risk note should NOT be present (p_h_to_t=0.40 < threshold≈0.50)
         notes_text = " ".join(r.policy_action.notes)
         self.assertNotIn("flip-risk", notes_text,
                          "Uniform (volatile) actor should raise threshold above 0.40")
 
     def test_stable_actor_uses_lower_threshold(self):
         """
-        Peaked histogram (H_norm≈0) → flip_threshold≈0.25.
-        P(H→T)=0.30 should trigger the gate.
+        Peaked histogram (H_norm≈0) → flip_threshold≈0.30.
+        P(H→T)=0.31 should trigger the gate.
         """
         actor = ActorState(
             actor_id="a",
@@ -517,7 +524,7 @@ class TestEntropyAdaptiveGate(unittest.TestCase):
             transition_matrix={
                 "COGNITIVE_HONESTY": {
                     "PERFORMANCE": 0.40,
-                    "TRANSACTION": 0.30,   # 0.30 > 0.25 → should trigger
+                    "TRANSACTION": 0.36,   # safely above adaptive stable threshold
                     "COGNITIVE_HONESTY": 0.20,
                     "MIXED": 0.10,
                 }

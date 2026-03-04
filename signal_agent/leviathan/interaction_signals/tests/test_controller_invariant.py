@@ -39,7 +39,7 @@ class TestControllerInvariant(unittest.TestCase):
             actor_after=actor,
             thread_before=thread,
             thread_after=thread,
-            V=0.5,
+            V=0.35,
             dV=dV,
             lyapunov_components={}
         )

@@ -136,6 +136,29 @@ def _print_human(payload: dict[str, Any]) -> None:
         print(f"{section}: {_stable_json(payload.get(section))}")
 
 
+def run_pipeline(
+    *,
+    text: str,
+    actor_id: str = "cli_user",
+    thread_id: str = "cli_thread",
+    store: StateStore | None = None,
+    seq: int = 1,
+    ledger_path: Path | None = None,
+) -> dict[str, Any]:
+    """
+    Run the Leviathan interaction pipeline and return a deterministic payload.
+
+    This is intentionally side-effect free except for optional ledger appends.
+    """
+    if not text or not text.strip():
+        raise ValueError("empty text input")
+
+    active_store = store or StateStore()
+    event = _build_event(text=text, actor_id=actor_id, thread_id=thread_id, seq=seq)
+    result = process_event(event, active_store, ledger_path=ledger_path)
+    return _round_floats(_serialize_result(event, result))
+
+
 def _run_once(
     *,
     text: str,
@@ -146,13 +169,18 @@ def _run_once(
     as_json: bool,
     ledger_path: Path | None,
 ) -> int:
-    if not text or not text.strip():
-        print("error: empty text input", file=sys.stderr)
+    try:
+        payload = run_pipeline(
+            text=text,
+            actor_id=actor_id,
+            thread_id=thread_id,
+            store=store,
+            seq=seq,
+            ledger_path=ledger_path,
+        )
+    except ValueError as exc:
+        print(f"error: {exc}", file=sys.stderr)
         return 2
-
-    event = _build_event(text=text, actor_id=actor_id, thread_id=thread_id, seq=seq)
-    result = process_event(event, store, ledger_path=ledger_path)
-    payload = _serialize_result(event, result)
 
     if as_json:
         print(_stable_json(payload))
@@ -220,4 +248,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
