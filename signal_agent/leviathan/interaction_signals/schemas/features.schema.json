@@ -1,0 +1,4 @@
+﻿{"$schema":"http://json-schema.org/draft-07/schema#","title":"Features","type":"object",
+ "required":["event_id","f"],
+ "properties":{"event_id":{"type":"string"},
+  "f":{"type":"object","description":"Feature dict: float or bool values, all floats in [0,1]"}}}

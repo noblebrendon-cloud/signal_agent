@@ -1,0 +1,127 @@
+from __future__ import annotations
+
+import json
+import subprocess
+import sys
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+import pytest
+
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+SOCIAL_OFFLOAD_SCRIPT = REPO_ROOT / "app" / "agents" / "social_offload" / "social_offload.py"
+PACK_PATH = REPO_ROOT / "constraints" / "packs" / "domain" / "linkedin_pack.yaml"
+PASSING_FIXTURE = REPO_ROOT / "tests" / "fixtures" / "social_offload" / "core_artifact.md"
+FAILING_FIXTURE = REPO_ROOT / "tests" / "fixtures" / "social_offload" / "core_artifact_failing.md"
+
+
+@dataclass(frozen=True)
+class OutputSnapshot:
+    files: tuple[str, ...]
+    newest_mtime: float | None
+
+
+def _snapshot_outputs(linkedin_dir: Path) -> OutputSnapshot:
+    txt_files = sorted((p for p in linkedin_dir.rglob("*.txt") if p.is_file()), key=lambda p: p.as_posix())
+    newest_mtime = max((p.stat().st_mtime for p in txt_files), default=None)
+    return OutputSnapshot(files=tuple(str(p.resolve()) for p in txt_files), newest_mtime=newest_mtime)
+
+
+def _read_jsonl_entries(jsonl_path: Path) -> list[dict[str, Any]]:
+    if not jsonl_path.exists():
+        return []
+
+    entries: list[dict[str, Any]] = []
+    for raw in jsonl_path.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line:
+            continue
+        entries.append(json.loads(line))
+    return entries
+
+
+def _run_social_offload(artifact_path: Path, out_dir: Path, log_jsonl_path: Path) -> subprocess.CompletedProcess[str]:
+    cmd = [
+        sys.executable,
+        str(SOCIAL_OFFLOAD_SCRIPT),
+        "--artifact",
+        str(artifact_path.resolve()),
+        "--channel",
+        "linkedin",
+        "--out",
+        str(out_dir),
+        "--log",
+        str(log_jsonl_path),
+        "--pack",
+        str(PACK_PATH.resolve()),
+    ]
+    return subprocess.run(
+        cmd,
+        cwd=str(out_dir.parent),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+
+@pytest.fixture(autouse=True)
+def _require_inputs_exist() -> None:
+    for path in (SOCIAL_OFFLOAD_SCRIPT, PACK_PATH, PASSING_FIXTURE, FAILING_FIXTURE):
+        assert path.exists(), f"Required path missing: {path}"
+
+
+def test_social_offload_passing_appends_ok_log_and_advances_output(tmp_path: Path) -> None:
+    out_dir = tmp_path / "outputs"
+    logs_jsonl = tmp_path / "logs" / "social_offload_runs.jsonl"
+    linkedin_dir = out_dir / "linkedin"
+
+    before_entries = _read_jsonl_entries(logs_jsonl)
+    before_snapshot = _snapshot_outputs(linkedin_dir)
+
+    result = _run_social_offload(PASSING_FIXTURE, out_dir, logs_jsonl)
+    assert result.returncode == 0, f"stdout={result.stdout}\nstderr={result.stderr}"
+
+    after_entries = _read_jsonl_entries(logs_jsonl)
+    assert len(after_entries) == len(before_entries) + 1
+
+    last = after_entries[-1]
+    assert last.get("artifact_path") == str(PASSING_FIXTURE.resolve())
+    assert last.get("status") == "ok"
+    assert last.get("artifact_id")
+    assert last.get("render_id")
+    assert isinstance(last.get("timestamp"), (int, float))
+
+    after_snapshot = _snapshot_outputs(linkedin_dir)
+    assert len(after_snapshot.files) > len(before_snapshot.files)
+    assert after_snapshot.newest_mtime is not None
+    if before_snapshot.newest_mtime is not None:
+        assert after_snapshot.newest_mtime > before_snapshot.newest_mtime
+
+
+def test_social_offload_failing_appends_fault_log_and_creates_no_output(tmp_path: Path) -> None:
+    out_dir = tmp_path / "outputs"
+    logs_jsonl = tmp_path / "logs" / "social_offload_runs.jsonl"
+    linkedin_dir = out_dir / "linkedin"
+
+    before_entries = _read_jsonl_entries(logs_jsonl)
+    before_snapshot = _snapshot_outputs(linkedin_dir)
+
+    result = _run_social_offload(FAILING_FIXTURE, out_dir, logs_jsonl)
+    assert result.returncode != 0, f"expected non-zero returncode, stdout={result.stdout}\nstderr={result.stderr}"
+
+    after_entries = _read_jsonl_entries(logs_jsonl)
+    assert len(after_entries) == len(before_entries) + 1
+
+    last = after_entries[-1]
+    assert last.get("artifact_path") == str(FAILING_FIXTURE.resolve())
+    assert last.get("status") == "fault"
+    assert last.get("artifact_id")
+    assert last.get("render_id")
+    assert last.get("fault_codes")
+    assert isinstance(last.get("timestamp"), (int, float))
+
+    after_snapshot = _snapshot_outputs(linkedin_dir)
+    assert after_snapshot.files == before_snapshot.files
+    assert after_snapshot.newest_mtime == before_snapshot.newest_mtime

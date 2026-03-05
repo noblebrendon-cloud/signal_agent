@@ -1,0 +1,12 @@
+{
+  "total_exported": 1,
+  "date_range": {
+    "from": "2026-02-28T07:37:30Z",
+    "to": "2026-02-28T07:37:30Z"
+  },
+  "avg_confidence": 0.9776,
+  "verified_count": 0,
+  "most_common_origin": "SVC_03",
+  "most_common_action": "investigate",
+  "outcome_counts": {}
+}

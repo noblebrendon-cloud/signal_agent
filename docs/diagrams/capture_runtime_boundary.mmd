@@ -1,0 +1,68 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#1a1a2e', 'primaryTextColor': '#eee', 'primaryBorderColor': '#555', 'lineColor': '#888', 'secondaryColor': '#16213e', 'tertiaryColor': '#0f3460' }}}%%
+graph TB
+    subgraph VOLATILE["Volatile Boundary (Non-Canonical)"]
+        style VOLATILE fill:#1a1a2e33,stroke:#e94560,stroke-width:2px,stroke-dasharray: 5 5
+        CLI["Capture CLI<br/>brn capture.add"]
+        RAW["data/capture/raw/"]
+        STAGE1["expired_stage1/"]
+        STAGE2["expired_stage2/"]
+        PROMO["Promote Engine<br/>best-effort"]
+        PROMOTED["data/capture/promoted/"]
+        ARCHIVE["data/capture/archive/"]
+        ROUTER["Spine Router<br/>hash audit"]
+        SPINES["constraints/spines/<name>/incoming/"]
+        INSTABILITY["Instability Detector<br/>spike severity"]
+        FLAGS["instability_flags"]
+
+        CLI -->|writes raw fragment| RAW
+        RAW -->|stage1 (14d)| STAGE1
+        STAGE1 -->|stage 2 (30d)| STAGE2
+        RAW -->|sorted docs| PROMO
+        PROMO -->|bundle .md| PROMOTED
+        PROMO -->|archive raw| ARCHIVE
+        PROMOTED -->|route bundle| ROUTER
+        ROUTER -->|copy bundle| SPINES
+        RAW -->|scan spikes| INSTABILITY
+        INSTABILITY -.->|flag| FLAGS
+        PROMO -.->|include| FLAGS
+    end
+
+    subgraph STRESS["Falsification Harness (Testing)"]
+        style STRESS fill:#ffffff11,stroke:#e94560,stroke-width:2px,stroke-dasharray: 2 2
+        HARNESS["stress.py"]
+        HARNESS -.->|synthetic load| RAW
+        HARNESS -.->|verify| PROMO
+        HARNESS -.->|verify| INSTABILITY
+    end
+
+    subgraph CANONICAL["Canonical Boundary"]
+        style CANONICAL fill:#0f346033,stroke:#00d2ff,stroke-width:2px
+        CURATE["Curate Pipeline<br/>curate.py"]
+        REGISTRY["artifact_registry.jsonl"]
+        PROCESSED["data/processed/ + data/archive/"]
+        CURATE -->|register + hash| REGISTRY
+        CURATE -->|move + rename| PROCESSED
+    end
+
+    subgraph DOWNSTREAM["Downstream Pipeline"]
+        style DOWNSTREAM fill:#16213e33,stroke:#7b68ee,stroke-width:2px
+        POLICY["Constraint / Policy Layer"]
+        KERNEL["Stability Kernel<br/>coherence_kernel.py"]
+        SIGNAL["Signal Compose<br/>compose.py"]
+        RELEASE["Release Tag / CI"]
+        POLICY -->|enforce| KERNEL
+        KERNEL -->|score| SIGNAL
+        SIGNAL -->|stage| RELEASE
+    end
+
+    PROMOTED -->|curate handoff| CURATE
+    SPINES -.->|input| POLICY
+    PROCESSED -->|input| POLICY
+    REGISTRY -->|provenance| DOWNSTREAM
+
+    classDef volatile fill:#e9456022,stroke:#e94560,color:#fff
+    classDef canonical fill:#00d2ff22,stroke:#00d2ff,color:#fff
+    classDef downstream fill:#7b68ee22,stroke:#7b68ee,color:#fff
+    class CLI,RAW,PROMO,PROMOTED,ARCHIVE,EXPIRED,ROUTER,SPINES,INSTABILITY,FLAGS volatile
+    class CURATE,REGISTRY,PROCESSED canonical
+    class POLICY,KERNEL,SIGNAL,RELEASE downstream

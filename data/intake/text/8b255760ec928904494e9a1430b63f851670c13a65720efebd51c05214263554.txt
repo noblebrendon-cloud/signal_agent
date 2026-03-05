@@ -1,0 +1,384 @@
+# Programmable Policy Layer v1.2: Signal Agent
+
+## 1. POLICY_LAYER_ID
+`SIGNAL_AGENT_CORE_POLICY_V1_2`
+
+## 2. FORMAL DEFINITIONS
+1.  **Entropy Sealing**: The cryptographic practice of deriving all application-level randomness (UUIDs, Jitter, Nonces) from a single initial `trace_id`, guaranteeing that `Replay(trace_id)` yields identical internal state sequences.
+2.  **Sliding Window Circuit Breaker**: A failure detection model that tracks the success rate over the last `N` events, rather than a consecutive count, allowing for error tolerance in high-throughput streams.
+3.  **OS-Level Watchdog**: A separate process or thread that sleeps for `max_wall_time` and sends a `SIGTERM` to the worker process if it has not exited, strictly enforcing time bounds against "while true" loops.
+4.  **Atomic Budget Reservation**: A transaction where resource cost is deducted *before* action execution. If deduction fails (insufficient funds), the action is `BLOCKED` immediately.
+
+## 3. STATE_MACHINE
+
+### States
+- `IDLE`: Initial state.
+- `RESERVING`: Acquiring budget lock.
+- `EXECUTING`: Workload active; Watchdog active.
+- `AWAITING_RETRY`: Sleeping (Deterministic Duration).
+- `CIRCUIT_OPEN`: Fast-fail mode.
+- `CIRCUIT_HALF_OPEN`: Probing mode (Serialized).
+- `SUSPENDED_FOR_APPROVAL`: Waiting for signature.
+- `COMPLETED`: Success (Terminal).
+- `TERMINATED`: Failure/Block (Terminal).
+
+### Transitions
+- `IDLE` -> `RESERVING` [Trigger: `start`]
+- `RESERVING` -> `EXECUTING` [Trigger: `funds_locked`]
+- `RESERVING` -> `TERMINATED` [Trigger: `insufficient_funds`]
+- `EXECUTING` -> `COMPLETED` [Trigger: `success`]
+- `EXECUTING` -> `AWAITING_RETRY` [Trigger: `recoverable_error`]
+- `EXECUTING` -> `CIRCUIT_OPEN` [Trigger: `window_threshold_exceeded`]
+- `EXECUTING` -> `TERMINATED` [Trigger: `watchdog_kill` OR `fatal_error`]
+- `AWAITING_RETRY` -> `EXECUTING` [Trigger: `sleep_done`]
+- `CIRCUIT_OPEN` -> `CIRCUIT_HALF_OPEN` [Trigger: `reset_timer_done`]
+- `CIRCUIT_HALF_OPEN` -> `EXECUTING` [Trigger: `probe_lock_acquired`]
+- `CIRCUIT_HALF_OPEN` -> `CIRCUIT_OPEN` [Trigger: `probe_failed`]
+- `CIRCUIT_HALF_OPEN` -> `IDLE` [Trigger: `window_healthy`]
+
+## 4. POLICY_SCHEMA_V1_2
+
+```yaml
+policy_id: "SIGNAL_AGENT_POLICY_V1_2"
+schema_version: "1.2.0"
+
+global_constraints:
+  max_wall_time_ms: 30000
+  max_recursion_depth: 3
+  fail_closed_on_internal_error: true
+  
+resource_budgets:
+  max_cost_usd_per_session: 0.50
+  max_tokens_total: 10000
+  max_file_ops_total: 50
+
+retry_policy:
+  max_attempts: 3
+  base_delay_ms: 500
+  max_delay_ms: 5000
+  backoff: "exponential_deterministic"
+
+circuit_breaker:
+  mode: "sliding_window"
+  window_size: 10
+  failure_threshold_pct: 50
+  open_state_duration_ms: 60000
+  half_open_probe_limit: 3
+
+entropy_sealing:
+  enabled: true
+  prng_algorithm: "PCG64"
+  uuid_namespace: "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+
+emergency_controls:
+  allow_override: true
+  require_signature: true
+  max_override_duration_min: 60
+
+risk_tier_matrix:
+  low: { approval: false, domains: ["*"] }
+  med: { approval: false, domains: ["internal-services"] }
+  high: { approval: true, domains: ["internal-services"] }
+
+tool_policy:
+  fs_read: { risk: "low", allowed: true }
+  fs_write: { risk: "high", allowed: true, paths: ["/safe_zone/*"] }
+  http: { risk: "med", allowed: true }
+  llm: { risk: "med", allowed: true }
+
+watchdog:
+  enabled: true
+  signal: "SIGTERM"
+  grace_ms: 500
+
+terminal_states:
+  - COMPLETED
+  - TERMINATED
+```
+
+## 5. ATOMIC_BUDGET_MODEL
+
+```python
+class AtomicBudget:
+    def __init__(self, limit):
+        self._limit = limit
+        self._used = 0
+        self._lock = Lock()
+    
+    def reserve(self, trace_id, request_idx, cost):
+        # Deterministic ID for idempotency
+        res_id = sha256(f"{trace_id}:{request_idx}:{cost}")
+        
+        with self._lock:
+            if self._used + cost > self._limit:
+                raise BudgetOverrun(f"Need {cost}, Have {self._limit - self._used}")
+            
+            self._used += cost
+            return res_id
+
+    def reconcile(self, res_id, actual_cost, reserved_cost):
+        with self._lock:
+            # Refund difference (reserved - actual)
+            delta = reserved_cost - actual_cost
+            self._used -= delta
+            
+            if self._used < 0: 
+                # Should be impossible logic error
+                self.force_terminate("Negative Budget State")
+```
+
+## 6. DETERMINISTIC_RETRY_SYSTEM
+
+```python
+def calculate_delay(trace_id, dependency, attempt, base, limit):
+    # 1. Seed from trace + context
+    seed_input = f"{trace_id}:{dependency}:{attempt}"
+    seed_val = int(sha256(seed_input).hexdigest(), 16)
+    
+    # 2. Local deterministic PRNG
+    rng = Random(seed_val)
+    
+    # 3. Jitter (0-500ms)
+    jitter = rng.randint(0, 500)
+    
+    # 4. Exponential Backoff
+    backoff = min(limit, base * (2 ** attempt))
+    
+    return backoff + jitter
+```
+
+## 7. ENTROPY_SEALING_MODEL
+
+To ensure replayability, `SystemRandom` and `time.time()` are FORBIDDEN in the policy layer.
+
+-   **Time**: Injected `Context.current_time_ms`. In replay, this comes from the log.
+-   **UUIDs**: `uuid5(NAMESPACE_DNS, f"{trace_id}:{step_id}")`.
+-   **Randomness**: `PCG64(seed=sha256(trace_id))`.
+
+## 8. CIRCUIT_BREAKER_MODEL (SLIDING WINDOW)
+
+```python
+class WindowBreaker:
+    def __init__(self, size=10, fail_threshold=0.5):
+        self.history = Deque(maxlen=size) # [1, 0, 1, 1...] 1=Success, 0=Fail
+        self.state = CLOSED
+    
+    def record(self, success):
+        self.history.append(1 if success else 0)
+        self._check_health()
+        
+    def _check_health(self):
+        if len(self.history) < self.history.maxlen:
+            return # Warmup
+
+        fail_rate = self.history.count(0) / len(self.history)
+        
+        if self.state == CLOSED and fail_rate >= self.fail_threshold:
+            self._transition(OPEN)
+        elif self.state == HALF_OPEN and success:
+            self._transition(CLOSED)
+            self.history.clear() # Reset window on recovery
+```
+
+## 9. WATCHDOG_MODEL
+
+```python
+def watchdog_entry(pid, timeout_ms):
+    time.sleep(timeout_ms / 1000.0)
+    try:
+        # Check if process still alive
+        os.kill(pid, 0)
+        # It is active past deadline -> TERMINATE
+        os.kill(pid, signal.SIGTERM)
+    except OSError:
+        pass # Process already exited, good.
+```
+
+## 10. EMERGENCY_OVERRIDE_MODEL
+
+-   **Structure**: `{ signer: "admin", sig: "rsa_sig", valid_until: 1718000000, scope: "fs_write:*" }`
+-   **Validation**:
+    1.  `Crypto.verify(sig, pub_key)`
+    2.  `now < valid_until`
+    3.  `request.scope matches override.scope`
+-   **Constraint**: Overrides can ignore `RiskTier` and `ToolPolicy`, but CANNOT increase `ResourceBudgets`.
+
+## 11. ENFORCEMENT_HOOKS (PSEUDOCODE)
+
+```python
+def pre_call(ctx, tool, params):
+    # 1. Depth Check
+    if ctx.depth > MAX_DEPTH: return BLOCK("RECURSION")
+    
+    # 2. Watchdog
+    if Watchdog.triggered: return BLOCK("TIMEOUT")
+    
+    # 3. Emergency
+    if ctx.has_override:
+        if validate_override(ctx.override): return ALLOW("OVERRIDE")
+        
+    # 4. Breaker
+    state = Breaker[tool].state
+    if state == OPEN: return BLOCK("CIRCUIT_OPEN")
+    if state == HALF_OPEN and not Breaker[tool].acquire_lock():
+        return BLOCK("CIRCUIT_THROTTLED")
+        
+    # 5. Budget
+    try:
+        res_id = Budget.reserve(ctx.trace, tool.cost)
+        ctx.res_id = res_id
+    except Overrun:
+        return TERMINATE("BUDGET")
+        
+    return ALLOW("OK")
+
+def on_error(ctx, err):
+    Breaker[ctx.tool].record(success=False)
+    
+    if Breaker[ctx.tool].state == OPEN:
+        return TERMINATE("BREAKER_TRIPPED")
+        
+    if err.is_retryable and ctx.attempts < MAX_RETRIES:
+        delay = deterministic_delay(ctx.trace, ctx.tool, ctx.attempts)
+        return RETRY(delay)
+        
+    return TERMINATE("ERROR")
+```
+
+## 12. TELEMETRY_SCHEMA
+
+```json
+[
+  { "id": "POLICY_CHECK_PASS", "fields": ["trace_id", "tool", "reason"] },
+  { "id": "POLICY_CHECK_BLOCK", "fields": ["trace_id", "rule_id", "violation"] },
+  { "id": "STATE_TRANSITION", "fields": ["prev", "curr", "trigger"] },
+  { "id": "BUDGET_RESERVED", "fields": ["res_id", "amount"] },
+  { "id": "BUDGET_RECONCILED", "fields": ["res_id", "actual", "refund"] },
+  { "id": "BUDGET_OVERRUN", "fields": ["limit", "attempted"] },
+  { "id": "BREAKER_TRIP", "fields": ["key", "window_stats"] },
+  { "id": "BREAKER_HALF_OPEN", "fields": ["key", "probe_id"] },
+  { "id": "BREAKER_RECOVER", "fields": ["key"] },
+  { "id": "WATCHDOG_TERMINATE", "fields": ["pid", "duration"] },
+  { "id": "EMERGENCY_OVERRIDE", "fields": ["signer", "scope"] },
+  { "id": "ENTROPY_SEALED", "fields": ["trace_id", "seed_hash"] },
+  { "id": "TERMINATION", "fields": ["final_state", "cause"] }
+]
+```
+
+## 13. TEST_MATRIX
+
+### Negative Tests (12)
+1.  Recursion N=4 -> Block.
+2.  Budget overflow -> Terminate.
+3.  Unauthorized High Risk -> Block.
+4.  Circuit Open -> Block.
+5.  Half-Open Probe #4 -> Block.
+6.  Unknown Tool -> Block.
+7.  Invalid Override Sig -> Block.
+8.  Expired Override -> Block.
+9.  Reserved Path Write -> Block.
+10. Wall-Clock Exceeded -> Terminate.
+11. Internal Exception -> Terminate (Fail-Closed).
+12. Policy Config malformed -> Terminate.
+
+### Positive Tests (12)
+1.  Read Allowed File -> Allow.
+2.  High Risk + Signature -> Allow.
+3.  Retry #2 -> Allow.
+4.  Budget within limit -> Allow.
+5.  Override valid -> Allow.
+6.  Circuit Closed -> Allow.
+7.  Half-Open Probe #1 -> Allow.
+8.  Breaker Recovery -> Allow.
+9.  Low Risk Tool -> Allow.
+10. Budget Refund -> Allow.
+11. Max Tokens - 1 -> Allow.
+12. Valid Schema -> Allow.
+
+### Replay Determinism (8)
+1.  Retry delay ms matches exact.
+2.  Jitter matches exact.
+3.  UUIDs generated match exact.
+4.  Reservation IDs match exact.
+5.  State transition delta matches.
+6.  Rule evaluation order matches.
+7.  Audit log checksum matches.
+8.  PRNG sequence matches 1000 draws.
+
+### Circuit Breaker (8)
+1.  10 Success -> Closed.
+2.  5 Fail / 10 -> Open.
+3.  Wait Timer -> Half-Open.
+4.  Probe 1 Fail -> Open.
+5.  Probe 1 Success -> Closed (Sliding Reset).
+6.  Key A Fail != Key B Fail (Isolation).
+7.  Window slides (Old fails drop off).
+8.  Threshold boundary check (49% vs 51%).
+
+## 14. DETERMINISTIC_REPLAY_HARNESS
+
+```python
+class ReplayHarness:
+    def verify(self, log_path):
+        log = load_log(log_path)
+        trace_id = log.trace_id
+        
+        # 1. Initialize Engine with Seed
+        engine = PolicyEngine(seed=sha256(trace_id))
+        
+        # 2. Mock Time
+        mock_clock = DeterministicClock(start=log.start_time)
+        
+        # 3. Re-run Inputs
+        for event in log.inputs:
+            mock_clock.set(event.timestamp)
+            output = engine.evaluate(event.payload)
+            
+            # 4. Strict Comparison used assertions
+            expected = log.find_output(event.id)
+            assert output == expected, f"Drift at {event.id}"
+```
+
+## 15. POLICY_INTEGRITY_VERIFICATION_SCRIPT
+
+```bash
+#!/bin/bash
+# verify_policy.sh
+
+# 1. Check Hard Caps
+grep -q "max_wall_time_ms: 30000" policy.yaml || exit 1
+
+# 2. Check Whitelist Behavior
+grep -q "allowed: true" policy.yaml | grep -v "risk" && exit 1 # Risk must be defined
+
+# 3. Check Override Safety
+# specific logic to ensure 'max_budget' cannot be overridden
+grep -A 5 "emergency_controls" policy.yaml | grep -q "cannot widen global caps" || echo "Manual Verify Required"
+
+# 4. Check Determinism
+grep -q "entropy_sealing" policy.yaml || exit 1
+
+echo "Policy Integrity Verified."
+```
+
+## 16. GOVERNANCE_WHITEPAPER_APPENDIX
+
+### Problem Statement
+Standard heuristic agents are non-deterministic, making safety audits impossible. We solve this by enforcing "Sealed Entropy" where execution is a pure function of `(Code, Config, TraceID)`.
+
+### Formal Constraint Wrapper Model
+The policy layer wraps the execution kernel. 
+`SafeExecute(Action) = Policy(Action) ? Execute(Action) : Error`.
+This guarantees no side-effect occurs without a recorded decision.
+
+### Deterministic Replay Proof Outline
+Since `Time`, `Random`, and `UUIDs` are derived properties of `TraceID`, and the Policy Logic is stateless (except for deterministic memory), any execution path can be perfectly reconstructed.
+
+### Atomic Budget Transaction Model
+We prioritize safety over availability. By reserving budget *before* the network call, we accept a slight over-estimation risk (refunded later) to guarantee zero over-spending.
+
+### Sliding Window Failure Isolation Theory
+Consecutive counters are too sensitive for AI agents (which have natural stochastic failures). A sliding window (e.g., 50% fail rate in last 10 calls) is robust against transient noise while catching systemic outages.
+
+### Entropy Sealing Rationale
+Allowing `SystemRandom` leaks external entropy into the decision tree, breaking the replay chain. We intentionally cripple the PRNG to be seeded, ensuring auditability.

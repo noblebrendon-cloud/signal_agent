@@ -1,0 +1,109 @@
+import json
+import logging
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logger = logging.getLogger(__name__)
+
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+SOCIAL_OFFLOAD_SCRIPT = REPO_ROOT / "app" / "agents" / "social_offload" / "social_offload.py"
+PACK_PATH = REPO_ROOT / "constraints" / "packs" / "domain" / "linkedin_pack.yaml"
+PASSING_FIXTURE = REPO_ROOT / "tests" / "fixtures" / "social_offload" / "core_artifact.md"
+FAILING_FIXTURE = REPO_ROOT / "tests" / "fixtures" / "social_offload" / "core_artifact_failing.md"
+
+OUTPUTS_DIR = REPO_ROOT / "data" / "social_offload" / "outputs" / "linkedin"
+LOGS_JSONL = REPO_ROOT / "data" / "social_offload" / "logs" / "social_offload_runs.jsonl"
+
+
+def get_newest_mtime(dir_path: Path) -> float:
+    if not dir_path.exists():
+        return 0.0
+    txt_files = list(dir_path.rglob("*.txt"))
+    if not txt_files:
+        return 0.0
+    return max(p.stat().st_mtime for p in txt_files)
+
+
+def get_latest_log_timestamp(log_path: Path) -> float:
+    if not log_path.exists():
+        return 0.0
+    last_ts = 0.0
+    try:
+        with open(log_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    data = json.loads(line)
+                    if "timestamp" in data:
+                        last_ts = max(last_ts, float(data["timestamp"]))
+                except json.JSONDecodeError:
+                    pass
+    except Exception as e:
+        logger.error(f"Failed reading logs: {e}")
+    return last_ts
+
+
+def run_offload(fixture_path: Path) -> subprocess.CompletedProcess[str]:
+    cmd = [
+        sys.executable,
+        str(SOCIAL_OFFLOAD_SCRIPT),
+        "--artifact", str(fixture_path),
+        "--channel", "linkedin",
+        "--pack", str(PACK_PATH),
+    ]
+    logger.info(f"Running: {' '.join(cmd)}")
+    return subprocess.run(cmd, cwd=str(REPO_ROOT), text=True, capture_output=True, check=False)
+
+
+def verify_contract():
+    logger.info("=== Starting Mechanical Verification of Social Offload Log Contract ===")
+
+    # 1. PASSING CASE
+    logger.info("--- Testing PASSING case ---")
+    before_mtime = get_newest_mtime(OUTPUTS_DIR)
+    before_log_ts = get_latest_log_timestamp(LOGS_JSONL)
+    
+    # Sleep slightly to ensure measurable time delta
+    time.sleep(0.1)
+
+    res_pass = run_offload(PASSING_FIXTURE)
+    if res_pass.returncode != 0:
+        logger.error(f"Passing fixture failed unexpectedly:\n{res_pass.stderr}")
+        sys.exit(1)
+
+    after_mtime = get_newest_mtime(OUTPUTS_DIR)
+    after_log_ts = get_latest_log_timestamp(LOGS_JSONL)
+
+    assert after_log_ts > before_log_ts, "New log entry with later timestamp MUST be appended on pass."
+    assert after_mtime > before_mtime, "New output file with later mtime MUST be written on pass."
+    logger.info("PASSING case OK: Delta confirmed for log timestamp and output mtime.")
+
+    # 2. FAILING CASE
+    logger.info("--- Testing FAILING case ---")
+    before_mtime = get_newest_mtime(OUTPUTS_DIR)
+    before_log_ts = get_latest_log_timestamp(LOGS_JSONL)
+
+    time.sleep(0.1)
+
+    res_fail = run_offload(FAILING_FIXTURE)
+    if res_fail.returncode == 0:
+        logger.error("Failing fixture passed unexpectedly.")
+        sys.exit(1)
+
+    after_mtime = get_newest_mtime(OUTPUTS_DIR)
+    after_log_ts = get_latest_log_timestamp(LOGS_JSONL)
+
+    assert after_log_ts > before_log_ts, "New log entry with later timestamp MUST be appended on fault."
+    assert after_mtime == before_mtime, "NO new output file should be written on fault."
+    logger.info("FAILING case OK: Log timestamp advanced, but output mtime remained unchanged.")
+
+    logger.info("=== Verification Complete. Contract is solid. ===")
+
+
+if __name__ == "__main__":
+    verify_contract()

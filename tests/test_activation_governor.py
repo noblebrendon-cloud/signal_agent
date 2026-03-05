@@ -1,0 +1,162 @@
+from __future__ import annotations
+
+import json
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
+from app.governor.activation_governor import append_event, compute_fingerprint, enforce
+
+
+def _iso_in(hours: int = 0, minutes: int = 0) -> str:
+    ts = datetime.now(timezone.utc) + timedelta(hours=hours, minutes=minutes)
+    return ts.isoformat().replace("+00:00", "Z")
+
+
+def _write_state(state: dict) -> Path:
+    state_path = Path("data/state/activation_governor.json")
+    state_path.parent.mkdir(parents=True, exist_ok=True)
+    state_path.write_text(json.dumps(state, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return state_path
+
+
+def _read_events() -> list[dict]:
+    event_path = Path("data/state/activation_events.jsonl")
+    if not event_path.exists():
+        return []
+    lines = [line for line in event_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    return [json.loads(line) for line in lines]
+
+
+def test_lock_blocks_unauthorized_activation(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    watch_root = Path("watch")
+    watch_root.mkdir(parents=True, exist_ok=True)
+    (watch_root / "file.txt").write_text("stable", encoding="utf-8")
+    baseline = compute_fingerprint([str(watch_root)])
+
+    _write_state(
+        {
+            "enforcement_enabled": True,
+            "lock": {
+                "id": "lock_a",
+                "active": True,
+                "authorized_scopes": ["capture.*"],
+                "expires_at_utc": _iso_in(hours=1),
+            },
+            "baseline": {
+                "watch_roots": [str(watch_root)],
+                "fingerprint": baseline,
+            },
+            "override": None,
+        }
+    )
+
+    decision = enforce("curate.run")
+
+    assert decision["decision"] == "BLOCK"
+    assert decision["reason"] == "scope_not_authorized_during_lock"
+    assert decision["lock_id"] == "lock_a"
+
+
+def test_override_allows_once_and_logs(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    watch_root = Path("watch")
+    watch_root.mkdir(parents=True, exist_ok=True)
+    (watch_root / "file.txt").write_text("stable", encoding="utf-8")
+    baseline = compute_fingerprint([str(watch_root)])
+
+    _write_state(
+        {
+            "enforcement_enabled": True,
+            "lock": {
+                "id": "lock_b",
+                "active": True,
+                "authorized_scopes": ["capture.*"],
+                "expires_at_utc": _iso_in(hours=1),
+            },
+            "baseline": {
+                "watch_roots": [str(watch_root)],
+                "fingerprint": baseline,
+            },
+            "override": {
+                "token_id": "ovr_test",
+                "scope": "curate.*",
+                "reason": "manual_approved",
+                "expires_at_utc": _iso_in(minutes=30),
+                "used": False,
+            },
+        }
+    )
+
+    first = enforce("curate.run")
+    second = enforce("curate.run")
+
+    assert first["decision"] == "ALLOW"
+    assert first["reason"] == "override_used"
+    assert first["override_token_id"] == "ovr_test"
+    assert second["decision"] == "BLOCK"
+    assert second["reason"] == "scope_not_authorized_during_lock"
+
+    saved_state = json.loads(Path("data/state/activation_governor.json").read_text(encoding="utf-8"))
+    assert saved_state["override"]["used"] is True
+
+    events = _read_events()
+    override_events = [e for e in events if e.get("event") == "OVERRIDE_USED"]
+    assert len(override_events) == 1
+    assert override_events[0]["override_token_id"] == "ovr_test"
+
+
+def test_event_log_append_only_stable(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    event_log = Path("data/state/activation_events.jsonl")
+
+    append_event(event_log, {"event": "A", "n": 1})
+    first_snapshot = event_log.read_text(encoding="utf-8")
+
+    append_event(event_log, {"event": "B", "n": 2})
+    second_snapshot = event_log.read_text(encoding="utf-8")
+
+    assert second_snapshot.startswith(first_snapshot)
+    lines = [line for line in second_snapshot.splitlines() if line.strip()]
+    assert len(lines) == 2
+    assert json.loads(lines[0])["event"] == "A"
+    assert json.loads(lines[1])["event"] == "B"
+
+
+def test_drift_detection_triggers_and_blocks(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    watch_root = Path("watch")
+    watch_root.mkdir(parents=True, exist_ok=True)
+    watched_file = watch_root / "fingerprint_target.txt"
+    watched_file.write_text("before", encoding="utf-8")
+
+    baseline = compute_fingerprint([str(watch_root)])
+    _write_state(
+        {
+            "enforcement_enabled": True,
+            "lock": {
+                "id": "lock_c",
+                "active": True,
+                "authorized_scopes": ["capture.*"],
+                "expires_at_utc": _iso_in(hours=1),
+            },
+            "baseline": {
+                "watch_roots": [str(watch_root)],
+                "fingerprint": baseline,
+            },
+            "override": None,
+        }
+    )
+
+    watched_file.write_text("after", encoding="utf-8")
+    decision = enforce("capture.promote")
+
+    assert decision["decision"] == "BLOCK"
+    assert decision["reason"] == "drift_detected"
+    assert decision["drift_status"] == "detected"
+
+    events = _read_events()
+    drift_events = [e for e in events if e.get("event") == "DRIFT_DETECTED"]
+    assert len(drift_events) >= 1
+    assert drift_events[-1]["expected_fingerprint"] == baseline
+    assert drift_events[-1]["observed_fingerprint"] != baseline

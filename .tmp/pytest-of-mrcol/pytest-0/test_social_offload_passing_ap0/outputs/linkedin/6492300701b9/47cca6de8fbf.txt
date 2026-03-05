@@ -1,0 +1,11 @@
+Systems fail because complexity outpaces observability.
+
+When building deterministic systems, the biggest risk isn't network failure. It's coherence drift.
+We addressed this by formalizing robust constraint packs and decoupling generation from projection.
+This ensures output stays rigidly bounded without needing a human in the loop.
+
+• Determinism requires hashes, not just IDs.
+• Constraints must fail-closed.
+• Observability is non-negotiable.
+
+Keep your systems rigid so your agents can be flexible.

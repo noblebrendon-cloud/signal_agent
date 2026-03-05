@@ -1,0 +1,8 @@
+default_provider: stub
+providers:
+  stub:
+    max_attempts: 1
+    breaker:
+      failure_threshold: 1
+      reset_seconds: 30
+    deterministic_stub: true

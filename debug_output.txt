@@ -1,0 +1,13 @@
+test_2_stage_decay (tests.test_capture_falsification.TestCaptureFalsification.test_2_stage_decay)
+Test raw -> stage1 -> stage2 transitions. ... ok
+test_bridge_doc_isolation (tests.test_capture_falsification.TestCaptureFalsification.test_bridge_doc_isolation)
+Test that a bridge document is isolated into its own cluster. ... ok
+test_instability_severity (tests.test_capture_falsification.TestCaptureFalsification.test_instability_severity)
+Test severity classification. ... ok
+test_router_hash (tests.test_capture_falsification.TestCaptureFalsification.test_router_hash)
+Verify router computes and logs hash. ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.858s
+
+OK

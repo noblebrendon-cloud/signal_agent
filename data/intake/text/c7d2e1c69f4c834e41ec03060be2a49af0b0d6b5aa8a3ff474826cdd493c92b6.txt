@@ -1,0 +1,9 @@
+---
+timestamp_utc: 2026-02-16T12:45:15Z
+input_type: stress_test
+source: synthetic_social_field_theory
+---
+node community network network propagation propagation viral influence viral cluster cluster cluster meme node graph propagation graph edge propagation propagation propagation graph propagation community meme edge node network community graph influence community network cluster network influence community network node graph community community influence edge cluster cluster edge propagation network graph propagation influence meme community node cluster viral cluster viral influence viral propagation influence
+
+https://meme-tracker.net/article/3414
+https://network-science.org/article/2502

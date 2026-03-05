@@ -1,0 +1,10 @@
+{
+    "checkout": "revenue",
+    "payment": "transactions",
+    "auth": "access",
+    "inventory": "fulfillment",
+    "shipping": "delivery",
+    "notifications": "communications",
+    "search": "discovery",
+    "recommendations": "engagement"
+}

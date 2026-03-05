@@ -1,0 +1,27 @@
+============================================================
+OIL -- INCIDENT EXPLANATION
+============================================================
+SUMMARY:          Incident detected in 'SVC_02'. Top suspected origin: 'SVC_03:deploy:sha-SVC_03-v3.1.2' (confidence 0.98).
+TECHNICAL IMPACT: SVC_02 / revenue_per_minute: delta -420.00 [metric]
+BUSINESS EFFECT:
+  Impact domain: 'revenue' (affected: 'SVC_02'). Suspected origin domain: 'transactions' (origin: 'SVC_03').
+TOP CAUSE:        'SVC_03 deploy sha-SVC_03-v3.1.2' -- 1 hop(s) from 'SVC_02', 3.0 min before reference timestamp.
+CONFIDENCE:       0.98
+ACTION:           Investigate recent changes to 'SVC_03 deploy sha-SVC_03-v3.1.2'. Check deployment logs and rollback options if applicable.
+EVIDENCE:
+  [evt-001] SVC_02/revenue_per_minute delta=-420.00 -- highest delta magnitude in batch
+  [evt-003] SVC_03/p99_latency_ms delta=+310.00 -- metric_kind='latency' with significant delta
+  [evt-005] SVC_01/cpu_utilization delta=+0.35 -- metric_kind='saturation' with significant delta
+SIMILAR INCIDENTS:
+  occurrence_count:            5
+  most_common_origin:          SVC_03
+  most_common_action_category: rollback
+  recent_examples:
+    [2026-02-28T06:10:54Z] origin=SVC_03 confidence=0.98 score=7 action=investigate
+    [2026-02-28T04:36:22Z] origin=SVC_03 confidence=0.98 score=7 action=rollback
+    [2026-02-28T04:26:25Z] origin=SVC_03 confidence=0.98 score=7
+  outcome_summary:
+    total_with_outcomes: 1
+    resolved_rate:       100.00%
+    counts: resolved=1
+============================================================

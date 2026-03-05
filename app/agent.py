@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
 
 from app.utils.resilience import CircuitBreaker, call_with_resilience
+from app.utils.breaker_store import SqliteBreakerStore
 from app.utils.reprojection import reproject_checkpoint, ConstraintPack
 from app.utils.exceptions import ConstraintViolation
 from app.audit.coherence_kernel import CoherenceKernel, Regime
@@ -27,6 +28,7 @@ class AgentConfig:
     max_delay_s: float = 4.0
     multiplier: float = 2.0
     analytics_log: Path = Path("data/state/provider_events.jsonl")
+    breaker_db_path: Path = Path("data/state/breakers.sqlite")
 
 
 class JsonlLogger:
@@ -36,7 +38,7 @@ class JsonlLogger:
 
     def track(self, event: Dict[str, Any]) -> None:
         if "timestamp" not in event:
-            event["timestamp"] = datetime.utcnow().isoformat()
+            event["timestamp"] = datetime.now(timezone.utc).isoformat()
         with self.path.open("a", encoding="utf-8") as f:
             f.write(json.dumps(event) + "\n")
 
@@ -46,6 +48,9 @@ class SignalAgent:
         self.config = config or AgentConfig()
         # Per-model circuit breakers, keyed by provider:model
         self.breakers = {m: CircuitBreaker() for m in self.config.models}
+        self.breaker_store = SqliteBreakerStore(self.config.breaker_db_path)
+        for model_key, breaker in self.breakers.items():
+            self.breaker_store.load_state_into_breaker(model_key, breaker)
         self.logger = JsonlLogger(self.config.analytics_log)
         
         # Wiring providers (simulating configuration or dependency injection)
@@ -88,7 +93,7 @@ class SignalAgent:
 
     def generate(self, prompt: str, constraint_pack_path: Optional[str] = None, request_id: Optional[str] = None) -> str:
         # 1. Entropy Sealing: Use or generate deterministic request_id
-        rid = request_id or datetime.utcnow().strftime("req_%Y%m%d_%H%M%S_%f")
+        rid = request_id or datetime.now(timezone.utc).strftime("req_%Y%m%d_%H%M%S_%f")
         track_evt = {"event": "AGENT_GENERATE_START", "prompt_chars": len(prompt), "request_id": rid}
         self.logger.track(track_evt)
         
@@ -123,6 +128,7 @@ class SignalAgent:
             max_delay_s=self.config.max_delay_s,
             multiplier=self.config.multiplier,
             breakers=self.breakers,
+            breaker_store=self.breaker_store,
             log=self.logger.track,
             kernel=self.kernel,
         )
@@ -130,7 +136,7 @@ class SignalAgent:
         # Re-Project (Constraint Check)
         if constraint_pack_path:
             # Generate a context ID for logging if one isn't available
-            ctx_id = f"gen_{datetime.utcnow().strftime('%Y%m%d_%H%M%S_%f')}"
+            ctx_id = f"gen_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S_%f')}"
             
             # 1. Delta Check (Simulate rollback by raising on FAIL)
             # This raises ConstraintViolation on FAIL
@@ -147,27 +153,229 @@ class SignalAgent:
 
 
 def main() -> None:
-    agent = SignalAgent()
-    try:
-        print(agent.generate("hello from SignalAgent"))
-    except Exception as e:
-        print(f"Generation failed: {e}")
-
-
-    # Example CLI hooks (would be in a proper CLI wrapper)
+    import argparse
     import sys
-    if len(sys.argv) > 1:
-        cmd = sys.argv[1]
-        if cmd == "curate":
-            from app.hq.curation import brn_cmds
-            target = sys.argv[2] if len(sys.argv) > 2 else "."
-            brn_cmds.brn_curate_path(target)
-        elif cmd == "curate.backfill":
-            from app.hq.curation import brn_cmds
-            brn_cmds.brn_curate_backfill()
-        elif cmd == "meme.offload":
-            from app.cli.brn_cmds_meme import main as meme_main
-            sys.exit(meme_main(sys.argv[2:]))
+
+    def _scope_for_command(cmd: str) -> str:
+        scope_map = {
+            "curate": "curate.run",
+            "curate.backfill": "curate.run",
+            "social_offload.run": "social_offload.run",
+        }
+        return scope_map.get(cmd, cmd)
+
+    def _is_read_only_command(cmd: str) -> bool:
+        return cmd in {"capture.status"}
+
+    def _requires_governor_check(cmd: str) -> bool:
+        non_mutating = {"governor.status", "governor.review", "governor.override"}
+        return cmd not in non_mutating and not _is_read_only_command(cmd)
+
+    def _print_governor_block(scope: str, decision: dict[str, Any]) -> None:
+        reason = decision.get("reason", "blocked")
+        hint = decision.get("remediation_hint", "")
+        lock_id = decision.get("lock_id", "")
+        drift = decision.get("drift_status", "unknown")
+        print(f"ERROR: Activation Governor blocked scope '{scope}'", file=sys.stderr)
+        print(f"reason={reason} lock_id={lock_id} drift_status={drift}", file=sys.stderr)
+        if hint:
+            print(f"remediation={hint}", file=sys.stderr)
+
+    if len(sys.argv) <= 1:
+        return
+
+    cmd = sys.argv[1]
+
+    if cmd in ("--version", "-v"):
+        try:
+            from app import __version__
+            print(__version__)
+        except ImportError:
+            print("0.4.0")
+        sys.exit(0)
+
+    if cmd == "governor.status":
+        from app.governor import governor_status
+
+        status = governor_status()
+        print(json.dumps(status, indent=2))
+        sys.exit(0 if status.get("status") == "ok" else 1)
+
+    if cmd == "governor.review":
+        from app.governor import governor_review
+
+        parser = argparse.ArgumentParser(prog="governor.review")
+        parser.add_argument("--init", action="store_true")
+        parser.add_argument("--lock-hours", type=int, default=24)
+        parser.add_argument("--review-hours", type=int, default=24)
+        parser.add_argument("--allow", action="append", default=[])
+        parser.add_argument("--watch-root", action="append", default=[])
+        parser.add_argument("--primary-scope", default="capture_pipeline")
+        parser.add_argument("--selection-rule", default="manual")
+        parser.add_argument("--selection-score", type=float, default=1.0)
+        parser.add_argument("--disable-enforcement", action="store_true")
+        args = parser.parse_args(sys.argv[2:])
+
+        result = governor_review(
+            init=args.init,
+            lock_hours=args.lock_hours,
+            review_hours=args.review_hours,
+            authorized_scopes=args.allow or None,
+            watch_roots=args.watch_root or None,
+            enforcement_enabled=not args.disable_enforcement,
+            primary_scope=args.primary_scope,
+            selection_rule=args.selection_rule,
+            selection_score=args.selection_score,
+        )
+        print(json.dumps(result, indent=2))
+        sys.exit(0)
+
+    if cmd == "governor.override":
+        from app.governor import governor_override
+
+        parser = argparse.ArgumentParser(prog="governor.override")
+        parser.add_argument("--scope", required=True)
+        parser.add_argument("--reason", required=True)
+        parser.add_argument("--ttl-min", type=int, default=30)
+        args = parser.parse_args(sys.argv[2:])
+
+        result = governor_override(
+            scope=args.scope,
+            reason=args.reason,
+            ttl_minutes=args.ttl_min,
+        )
+        print(json.dumps(result, indent=2))
+        sys.exit(0)
+
+    if cmd == "audit.preflight":
+        from app.audit.runtime_audit import run_preflight
+
+        parser = argparse.ArgumentParser(prog="audit.preflight")
+        parser.add_argument("--repo-root", default=".")
+        parser.add_argument("--contract", default="task_contract.yaml")
+        parser.add_argument("--output", default="data/state/preflight.json")
+        parser.add_argument("--codex-home", default=str(Path.home() / ".codex"))
+        args = parser.parse_args(sys.argv[2:])
+
+        result = run_preflight(
+            repo_root=Path(args.repo_root),
+            contract_path=Path(args.contract),
+            output_path=Path(args.output),
+            codex_home=Path(args.codex_home),
+        )
+        print(json.dumps(result, indent=2, sort_keys=True))
+        sys.exit(0)
+
+    if cmd == "audit.postflight":
+        from app.audit.runtime_audit import run_postflight
+
+        parser = argparse.ArgumentParser(prog="audit.postflight")
+        parser.add_argument("--repo-root", default=".")
+        parser.add_argument("--contract", default="task_contract.yaml")
+        parser.add_argument("--preflight", default="data/state/preflight.json")
+        parser.add_argument("--postflight", default="data/state/postflight.json")
+        parser.add_argument("--contract-eval", default="data/state/contract_eval.json")
+        parser.add_argument("--codex-home", default=str(Path.home() / ".codex"))
+        args = parser.parse_args(sys.argv[2:])
+
+        postflight, contract_eval = run_postflight(
+            repo_root=Path(args.repo_root),
+            contract_path=Path(args.contract),
+            preflight_path=Path(args.preflight),
+            postflight_path=Path(args.postflight),
+            contract_eval_path=Path(args.contract_eval),
+            codex_home=Path(args.codex_home),
+        )
+        print(
+            json.dumps(
+                {"postflight": postflight, "contract_eval": contract_eval},
+                indent=2,
+                sort_keys=True,
+            )
+        )
+        sys.exit(0)
+
+    if cmd == "daemon.run":
+        from app.daemon.clock import run_loop
+        parser = argparse.ArgumentParser(prog="daemon.run")
+        parser.add_argument("--repo-root", default=".")
+        parser.add_argument("--contract", default="task_contract.yaml")
+        parser.add_argument("--state-dir", default="data/state")
+        parser.add_argument("--codex-home", default=str(Path.home() / ".codex"))
+        parser.add_argument("--mode", default="interval")  # interval
+        parser.add_argument("--interval-s", type=int, default=60)
+        parser.add_argument("--max-ticks", type=int, default=0)  # 0 = forever
+        parser.add_argument("--lock-path", default="data/state/clock.lock")
+        parser.add_argument("--lock-stale-after-s", type=int, default=3600)
+        args = parser.parse_args(sys.argv[2:])
+        run_loop(
+            repo_root=Path(args.repo_root),
+            contract_path=Path(args.contract),
+            state_dir=Path(args.state_dir),
+            codex_home=Path(args.codex_home),
+            lock_path=Path(args.lock_path),
+            mode=str(args.mode),
+            interval_s=int(args.interval_s),
+            max_ticks=int(args.max_ticks),
+            lock_stale_after_s=int(args.lock_stale_after_s),
+        )
+        print(json.dumps({"status": "ok"}, indent=2, sort_keys=True))
+        sys.exit(0)
+
+    if _requires_governor_check(cmd):
+        from app.governor import enforce as governor_enforce
+
+        scope = _scope_for_command(cmd)
+        decision = governor_enforce(scope=scope)
+        if decision.get("decision") == "BLOCK":
+            _print_governor_block(scope, decision)
+            sys.exit(2)
+
+    if cmd == "curate":
+        from app.hq.curation import brn_cmds
+
+        target = sys.argv[2] if len(sys.argv) > 2 else "."
+        brn_cmds.brn_curate_path(target)
+    elif cmd == "curate.backfill":
+        from app.hq.curation import brn_cmds
+
+        brn_cmds.brn_curate_backfill()
+    elif cmd == "meme.offload":
+        from app.cli.brn_cmds_meme import main as meme_main
+
+        sys.exit(meme_main(sys.argv[2:]))
+    elif cmd == "capture.add":
+        from app.hq.capture.capture import main as capture_main
+
+        sys.exit(capture_main(["add"] + sys.argv[2:]))
+    elif cmd == "capture.promote":
+        from app.hq.capture.promote import main as promote_main
+
+        sys.exit(promote_main(sys.argv[2:]))
+    elif cmd == "capture.status":
+        from app.hq.capture.capture import main as capture_main
+
+        sys.exit(capture_main(["status"]))
+    elif cmd == "capture.decay":
+        from app.hq.capture.decay import main as decay_main
+
+        sys.exit(decay_main(sys.argv[2:]))
+    elif cmd == "capture.route":
+        from app.hq.capture.router import main as route_main
+
+        sys.exit(route_main(sys.argv[2:]))
+    elif cmd == "capture.instability":
+        from app.hq.capture.instability import main as instability_main
+
+        sys.exit(instability_main(sys.argv[2:]))
+    elif cmd == "capture.stress":
+        from app.hq.capture.stress import main as stress_main
+
+        sys.exit(stress_main(sys.argv[2:]))
+    elif cmd == "social_offload.run":
+        from app.agents.social_offload.social_offload import main as social_offload_main
+
+        sys.exit(social_offload_main(sys.argv[2:]))
 
 
 if __name__ == "__main__":

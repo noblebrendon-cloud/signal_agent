@@ -1,0 +1,226 @@
+from __future__ import annotations
+
+import hashlib
+import json
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from typing import Any
+
+from app.utils.io_contract import atomic_write_text
+
+from .activation_governor import (
+    DEFAULT_EVENT_LOG_PATH,
+    DEFAULT_STATE_PATH,
+    append_event,
+    compute_fingerprint,
+    enforce,
+    load_state,
+    validate_state,
+)
+
+DEFAULT_AUTHORIZED_SCOPES = ["capture.*", "governor.*"]
+DEFAULT_WATCH_ROOTS = [
+    "app/agents",
+    "app/hq",
+    "app/cli",
+    "constraints/packs",
+    "constraints/spines",
+]
+
+
+def _utc_now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _iso(ts: datetime) -> str:
+    return ts.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def _new_lock_id(now: datetime, authorized_scopes: list[str]) -> str:
+    basis = f"{_iso(now)}|{'|'.join(sorted(authorized_scopes))}"
+    return f"lock_{hashlib.sha256(basis.encode('utf-8')).hexdigest()[:12]}"
+
+
+def _write_state(path: Path, state: dict[str, Any]) -> None:
+    payload = json.dumps(state, indent=2, sort_keys=True) + "\n"
+    atomic_write_text(path, payload)
+
+
+def governor_status(
+    state_path: Path = DEFAULT_STATE_PATH,
+    event_log: Path = DEFAULT_EVENT_LOG_PATH,
+) -> dict[str, Any]:
+    try:
+        state = load_state(state_path)
+        validate_state(state)
+    except Exception as exc:
+        return {
+            "status": "missing_or_invalid",
+            "error": str(exc),
+            "state_path": str(state_path),
+            "remediation_hint": "run governor.review --init",
+        }
+
+    watch_roots = state["baseline"]["watch_roots"]
+    observed = compute_fingerprint(watch_roots)
+    expected = state["baseline"]["fingerprint"]
+    drift_status = "detected" if observed != expected else "ok"
+    result = {
+        "status": "ok",
+        "state_path": str(state_path),
+        "event_log": str(event_log),
+        "enforcement_enabled": state["enforcement_enabled"],
+        "lock_id": state["lock"]["id"],
+        "lock_active": state["lock"]["active"],
+        "lock_expires_at_utc": state["lock"].get("expires_at_utc"),
+        "authorized_scopes": state["lock"]["authorized_scopes"],
+        "baseline_fingerprint": expected,
+        "observed_fingerprint": observed,
+        "drift_status": drift_status,
+        "override": state.get("override"),
+    }
+    return result
+
+
+def governor_review(
+    *,
+    init: bool = False,
+    state_path: Path = DEFAULT_STATE_PATH,
+    event_log: Path = DEFAULT_EVENT_LOG_PATH,
+    lock_hours: int = 24,
+    review_hours: int = 24,
+    authorized_scopes: list[str] | None = None,
+    watch_roots: list[str] | None = None,
+    enforcement_enabled: bool = True,
+    primary_scope: str = "capture_pipeline",
+    selection_rule: str = "manual",
+    selection_score: float = 1.0,
+) -> dict[str, Any]:
+    scopes = authorized_scopes or DEFAULT_AUTHORIZED_SCOPES
+    roots = watch_roots or DEFAULT_WATCH_ROOTS
+    now = _utc_now()
+    fingerprint = compute_fingerprint(roots)
+
+    state_exists = Path(state_path).exists()
+    if not init and not state_exists:
+        raise ValueError("state_missing_run_review_with_init")
+
+    if init or not state_exists:
+        lock_id = _new_lock_id(now, scopes)
+    else:
+        existing = load_state(state_path)
+        validate_state(existing)
+        lock_id = existing["lock"]["id"]
+        if authorized_scopes:
+            lock_id = _new_lock_id(now, scopes)
+
+    lock_expires = now + timedelta(hours=lock_hours)
+    review_due = now + timedelta(hours=review_hours)
+
+    state = {
+        "enforcement_enabled": bool(enforcement_enabled),
+        "lock": {
+            "id": lock_id,
+            "active": True,
+            "primary_scope": primary_scope,
+            "selection_rule": selection_rule,
+            "selection_score": float(selection_score),
+            "created_at_utc": _iso(now),
+            "expires_at_utc": _iso(lock_expires),
+            "review_due_at_utc": _iso(review_due),
+            "authorized_scopes": list(scopes),
+        },
+        "baseline": {
+            "watch_roots": list(roots),
+            "fingerprint": fingerprint,
+        },
+        "override": None,
+    }
+    validate_state(state)
+    _write_state(state_path, state)
+
+    append_event(
+        event_log,
+        {
+            "timestamp_utc": _iso(now),
+            "event": "REVIEW_INIT" if (init or not state_exists) else "REVIEW_ROLLOVER",
+            "lock_id": lock_id,
+            "authorized_scopes": scopes,
+            "watch_roots": roots,
+            "fingerprint": fingerprint,
+            "lock_expires_at_utc": _iso(lock_expires),
+            "review_due_at_utc": _iso(review_due),
+        },
+    )
+
+    return {
+        "status": "ok",
+        "event": "review_init" if (init or not state_exists) else "review_rollover",
+        "lock_id": lock_id,
+        "fingerprint": fingerprint,
+        "state_path": str(state_path),
+        "event_log": str(event_log),
+    }
+
+
+def governor_override(
+    *,
+    scope: str,
+    reason: str,
+    ttl_minutes: int = 30,
+    state_path: Path = DEFAULT_STATE_PATH,
+    event_log: Path = DEFAULT_EVENT_LOG_PATH,
+) -> dict[str, Any]:
+    state = load_state(state_path)
+    validate_state(state)
+
+    now = _utc_now()
+    token_basis = f"{scope}|{reason}|{_iso(now)}"
+    token_id = f"ovr_{hashlib.sha256(token_basis.encode('utf-8')).hexdigest()[:12]}"
+    expires = now + timedelta(minutes=ttl_minutes)
+
+    state["override"] = {
+        "token_id": token_id,
+        "scope": scope,
+        "reason": reason,
+        "expires_at_utc": _iso(expires),
+        "used": False,
+    }
+    validate_state(state)
+    _write_state(state_path, state)
+
+    append_event(
+        event_log,
+        {
+            "timestamp_utc": _iso(now),
+            "event": "OVERRIDE_ISSUED",
+            "lock_id": state["lock"]["id"],
+            "override_token_id": token_id,
+            "scope": scope,
+            "reason": reason,
+            "expires_at_utc": _iso(expires),
+        },
+    )
+
+    return {
+        "status": "ok",
+        "override_token_id": token_id,
+        "scope": scope,
+        "expires_at_utc": _iso(expires),
+        "state_path": str(state_path),
+        "event_log": str(event_log),
+    }
+
+
+__all__ = [
+    "DEFAULT_EVENT_LOG_PATH",
+    "DEFAULT_STATE_PATH",
+    "append_event",
+    "compute_fingerprint",
+    "enforce",
+    "governor_override",
+    "governor_review",
+    "governor_status",
+    "load_state",
+    "validate_state",
+]

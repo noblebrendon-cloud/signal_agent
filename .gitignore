@@ -1,2 +1,48 @@
+﻿# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+
+# Runtime outputs
+logs/
+data/logs/
+data/state/
+data/social_offload/
+data/capture/raw/
+data/capture/archive/
+data/capture/promoted/
+data/capture/*.ndjson
+data/capture/instability_state.json
+data/capture/routing_log.jsonl
+repro_out/
+repro_out/run*.jsonl
+repro_out/summary.json
+out*.txt
+test_out.txt
+*.log
+*.out
+
+# Temporary files
+.tmp/
+.tmp/**
+*.tmp
+.tmp_offload_out/
+
+# Incoming/generated artifacts
+constraints/spines/misc/incoming/bundle_*
+data/state/clock.lock
+data/**/incoming/
+constraints/**/incoming/
+SYSTEM_STATE/
+
+# OS/editor
+.DS_Store
+Thumbs.db
 .vscode/
+
+# local scratch
+winget_info.txt
+winget_out.txt
 

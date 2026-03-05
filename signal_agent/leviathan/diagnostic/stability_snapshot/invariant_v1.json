@@ -1,0 +1,101 @@
+{
+  "version": "v1",
+  "inputs": {
+    "total_questions": 15,
+    "score_definition": "sum of 15 boolean answers",
+    "score_range_inclusive": [0, 15]
+  },
+  "bands": [
+    {
+      "name": "GREEN",
+      "range_inclusive": [13, 15],
+      "meaning": "Stable; no instability-enforced blocks.",
+      "blocked_operations": [],
+      "required_actions": []
+    },
+    {
+      "name": "YELLOW",
+      "range_inclusive": [10, 12],
+      "meaning": "Drift present; freeze high-risk change operations.",
+      "blocked_operations": [
+        "deployment_promotion",
+        "autonomous_policy_parameter_update",
+        "new_external_integration_enable",
+        "bulk_data_export"
+      ],
+      "required_actions": [
+        "Record failed-question IDs and remediation owner in governance ledger.",
+        "Attach evidence artifact for each failed question.",
+        "Produce one subsequent snapshot with score >= 13."
+      ]
+    },
+    {
+      "name": "ORANGE",
+      "range_inclusive": [6, 9],
+      "meaning": "Unstable; freeze all change and outward side-effect operations.",
+      "blocked_operations": [
+        "deployment_promotion",
+        "autonomous_policy_parameter_update",
+        "new_external_integration_enable",
+        "bulk_data_export",
+        "outbound_side_effect_dispatch",
+        "autonomous_actor_escalation",
+        "state_schema_migration",
+        "runtime_config_mutation"
+      ],
+      "required_actions": [
+        "Open incident record with root cause and remediation plan.",
+        "Run ledger_integrity_sweep with zero errors.",
+        "Attach evidence artifact for each failed question.",
+        "Produce two consecutive snapshots with score >= 10 and latest score >= 13."
+      ]
+    },
+    {
+      "name": "RED",
+      "range_inclusive": [0, 5],
+      "meaning": "Critical instability; containment mode.",
+      "blocked_operations": [
+        "inbox_ingest",
+        "deployment_promotion",
+        "autonomous_policy_parameter_update",
+        "new_external_integration_enable",
+        "bulk_data_export",
+        "outbound_side_effect_dispatch",
+        "autonomous_actor_escalation",
+        "state_schema_migration",
+        "runtime_config_mutation"
+      ],
+      "required_actions": [
+        "Enter containment incident state in governance ledger.",
+        "Run stability_snapshot and ledger_integrity_sweep; both must complete successfully.",
+        "Attach evidence artifact for each failed question.",
+        "Produce three consecutive snapshots with score >= 10 and latest score >= 13."
+      ]
+    }
+  ],
+  "overrides": {
+    "enabled": true,
+    "rule": "Break-glass override valid only when band in {ORANGE,RED}, operation in override_allowlist, expiry_utc > now_utc, (expiry_utc - utc_timestamp) <= expiry_max_hours, and no other unexpired override exists for same operation.",
+    "override_allowlist": [
+      "runtime_config_mutation",
+      "state_schema_migration",
+      "deployment_promotion"
+    ],
+    "required_ledger_fields": [
+      "reason",
+      "owner",
+      "utc_timestamp",
+      "expiry_utc",
+      "operation",
+      "band",
+      "score"
+    ],
+    "expiry_max_hours": 4
+  },
+  "notes": [
+    "Policy gate decision is deterministic: compute band from score, then allow only if operation is not blocked for that band or a valid override exists.",
+    "Block semantics are strict: if operation is listed in blocked_operations for current band, gate returns allow=false unless valid override.",
+    "Unknown operation IDs are denied when band is ORANGE or RED.",
+    "No changes to existing ledger event schema are required; override records are additive governance entries."
+  ]
+}

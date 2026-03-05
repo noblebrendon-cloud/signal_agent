@@ -1,0 +1,221 @@
+# Domain-Adaptable Constraint Packs: Signal Agent
+
+## 1. CONSTRAINT_PACK_SYSTEM_ID
+`SIGNAL_AGENT_CONSTRAINT_SYSTEM_V1`
+
+## 2. CORE_PACK (Global Governance)
+*Applies to ALL domains. Cannot be disabled, only tightened.*
+
+```yaml
+pack_id: "core_governance_v1"
+scope: "global"
+priority: 0  # Highest priority (0)
+
+constraints:
+  - id: "CORE-001"
+    intent: "Prevent financial loss"
+    scope: "action:transfer_money"
+    trigger: "pre_execution"
+    rule: "deny_always"
+    enforcement: "block"
+    audit_event: "FINANCIAL_ATTEMPT_BLOCKED"
+    rollback_behavior: "none"
+
+  - id: "CORE-002"
+    intent: "Prevent destructive file operations"
+    scope: "action:delete_non_temp_files"
+    trigger: "pre_execution"
+    rule: "path not match '/tmp/*'"
+    enforcement: "block"
+    audit_event: "DESTRUCTIVE_FILE_OP_BLOCKED"
+    rollback_behavior: "none"
+
+  - id: "CORE-003"
+    intent: "Ensure human oversight for external comms"
+    scope: "action:send_email"
+    trigger: "pre_execution"
+    rule: "requires_approval == true"
+    enforcement: "request_approval"
+    audit_event: "EMAIL_APPROVAL_REQUESTED"
+    rollback_behavior: "cancel_task"
+```
+
+## 3. DOMAIN_PACKS
+
+### Domain A: Logistics Ops
+*Focus: Read-heavy, specific write paths, high availability.*
+
+```yaml
+pack_id: "domain_logistics_ops_v1"
+scope: "domain:logistics_ops"
+priority: 10
+
+constraints:
+  - id: "LOG-001"
+    intent: "Protect inventory data integrity"
+    scope: "action:db_write"
+    trigger: "pre_execution"
+    rule: "table in ['inventory_logs', 'shipment_tracking']"
+    enforcement: "allow"
+    audit_event: "INVENTORY_UPDATE"
+    rollback_behavior: "transaction_rollback"
+
+  - id: "LOG-002"
+    intent: "Prevent bulk deletions"
+    scope: "action:db_delete"
+    trigger: "pre_execution"
+    rule: "row_count > 1"
+    enforcement: "block"
+    audit_event: "BULK_DELETE_ATTEMPT"
+    rollback_behavior: "none"
+```
+
+### Domain B: Content Publishing
+*Focus: Creative generation, strict output formatting, brand safety.*
+
+```yaml
+pack_id: "domain_content_publishing_v1"
+scope: "domain:content_publishing"
+priority: 10
+
+constraints:
+  - id: "PUB-001"
+    intent: "Enforce brand voice"
+    scope: "output:text_generation"
+    trigger: "post_execution"
+    rule: "sentiment score > 0.5 AND contains_profanity == false"
+    enforcement: "retry_with_correction"
+    audit_event: "BRAND_SAFETY_VIOLATION"
+    rollback_behavior: "discard_output"
+
+  - id: "PUB-002"
+    intent: "Prevent unapproved publishing"
+    scope: "action:publish_cms"
+    trigger: "pre_execution"
+    rule: "status == 'approved' AND approver != 'self'"
+    enforcement: "block"
+    audit_event: "UNAPPROVED_PUBLISH_ATTEMPT"
+    rollback_behavior: "none"
+```
+
+## 4. OVERRIDES + EXCEPTIONS
+
+Overrides allow specific tasks or sessions to strictly *tighten* or temporarily *exempt* rules under specific conditions.
+
+**Rule:** Overrides can never loosen `CORE` constraints, they can only modify `DOMAIN` constraints.
+
+### Exception Schema
+```yaml
+exception_id: "EX-LOG-001"
+target_constraint: "LOG-002"
+condition: "task_type == 'inventory_purge' AND user_role == 'admin'"
+effect: "allow"
+expiry: "session_end"
+approval_required: true
+```
+
+### Examples
+1.  **Emergency Patching**: Admin overrides "No Exec" rule for 1 hour to fix a P0 bug. (Requires 2-person sign-off).
+2.  **Sandbox Mode**: All `http-fetch` actions allowed to `localhost`, regardless of domain whitelist.
+
+## 5. CONFLICT RESOLUTION
+
+When multiple constraints apply to the same action, the system must resolve the conflict deterministically.
+
+**Priority Order (Lower value = Higher Priority):**
+1.  `CORE` (Priority 0) - Immutable.
+2.  `EMERGENCY_OVERRIDE` (Priority 1) - Temporary, high-permission.
+3.  `DOMAIN` (Priority 10) - Standard business logic.
+4.  `TASK` (Priority 20) - Specific to current workflow.
+5.  `SESSION` (Priority 30) - User preferences.
+
+**Tie-Breaker Rules:**
+1.  **Most Restrictive Wins**: If one rule says `ALLOW` and another says `BLOCK`, result is `BLOCK`.
+2.  **Specific Scope Wins**: `action:write_file:/tmp/log.txt` beats `action:write_file`.
+3.  **Lexicographical ID**: If priority and strictness are equal, lower alphanumeric ID wins.
+
+## 6. MERGE_ALGORITHM
+
+```python
+def merge_packs(core_pack, domain_pack, task_overrides):
+    """
+    Merges constraint packs into a single execution policy.
+    Returns a flat list of active constraints.
+    """
+    active_policy = {}
+
+    # 1. Load Core (Base Truth)
+    for rule in core_pack.constraints:
+        active_policy[rule.id] = rule
+
+    # 2. Overlay Domain (Cannot loosen Core)
+    for rule in domain_pack.constraints:
+        if conflicts_with_core(rule, core_pack):
+            log_warning(f"Domain rule {rule.id} ignored; conflicts with Core.")
+            continue
+        active_policy[rule.id] = rule
+
+    # 3. Apply Overrides
+    for override in task_overrides:
+        target_id = override.target_constraint
+        if target_id in active_policy:
+            # Only allow override if it doesn't violate Core invariants
+            if is_safe_override(active_policy[target_id], override):
+                active_policy[target_id] = apply_override(active_policy[target_id], override)
+            else:
+                log_error(f"Unsafe override attempt on {target_id}")
+
+    return list(active_policy.values())
+```
+
+## 7. ADAPTATION_KNOBS
+
+Parameters to tune stringency without code changes.
+
+| Knob Name | Default | Effect |
+| :--- | :--- | :--- |
+| `strict_mode` | `false` | If true, any unknown action is BLOCKED (allow-list only). |
+| `require_reasoning` | `true` | If true, agent must output a reasoning trace before any `write` action. |
+| `human_in_the_loop_threshold` | `0.8` | Confidence score below which human approval is mandated. |
+| `max_budget_multiplier` | `1.0` | Scalar for resource budgets (e.g., set to 0.5 for "Economy Mode"). |
+
+## 8. TEST_SUITE
+
+### Merge Tests
+| Case ID | Inputs | Expected Result | Reason |
+| :--- | :--- | :--- | :--- |
+| `MRG-01` | Core vs. Empty Domain | Core Only | Baseline. |
+| `MRG-02` | Core(Block X) vs Domain(Allow X) | Core(Block X) | Core is immutable. |
+| `MRG-03` | Domain(Block Y) vs Override(Allow Y) | Override(Allow Y) | Valid domain override. |
+| `MRG-04` | Core(Block Z) vs Override(Allow Z) | Core(Block Z) | Cannot override Core. |
+| `MRG-05` | Domain A vs Domain B (Disjoint) | Union(A, B) | No conflict. |
+| `MRG-06` | Same ID, Different Rule | Error/Warn | ID collision. |
+| `MRG-07` | Knob `strict_mode=true` | Implicit "Block *" | Global switch. |
+| `MRG-08` | Tie-breaker (Block vs Allow) | Block | Safety first. |
+
+### Runtime Tests
+| Case ID | Scenario | Expected Outcome |
+| :--- | :--- | :--- |
+| `RUN-01` | Logistics: Write to `inventory_logs` | **Allowed** (LOG-001) |
+| `RUN-02` | Logistics: Delete 100 rows | **Blocked** (LOG-002) |
+| `RUN-03` | Content: Generate profanity | **Correction** (PUB-001) |
+| `RUN-04` | Content: Publish without approval | **Blocked** (PUB-002) |
+| `RUN-05` | Global: Transfer Money | **Blocked** (CORE-001) |
+| `RUN-06` | Global: Delete `/etc/config` | **Blocked** (CORE-002) |
+| `RUN-07` | Global: Email with Approval | **Request** (CORE-003) |
+| `RUN-08` | Content: Publish (Approved) | **Allowed** |
+
+## 9. DEPLOYMENT_PATTERN
+
+1.  **Loading**:
+    - During system init, `ConstraintLoader` reads `CORE_PACK.yaml`.
+    - Detects environment/domain context and loads `DOMAIN_PACK_*.yaml`.
+    - Validates integrity (signatures, schema checks).
+
+2.  **Validation**:
+    - Runs `ConstraintValidator` (the merge algorithm) to produce `EffectivePolicy`.
+    - If validation fails (e.g., Core conflict), system enters `SAFE_MODE` (locks all actions).
+
+3.  **Audit**:
+    - Every constraint evaluation is logged with `trace_id`, `constraint_id`, `input`, and `result`.
+    - Periodic hash-chain verification of audit logs to ensuring non-repudiation.

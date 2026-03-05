@@ -1,0 +1,5 @@
+from typing import Protocol
+
+class Provider(Protocol):
+    def call(self, model: str, prompt: str) -> str:
+        ...

@@ -1,0 +1,83 @@
+# Operational Core v1
+
+**Date:** 2026-02-17
+**Status:** ACTIVE
+**Scope:** Signal Agent Capture Layer
+
+## 1. Daily Operations (Powershell)
+
+These commands form the low-friction loop for daily agent operations.
+
+**IMPORTANT:** Always run these commands from the repository root: `E:\signal_agent`.
+
+Alternatively, use the frictionless helper script:
+```powershell
+.\daily_ops.ps1 status
+```
+
+```powershell
+# OPTIONAL: Set location if not already there
+cd E:\signal_agent
+```
+
+### A. Status Check
+Check the health, counts, and configuration hash of the capture system.
+```powershell
+# Helper Script (Recommended)
+.\daily_ops.ps1 status
+
+# Manual Command
+python -m app.agent capture.status
+```
+
+### B. Decay (Cleanup)
+Move old raw files to expiration stages to keep the active workspace clean.
+```powershell
+python -m app.agent capture.decay --days 14 --purge-days 30
+```
+
+### C. Promote (Cluster & Bundle)
+Aggregate raw files into semantic bundles.
+```powershell
+python -m app.agent capture.promote --min-cluster-size 3
+```
+
+### D. Route (Dispatch)
+Send bundles to the appropriate spine based on content analysis.
+```powershell
+# Routable bundles are output by promote.
+python -m app.agent capture.route --bundle <path_to_bundle>
+```
+
+### E. Instability Scan (Anomalies)
+Detect drift and sudden spikes in topic volume.
+```powershell
+python -m app.agent capture.instability --window-days 7 --min-today 6 --ratio 3.0
+```
+**Note:** A `baseline=0.0` with `today_count > 0` is classified as a "Cold Start". This is normal for new topics and is not an error.
+
+---
+
+## 2. Validation & Quality Assurance
+
+Run the strict validator to ensure system integrity. This script enforces all invariants.
+
+### Run Validator
+```powershell
+python tools/capture_validate_fix1.py
+```
+**Exit Code:** `0` (PASS), `1` (FAIL)
+
+### Invariants
+1. **Registry Read-Only:** The `artifact_registry.jsonl` file MUST NOT be modified by any `capture.*` command.
+   - *Failure Definition:* Any change in file hash/mtime during capture operations is a CRITICAL FAILURE.
+2. **Deterministic Output:** Stress tests must produce identical results given the same seed.
+   - *Failure Definition:* Mismatch in generated docs, clusters, or isolation metrics.
+3. **Bridge Defense:** Ambiguous documents bridging two distinct themes must be forced into isolation or a new cluster.
+   - *Failure Definition:* `bridge_forced_count == 0` when bridge scenario is active.
+
+## 3. Troubleshooting
+
+- **Validator Fails on JSON Parse:** Ensure no debug prints are polluting stdout. The validator strictly parses JSON from stdout.
+- **Bridge Check Fails:** Ensure `stress` and `promote` usage scenarios match (e.g. time windows).
+- **Registry Drift:** Check if a new feature is inadvertently writing to the registry. Only `curate` tools should write there.

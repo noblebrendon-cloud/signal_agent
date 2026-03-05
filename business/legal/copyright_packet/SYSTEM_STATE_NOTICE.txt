@@ -1,0 +1,16 @@
+<!--
+================================================================================
+SYSTEM STATE NOTICE
+
+Copyright (c) 2026 Brendon R. Coleman. All Rights Reserved.
+
+This document serves as the formal operational tracking manifest for the 
+Laviathon System (internal: Signal Agent). The structural layout, format, 
+and proprietary definitions of state utilized within this file fall under 
+Work 2 of the registered copyright packet (Architecture, Governance, and 
+Operations Manual). 
+
+Unauthorized reproduction of this structural reporting format is prohibited.
+Algorithm outputs and underlying mathematics remain expressly excluded.
+================================================================================
+-->

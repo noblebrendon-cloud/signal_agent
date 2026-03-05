@@ -1,0 +1,65 @@
+import logging
+import os
+import tempfile
+import unittest
+
+from app.utils.reprojection import ConstraintPack, compute_delta, extract_artifact_state, reproject_checkpoint
+from app.utils.exceptions import ConstraintViolation
+
+logging.disable(logging.CRITICAL)
+
+
+class TestReprojection(unittest.TestCase):
+    def test_extract_sections_parses_markdown_headers(self):
+        text = "# Section 1\nContent 1\n## Section 2\nContent 2\n- Claim 1\n- Claim 2\n"
+        state = extract_artifact_state(text)
+        self.assertIn("Section 1", state.sections)
+        self.assertIn("Section 2", state.sections)
+        self.assertEqual(len(state.claims), 2)
+        self.assertEqual(state.claims[0], "Claim 1")
+
+    def test_disallowed_phrase_triggers_fail(self):
+        text = "This text contains a badword."
+        state = extract_artifact_state(text)
+        pack = ConstraintPack(scope="test", disallowed_phrases=["badword"])
+        report = compute_delta(state, pack, "ctx", "path", 0.75)
+        self.assertEqual(report.status, "FAIL")
+
+    def test_boundary_max_claims_triggers_fail(self):
+        text = "- Claim 1\n- Claim 2\n- Claim 3\n"
+        state = extract_artifact_state(text)
+        pack = ConstraintPack(scope="test", boundary_conditions={"max_claims": 2})
+        report = compute_delta(state, pack, "ctx", "path", 0.75)
+        self.assertEqual(report.status, "FAIL")
+
+    def test_soft_score_warn_threshold(self):
+        text = "keyword1 is here."
+        state = extract_artifact_state(text)
+        pack = ConstraintPack(
+            scope="test",
+            required_invariants=[
+                {"id": "inv1", "keywords": ["keyword1"], "min_count": 1},
+                {"id": "inv2", "keywords": ["keyword2"], "min_count": 1},
+            ],
+        )
+        report = compute_delta(state, pack, "ctx", "path", 0.75)
+        self.assertEqual(report.status, "WARN")
+        self.assertAlmostEqual(report.soft_score, 0.5)
+
+    def test_reproject_checkpoint_integration(self):
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
+            f.write("disallowed_phrases: ['failme']\n")
+            pack_path = f.name
+
+        try:
+            with self.assertRaises(ConstraintViolation):
+                reproject_checkpoint("This text has failme.", pack_path)
+
+            report = reproject_checkpoint("Clean text.", pack_path)
+            self.assertEqual(report.status, "PASS")
+        finally:
+            os.remove(pack_path)
+
+
+if __name__ == "__main__":
+    unittest.main()

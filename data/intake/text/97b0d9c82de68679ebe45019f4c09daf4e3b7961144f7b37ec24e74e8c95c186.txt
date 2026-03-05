@@ -1,0 +1,18 @@
+---
+cluster_id: 76f8fc62e3be
+file_count: 2
+created_utc: 2026-02-17T11:45:21Z
+---
+
+## Included Files
+
+- raw_2026-02-16T18-00-01_001Z.md
+- raw_2026-02-16T18-00-02_002Z.md
+
+## Content
+
+Volatile capture layer design patterns
+
+---
+
+Volatile capture design and layer patterns

@@ -1,0 +1,8 @@
+---
+timestamp_utc: 2026-02-17T11:45:15Z
+input_type: stress_test
+source: synthetic_stuffed
+---
+buy diagnostic vector vector metric diagnostic stability buy metric coherence signal align diagnostic kernel signal metric buy buy embedding stability buy signal buy buy coherence stability signal align stability buy drift buy metric drift signal signal diagnostic align kernel buy align signal stability kernel vector buy align metric coherence buy coherence
+
+https://ai-safety.org/article/8727

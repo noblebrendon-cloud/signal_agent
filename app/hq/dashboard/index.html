@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HQ Dashboard - Social Offload</title>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 20px; background: #f4f4f5; color: #18181b; }
+        .container { max-width: 1200px; margin: 0 auto; display: grid; gap: 20px; grid-template-columns: 350px 1fr; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        h1, h2, h3 { margin-top: 0; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: 500; margin-bottom: 5px; font-size: 14px; }
+        input[type="text"] { width: 100%; padding: 8px; border: 1px solid #d4d4d8; border-radius: 4px; box-sizing: border-box; }
+        .toggle { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+        button { background: #09090b; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: 500; width: 100%; }
+        button:hover { background: #27272a; }
+        button:disabled { background: #a1a1aa; cursor: not-allowed; }
+        pre { background: #18181b; color: #10b981; padding: 15px; border-radius: 4px; overflow-x: auto; font-size: 13px; min-height: 100px; margin: 0; white-space: pre-wrap; word-wrap: break-word;}
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #e4e4e7; }
+        th { font-weight: 600; color: #52525b; }
+        .status-ok { color: #10b981; font-weight: 600;}
+        .status-fault { color: #ef4444; font-weight: 600;}
+        .full-width { grid-column: 1 / -1; }
+        .outputs-list { list-style: none; padding: 0; margin: 0; font-size: 13px;}
+        .outputs-list li { padding: 5px 0; border-bottom: 1px solid #f4f4f5; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card full-width">
+            <h1>HQ Social Offload Dashboard</h1>
+        </div>
+        
+        <div class="card">
+            <h2>Execute Pipeline</h2>
+            <form id="execute-form">
+                <div class="form-group">
+                    <label for="artifact">Core Artifact Path</label>
+                    <input type="text" id="artifact" name="artifact" required value="tests/fixtures/social_offload/core_artifact.md">
+                </div>
+                <div class="form-group">
+                    <label for="pack">Constraint Pack Path</label>
+                    <input type="text" id="pack" name="pack" required value="constraints/packs/domain/linkedin_pack.yaml">
+                </div>
+                <div class="form-group toggle">
+                    <input type="checkbox" id="dry-run" name="dry_run">
+                    <label for="dry-run" style="margin:0">Dry Run (Do not write file)</label>
+                </div>
+                <button type="submit" id="submit-btn">Run Social Offload (LinkedIn)</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>Execution Output</h2>
+            <pre id="output-pane">Ready...</pre>
+        </div>
+
+        <div class="card full-width">
+            <h2>Recent Runs (Audit Log)</h2>
+            <table id="runs-table">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Status</th>
+                        <th>Artifact ID</th>
+                        <th>Render ID</th>
+                        <th>Details / Faults</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan="5">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card full-width">
+            <h2>Generated Output Files</h2>
+            <ul class="outputs-list" id="outputs-list">
+                <li>Loading...</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        async function fetchRuns() {
+            try {
+                const res = await fetch('/api/runs');
+                const data = await res.json();
+                const tbody = document.querySelector('#runs-table tbody');
+                tbody.innerHTML = '';
+                if (!data || data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5">No runs found</td></tr>';
+                    return;
+                }
+                data.forEach(run => {
+                    const statusClass = run.status === 'ok' ? 'status-ok' : 'status-fault';
+                    const date = new Date(run.timestamp * 1000).toLocaleString();
+                    let details = '-';
+                    if (run.status === 'fault') {
+                        details = run.fault_codes || 'Unknown Fault';
+                    } else if (run.status === 'ok') {
+                        details = `Words: ${run.word_count}, Claims: ${run.claim_count}`;
+                    }
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${date}</td>
+                        <td class="${statusClass}">${run.status.toUpperCase()}</td>
+                        <td><code style="background:#f4f4f5;padding:2px 4px;border-radius:3px">${run.artifact_id || '-'}</code></td>
+                        <td><code style="background:#f4f4f5;padding:2px 4px;border-radius:3px">${run.render_id || '-'}</code></td>
+                        <td>${details}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function fetchOutputs() {
+            try {
+                const res = await fetch('/api/outputs');
+                const data = await res.json();
+                const ul = document.getElementById('outputs-list');
+                ul.innerHTML = '';
+                if (!data.files || data.files.length === 0) {
+                    ul.innerHTML = '<li>No files generated yet</li>';
+                    return;
+                }
+                data.files.forEach(f => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<code style="background:#f4f4f5;padding:2px 4px;border-radius:3px;font-family:monospace">${f}</code>`;
+                    ul.appendChild(li);
+                });
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        document.getElementById('execute-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submit-btn');
+            const outPane = document.getElementById('output-pane');
+            btn.disabled = true;
+            btn.textContent = 'Running...';
+            outPane.textContent = 'Executing subprocess...';
+
+            const payload = {
+                artifact_path: document.getElementById('artifact').value,
+                pack_path: document.getElementById('pack').value,
+                dry_run: document.getElementById('dry-run').checked
+            };
+
+            try {
+                const res = await fetch('/api/run/social_offload', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                const result = await res.json();
+                
+                let outText = `Return Code: ${result.returncode}\n\n`;
+                if (result.stdout_tail) outText += `--- STDOUT ---\n${result.stdout_tail}\n`;
+                if (result.stderr_tail) outText += `--- STDERR ---\n${result.stderr_tail}\n`;
+                outPane.textContent = outText;
+
+            } catch (err) {
+                outPane.textContent = `Error: ${err.message}`;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Run Social Offload (LinkedIn)';
+                fetchRuns();
+                fetchOutputs();
+            }
+        });
+
+        // Init
+        fetchRuns();
+        fetchOutputs();
+    </script>
+</body>
+</html>

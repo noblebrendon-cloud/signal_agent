@@ -32,6 +32,9 @@ class KernelConfig:
     # C1
     lambda1: float = 0.5
 
+    # V(t) Report Sigmoid
+    v_alpha: float = 4.0
+
     # C2
     dmax: float = 0.4
 
@@ -86,6 +89,9 @@ class KernelSnapshot:
     R: float
     E: float
     regime: Regime
+    V_raw: float = 0.0
+    V_report: float = 0.0
+    version: str = "0.4.0"
 
 
 class CoherenceKernel:
@@ -258,6 +264,9 @@ class CoherenceKernel:
 
         self._regime = self._update_regime(phi_risk)
 
+        V_raw = phi_risk + (self.cfg.K * E)
+        V_report = sigmoid(self.cfg.v_alpha * (V_raw - 1.0))
+
         return KernelSnapshot(
             ts=now,
             phi1=phi["phi1"],
@@ -270,12 +279,14 @@ class CoherenceKernel:
             A=A,
             R=R,
             E=E,
+            V_raw=V_raw,
+            V_report=V_report,
             regime=self._regime,
         )
 
     def is_unstable_by_condition(self, snap: KernelSnapshot) -> bool:
-        # Stability condition: C >= K*E (stable) else unstable
-        return snap.coherence < (self.cfg.K * snap.E)
+        # Stability condition: V_raw <= 1.0 (stable) else unstable
+        return snap.V_raw > 1.0
 
 
 class Priority(str, Enum):
@@ -296,9 +307,12 @@ def persist_panic_log(snap: KernelSnapshot, request_id: Optional[str] = None, ev
             "ts": snap.ts,
             "phi_risk": snap.phi_risk,
             "E": snap.E,
+            "V_raw": snap.V_raw,
+            "V_report": snap.V_report,
             "regime": snap.regime.value,
             "request_id": request_id,
             "events_summary": events_summary or {},
+            "version": snap.version,
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(snap.ts))
         }
         

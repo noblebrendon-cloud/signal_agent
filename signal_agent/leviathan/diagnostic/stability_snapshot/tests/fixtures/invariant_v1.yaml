@@ -1,0 +1,204 @@
+{
+  "version": "invariant_v1",
+  "bands": [
+    {
+      "name": "stable",
+      "min_score": 11
+    },
+    {
+      "name": "moderate",
+      "min_score": 6
+    },
+    {
+      "name": "high_risk",
+      "min_score": 0
+    }
+  ],
+  "operations": {
+    "deploy_release": {
+      "allow_bands": [
+        "stable"
+      ],
+      "override_permitted_bands": [
+        "moderate"
+      ],
+      "blocked_reason_by_band": {
+        "moderate": "deploy_release_requires_stable_band",
+        "high_risk": "deploy_release_frozen_in_high_risk"
+      },
+      "required_actions_by_band": {
+        "stable": [
+          "record_release_artifact"
+        ],
+        "moderate": [
+          "run_full_regression_suite",
+          "capture_mechanism_and_counterfactual"
+        ],
+        "high_risk": [
+          "freeze_release_train",
+          "stabilize_core_invariants"
+        ]
+      },
+      "override_required_ledger_fields_by_band": {
+        "moderate": [
+          "incident_or_change_id",
+          "decision_owner",
+          "mechanism",
+          "counterfactual",
+          "approved_by"
+        ],
+        "high_risk": [
+          "incident_or_change_id",
+          "decision_owner",
+          "mechanism",
+          "counterfactual",
+          "approved_by",
+          "risk_acknowledgement"
+        ]
+      }
+    },
+    "enable_autonomy": {
+      "allow_bands": [
+        "stable"
+      ],
+      "override_permitted_bands": [],
+      "blocked_reason_by_band": {
+        "moderate": "autonomy_increase_requires_stable_band",
+        "high_risk": "autonomy_increase_blocked_in_high_risk"
+      },
+      "required_actions_by_band": {
+        "stable": [
+          "log_autonomy_scope"
+        ],
+        "moderate": [
+          "defer_autonomy_expansion"
+        ],
+        "high_risk": [
+          "stabilize_before_autonomy_change"
+        ]
+      },
+      "override_required_ledger_fields_by_band": {
+        "moderate": [],
+        "high_risk": []
+      }
+    },
+    "expand_scope": {
+      "allow_bands": [
+        "stable",
+        "moderate"
+      ],
+      "override_permitted_bands": [],
+      "blocked_reason_by_band": {
+        "high_risk": "scope_expansion_blocked_in_high_risk"
+      },
+      "required_actions_by_band": {
+        "stable": [
+          "document_scope_delta"
+        ],
+        "moderate": [
+          "document_scope_delta",
+          "set_guardrail_thresholds"
+        ],
+        "high_risk": [
+          "stabilize_signal_baseline"
+        ]
+      },
+      "override_required_ledger_fields_by_band": {
+        "high_risk": []
+      }
+    },
+    "routine_maintenance": {
+      "allow_bands": [
+        "stable",
+        "moderate",
+        "high_risk"
+      ],
+      "override_permitted_bands": [],
+      "blocked_reason_by_band": {},
+      "required_actions_by_band": {
+        "stable": [
+          "record_maintenance_window"
+        ],
+        "moderate": [
+          "record_maintenance_window",
+          "notify_on_call_owner"
+        ],
+        "high_risk": [
+          "record_maintenance_window",
+          "limit_to_low_impact_tasks"
+        ]
+      },
+      "override_required_ledger_fields_by_band": {}
+    },
+    "incident_hotfix": {
+      "allow_bands": [
+        "stable",
+        "moderate"
+      ],
+      "override_permitted_bands": [
+        "high_risk"
+      ],
+      "blocked_reason_by_band": {
+        "high_risk": "hotfix_requires_override_in_high_risk"
+      },
+      "required_actions_by_band": {
+        "stable": [
+          "link_hotfix_to_incident"
+        ],
+        "moderate": [
+          "link_hotfix_to_incident",
+          "capture_rollback_plan"
+        ],
+        "high_risk": [
+          "incident_commander_acknowledgement",
+          "prepare_rollback_plan"
+        ]
+      },
+      "override_required_ledger_fields_by_band": {
+        "high_risk": [
+          "incident_or_change_id",
+          "decision_owner",
+          "mechanism",
+          "counterfactual",
+          "rollback_plan",
+          "approved_by"
+        ]
+      }
+    },
+    "write_access_prod": {
+      "allow_bands": [
+        "stable"
+      ],
+      "override_permitted_bands": [
+        "moderate"
+      ],
+      "blocked_reason_by_band": {
+        "moderate": "prod_write_requires_stable_or_override",
+        "high_risk": "prod_write_blocked_in_high_risk"
+      },
+      "required_actions_by_band": {
+        "stable": [
+          "record_access_reason"
+        ],
+        "moderate": [
+          "open_access_window_ticket",
+          "capture_two_person_review"
+        ],
+        "high_risk": [
+          "use_break_glass_read_only_fallback"
+        ]
+      },
+      "override_required_ledger_fields_by_band": {
+        "moderate": [
+          "incident_or_change_id",
+          "decision_owner",
+          "mechanism",
+          "counterfactual",
+          "approved_by",
+          "expiry_utc"
+        ],
+        "high_risk": []
+      }
+    }
+  }
+}

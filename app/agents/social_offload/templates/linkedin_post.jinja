@@ -1,0 +1,22 @@
+{% set hook_text = sections.get('hook') or sections.get('preamble') or 'Untitled Update' %}
+{{ hook_text }}
+
+{% if sections.get('body') %}
+{{ sections.get('body') }}
+{% else %}
+{% for text in sections.values() %}
+{% if loop.index > 1 %}{{ text }}
+
+{% endif %}
+{% endfor %}
+{% endif %}
+
+{% if claims %}
+{% for claim in claims %}
+• {{ claim }}
+{% endfor %}
+{% endif %}
+
+{% if sections.get('conclusion') %}
+{{ sections.get('conclusion') }}
+{% endif %}

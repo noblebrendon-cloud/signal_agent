@@ -1,0 +1,14 @@
+# Copyright (c) 2026 Brendon R. Coleman. All Rights Reserved.
+#
+# This file is part of the Laviathon System (Internal: Signal Agent).
+#
+# NOTICE: All information contained herein is, and remains, the property
+# of Brendon R. Coleman. The intellectual and technical concepts contained
+# herein are proprietary and may be covered by U.S. and Foreign Copyright 
+# and/or trade secret laws. Dissemination of this information or reproduction
+# of this material is strictly forbidden unless prior written permission is
+# obtained from Brendon R. Coleman.
+#
+# This header applies to the expressive structure, organization, and 
+# original source code contained in this file. It does not apply to 
+# abstract mathematical concepts, algorithms, or third-party dependencies.

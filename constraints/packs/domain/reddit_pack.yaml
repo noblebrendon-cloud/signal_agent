@@ -1,0 +1,44 @@
+scope: "domain:reddit"
+pack_version: "1.0.0"
+created_at: "2026-02-20T18:00:00Z"
+
+boundary_conditions:
+  max_word_count: 350
+  max_claims: 5
+
+disallowed_phrases:
+  - "link in bio"
+
+allowed_output_classes: []
+required_invariants: []
+
+constraint_rules:
+  - constraint_id: REDDIT_ALLOW_OFFLOAD
+    rule_type: ALLOW
+    trigger:
+      capability_id: "content:text"
+    predicate: {}
+  - constraint_id: REDDIT_DENY_EXCESS_CLAIMS
+    rule_type: DENY
+    trigger:
+      capability_id: "content:text"
+    predicate:
+      op: "GT"
+      left: "snapshot.metrics.claims_count"
+      right: 5
+  - constraint_id: REDDIT_DENY_EXCESS_WORDS
+    rule_type: DENY
+    trigger:
+      capability_id: "content:text"
+    predicate:
+      op: "GT"
+      left: "snapshot.metrics.word_count"
+      right: 350
+  - constraint_id: REDDIT_DENY_LINK_IN_BIO
+    rule_type: DENY
+    trigger:
+      capability_id: "content:text"
+    predicate:
+      op: "MATCHES"
+      left: "snapshot.content"
+      right: "link in bio"

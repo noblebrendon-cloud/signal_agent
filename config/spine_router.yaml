@@ -1,0 +1,20 @@
+spines:
+  - name: ai_stability_diagnostic
+    keywords: [stability, friction, ops, adoption, workflow, automation, client, diagnostic, readiness, scoring]
+    domains: [openai.com, anthropic.com, xda-developers.com, arxiv.org]
+
+  - name: social_field_theory
+    keywords: [boundary, attractor, coherence, field, escalation, invariants, governance, entropy, topology]
+    domains: []
+
+  - name: content_publishing
+    keywords: [youtube, newsletter, outline, script, post, substack, linkedin, facebook, social, content]
+    domains: [youtube.com, substack.com]
+
+  - name: logistics_ops
+    keywords: [warehouse, packing, slip, discrepancy, inventory, receiving, dock, shipping, logistics]
+    domains: []
+
+  - name: misc
+    keywords: []
+    domains: []

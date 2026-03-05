@@ -186,8 +186,9 @@ class TestRenderer(unittest.TestCase):
             self.assertTrue(out_path.exists())
             self.assertTrue(out_path.stat().st_size > 0)
 
-            img = Image.open(str(out_path))
-            self.assertEqual(img.size, (540, 540))
+            # Close handle before TemporaryDirectory cleanup on Windows.
+            with Image.open(str(out_path)) as img:
+                self.assertEqual(img.size, (540, 540))
 
     def test_render_infographic(self):
         try:

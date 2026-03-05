@@ -7,11 +7,6 @@ from pathlib import Path
 from typing import Dict, Any, Optional, List, Set
 
 import yaml
-import docx
-from pypdf import PdfReader
-import ebooklib
-from ebooklib import epub
-from bs4 import BeautifulSoup
 
 # --- Configuration ---
 ROOT = Path(__file__).resolve().parents[2] # Adjusted for app/intake/intake.py
@@ -50,8 +45,17 @@ def normalize_text(text: str) -> str:
     return text.strip()
 
 class IntakeSystem:
-    def __init__(self, mode: str = "NORMAL"):
+    def __init__(
+        self,
+        mode: str = "NORMAL",
+        scan_roots: Optional[List[Path]] = None,
+        only_ext: Optional[str] = None,
+        explicit_roots: bool = False,
+    ):
         self.mode = mode
+        self.scan_roots = [p.resolve() for p in (scan_roots or [ROOT])]
+        self.only_ext = only_ext.lower() if only_ext else None
+        self.explicit_roots = explicit_roots
         self.ledger_cache: Dict[str, str] = {} # path -> source_sha256
         self.stats = {
             "total": 0, "supported": 0, "ingested": 0,
@@ -108,30 +112,39 @@ class IntakeSystem:
 
     def should_skip_path(self, path: Path) -> bool:
         """Check against exclude directories."""
-        try:
-            rel = path.relative_to(ROOT)
-            for part in rel.parts:
-                if part in EXCLUDE_DIRS:
-                    return True
-        except ValueError:
-            pass # path not relative to root
+        if not self.explicit_roots:
+            try:
+                rel = path.relative_to(ROOT)
+                for part in rel.parts:
+                    if part in EXCLUDE_DIRS:
+                        return True
+            except ValueError:
+                pass # path not relative to root
         return False
 
     def extract_pdf(self, path: Path) -> str:
         try:
-             from app.intake.extract_pdf_text import extract_pdf_text
-             return extract_pdf_text(path)
-        except ImportError:
-             # Fallback to pypdf if module missing (or raise, user chose pdfminer path)
-             # But user said "don't mix". So let's stick to the new module.
-             raise RuntimeError("pdfminer extraction module not found")
+            from app.intake.extract_pdf_text import extract_pdf_text
+        except ModuleNotFoundError as e:
+            if e.name == "app":
+                from extract_pdf_text import extract_pdf_text
+            else:
+                raise
+        return extract_pdf_text(path)
 
     def extract_docx(self, path: Path) -> str:
+        try:
+            import docx
+        except ImportError as e:
+            raise RuntimeError("DOCX extraction requires python-docx. Install with: pip install python-docx") from e
         doc = docx.Document(path)
         # Simple paragraph extraction; could expand to tables if needed
         return "\n".join([p.text for p in doc.paragraphs])
 
     def extract_epub(self, path: Path) -> str:
+        import ebooklib
+        from ebooklib import epub
+        from bs4 import BeautifulSoup
         book = epub.read_epub(path)
         chapters = []
         # Attempt to iterate in spine order
@@ -253,21 +266,29 @@ class IntakeSystem:
         except Exception as e:
             self.stats["errors"] += 1
             print(f"Error processing {rel_path}: {e}")
-            self.append_event({
+            error_event: Dict[str, Any] = {
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "source_path": rel_path,
                 "status": "error",
                 "error_message": str(e),
                 "mode": self.mode
-            })
+            }
+            if path.suffix.lower() == ".docx":
+                error_event["extractor"] = "docx_v1"
+            self.append_event(error_event)
 
     def run(self):
         print(f"Starting Intake v2 Scan... Mode: {self.mode}")
-        print(f"Scanning ROOT: {ROOT}")
+        for scan_root in self.scan_roots:
+            print(f"Scanning ROOT: {scan_root}")
 
         # Recursive walk
-        for path in ROOT.rglob("*"):
-            if path.is_file():
+        for scan_root in self.scan_roots:
+            for path in scan_root.rglob("*"):
+                if not path.is_file():
+                    continue
+                if self.only_ext and path.suffix.lower() != self.only_ext:
+                    continue
                 self.process_file(path)
 
         print("\n--- Scan Complete ---")
@@ -293,7 +314,29 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="SignalAgent Intake System")
     parser.add_argument("--mode", default="NORMAL", choices=["NORMAL", "MOD"], help="Execution Mode (NORMAL or MOD)")
+    parser.add_argument("--root", action="append", help="Optional scan root path (repeatable)")
+    parser.add_argument("--only-ext", choices=["pdf"], help="Optional extension filter")
     args = parser.parse_args()
 
-    agent = IntakeSystem(mode=args.mode)
+    scan_roots: List[Path] = [ROOT]
+    if args.root:
+        scan_roots = []
+        for raw_root in args.root:
+            resolved_root = Path(raw_root).expanduser().resolve()
+            if not resolved_root.exists():
+                parser.error(f"--root path does not exist: {resolved_root}")
+            if not resolved_root.is_dir():
+                parser.error(f"--root path is not a directory: {resolved_root}")
+            scan_roots.append(resolved_root)
+
+    only_ext = None
+    if args.only_ext:
+        only_ext = f".{args.only_ext.lower()}"
+
+    agent = IntakeSystem(
+        mode=args.mode,
+        scan_roots=scan_roots,
+        only_ext=only_ext,
+        explicit_roots=bool(args.root),
+    )
     agent.run()

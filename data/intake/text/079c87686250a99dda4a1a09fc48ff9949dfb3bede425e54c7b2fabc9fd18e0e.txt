@@ -1,0 +1,258 @@
+from __future__ import annotations
+
+import re
+from dataclasses import dataclass
+from functools import lru_cache
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
+
+
+# -----------------------------
+# Errors (fail-closed)
+# -----------------------------
+
+class DSLViolation(Exception):
+    pass
+
+
+# -----------------------------
+# Public API
+# -----------------------------
+
+def predicate_eval(predicate: Dict[str, Any], action: Dict[str, Any], snapshot: Dict[str, Any], context: Dict[str, Any]) -> bool:
+    """
+    Deterministic, fail-closed DSL evaluator.
+    - No eval
+    - Explicit operator set
+    - Explicit accessor surface
+    - Safe regex only
+    """
+    if not predicate:
+        return True  # empty predicate applies
+
+    # normalize + validate node
+    node = _validate_node(predicate)
+
+    env = {
+        "action": action,
+        "snapshot": snapshot,
+        "context": context,
+    }
+    return _eval(node, env)
+
+
+# -----------------------------
+# Node validation
+# -----------------------------
+
+_ALLOWED_OPS = {
+    "AND", "OR", "NOT",
+    "EQ", "NEQ",
+    "GT", "GTE", "LT", "LTE",
+    "IN",
+    "MATCHES",
+    "EXISTS",
+}
+
+_ALLOWED_ROOTS = {"action", "snapshot", "context"}
+
+_MAX_NODE_DEPTH = 64
+_MAX_LIST_ITEMS = 256
+
+# Regex constraints (kept conservative)
+_MAX_REGEX_LEN = 256
+_MAX_MATCH_TEXT_LEN = 4096
+_DISALLOWED_REGEX_TOKENS = [
+    r"(?",   # any inline flags/lookarounds are blocked (covers (?=, (?!, (?P<, etc.)
+    r"\A", r"\Z",  # anchors okay in theory, but keep stable across engines? optional: remove these if you want
+]
+
+
+def _validate_node(node: Any, depth: int = 0) -> Dict[str, Any]:
+    if depth > _MAX_NODE_DEPTH:
+        raise DSLViolation("DSL too deep")
+
+    if not isinstance(node, dict):
+        raise DSLViolation("DSL node must be object")
+
+    if "op" not in node:
+        raise DSLViolation("DSL node missing 'op'")
+
+    op = str(node["op"]).upper().strip()
+    if op not in _ALLOWED_OPS:
+        raise DSLViolation(f"Unsupported op: {op}")
+
+    # Standardize to upper op
+    node2 = dict(node)
+    node2["op"] = op
+
+    # Validate by op shape
+    if op in ("AND", "OR"):
+        args = node2.get("args")
+        if not isinstance(args, list) or not args:
+            raise DSLViolation(f"{op} requires non-empty args list")
+        if len(args) > _MAX_LIST_ITEMS:
+            raise DSLViolation("Too many args")
+        node2["args"] = [_validate_node(a, depth + 1) for a in args]
+        return node2
+
+    if op == "NOT":
+        arg = node2.get("arg")
+        if arg is None:
+            raise DSLViolation("NOT requires arg")
+        node2["arg"] = _validate_node(arg, depth + 1)
+        return node2
+
+    if op == "EXISTS":
+        left = node2.get("left")
+        if not isinstance(left, str):
+            raise DSLViolation("EXISTS requires left accessor string")
+        _validate_accessor(left)
+        return node2
+
+    # Binary ops require left accessor + right value (or list for IN)
+    left = node2.get("left")
+    if not isinstance(left, str):
+        raise DSLViolation(f"{op} requires left accessor string")
+    _validate_accessor(left)
+
+    if op == "IN":
+        right = node2.get("right")
+        if not isinstance(right, list) or not right:
+            raise DSLViolation("IN requires non-empty list 'right'")
+        if len(right) > _MAX_LIST_ITEMS:
+            raise DSLViolation("IN list too large")
+        for v in right:
+            _validate_primitive(v)
+        return node2
+
+    if op == "MATCHES":
+        right = node2.get("right")
+        if not isinstance(right, str):
+            raise DSLViolation("MATCHES requires regex pattern string")
+        _validate_regex(right)
+        return node2
+
+    # All other binary comparisons expect primitive
+    right = node2.get("right")
+    _validate_primitive(right)
+    return node2
+
+
+def _validate_accessor(path: str) -> None:
+    """
+    Accessor: root.key1.key2...
+    """
+    parts = path.split(".")
+    if not parts or parts[0] not in _ALLOWED_ROOTS:
+        raise DSLViolation(f"Invalid accessor root: {path}")
+
+    # Only allow safe identifier segments
+    for seg in parts[1:]:
+        if not seg or not re.fullmatch(r"[A-Za-z0-9_]+", seg):
+            raise DSLViolation(f"Invalid accessor segment: {seg}")
+
+
+def _validate_primitive(v: Any) -> None:
+    if v is None:
+        return
+    if isinstance(v, (str, int, float, bool)):
+        return
+    raise DSLViolation("Right-hand value must be primitive")
+
+
+def _validate_regex(pat: str) -> None:
+    if len(pat) > _MAX_REGEX_LEN:
+        raise DSLViolation("Regex too long")
+    for bad in _DISALLOWED_REGEX_TOKENS:
+        if bad in pat:
+            raise DSLViolation("Regex contains disallowed token")
+    # compile once (will raise if invalid)
+    _compile_regex(pat)
+
+
+@lru_cache(maxsize=512)
+def _compile_regex(pat: str) -> re.Pattern:
+    # Force deterministic flags set (none)
+    return re.compile(pat)
+
+
+# -----------------------------
+# Evaluation
+# -----------------------------
+
+def _get(env: Dict[str, Any], accessor: str) -> Any:
+    parts = accessor.split(".")
+    cur: Any = env.get(parts[0])
+    for seg in parts[1:]:
+        if not isinstance(cur, dict):
+            return None
+        cur = cur.get(seg)
+    return cur
+
+
+def _coerce_num(v: Any) -> Optional[float]:
+    if isinstance(v, bool):
+        return None
+    if isinstance(v, (int, float)):
+        return float(v)
+    if isinstance(v, str):
+        try:
+            return float(v)
+        except Exception:
+            return None
+    return None
+
+
+def _eval(node: Dict[str, Any], env: Dict[str, Any]) -> bool:
+    op = node["op"]
+
+    if op == "AND":
+        return all(_eval(a, env) for a in node["args"])
+
+    if op == "OR":
+        return any(_eval(a, env) for a in node["args"])
+
+    if op == "NOT":
+        return not _eval(node["arg"], env)
+
+    if op == "EXISTS":
+        v = _get(env, node["left"])
+        return v is not None
+
+    left_val = _get(env, node["left"])
+
+    if op in ("EQ", "NEQ"):
+        right = node["right"]
+        ok = (left_val == right)
+        return ok if op == "EQ" else (not ok)
+
+    if op in ("GT", "GTE", "LT", "LTE"):
+        rn = _coerce_num(node["right"])
+        ln = _coerce_num(left_val)
+        if rn is None or ln is None:
+            return False  # fail-closed on non-numeric comparisons
+            
+        # assert non-None for type checker
+        assert ln is not None
+        assert rn is not None
+        
+        if op == "GT":  return ln > rn
+        if op == "GTE": return ln >= rn
+        if op == "LT":  return ln < rn
+        if op == "LTE": return ln <= rn
+        return False
+
+    if op == "IN":
+        right_list = node["right"]
+        return left_val in right_list
+
+    if op == "MATCHES":
+        if not isinstance(left_val, str):
+            return False
+        if len(left_val) > _MAX_MATCH_TEXT_LEN:
+            return False
+        pat = _compile_regex(node["right"])
+        return pat.search(left_val) is not None
+
+    # Should be unreachable due to validation
+    raise DSLViolation(f"Unhandled op: {op}")

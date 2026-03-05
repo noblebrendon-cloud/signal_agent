@@ -1,0 +1,54 @@
+scope: "domain:linkedin"
+pack_version: "1.1.0"
+created_at: "2026-02-20T21:00:00Z"
+
+boundary_conditions:
+  max_word_count: 250
+  min_word_count: 20
+  max_claims: 4
+
+disallowed_phrases:
+  - "game changer"
+  - "synergy"
+  - "delve"
+  - "crushing it"
+  - "thought leader"
+  - "🚀"
+  - "🔥"
+  - "link in bio"
+  - "subscribe now"
+  - "buy now"
+
+allowed_output_classes: []
+required_invariants: []
+
+constraint_rules:
+  - constraint_id: LINKEDIN_ALLOW_OFFLOAD
+    rule_type: ALLOW
+    trigger:
+      capability_id: "content:text"
+    predicate: {}
+  - constraint_id: LINKEDIN_DENY_EXCESS_CLAIMS
+    rule_type: DENY
+    trigger:
+      capability_id: "content:text"
+    predicate:
+      op: "GT"
+      left: "snapshot.metrics.claims_count"
+      right: 4
+  - constraint_id: LINKEDIN_DENY_EXCESS_WORDS
+    rule_type: DENY
+    trigger:
+      capability_id: "content:text"
+    predicate:
+      op: "GT"
+      left: "snapshot.metrics.word_count"
+      right: 250
+  - constraint_id: LINKEDIN_DENY_SHORT_WORDS
+    rule_type: DENY
+    trigger:
+      capability_id: "content:text"
+    predicate:
+      op: "LT"
+      left: "snapshot.metrics.word_count"
+      right: 20

@@ -11,12 +11,14 @@ from app.utils.exceptions import SystemHalt, LoadShed
 
 if TYPE_CHECKING:
     from app.audit.coherence_kernel import CoherenceKernel, Regime, Priority
+    from app.utils.breaker_store import SqliteBreakerStore
 
 
 @dataclass
 class CircuitBreaker:
     failures: int = 0
     open_until: float = 0.0  # using timestamp (time.time())
+    last_fail_ts: float = 0.0
     # State tracking: 
     # If open_until > now => OPEN
     # If open_until <= now and open_until > 0 => HALF_OPEN (allows 1 probe)
@@ -47,8 +49,10 @@ class CircuitBreaker:
         self.failures = 0
         self.open_until = 0.0
         self._probe_allowed = False
+        self.last_fail_ts = 0.0
 
     def record_failure(self, now: float, *, open_after: int = 5, open_for_seconds: int = 600) -> None:
+        self.last_fail_ts = now
         if self.get_state(now) == "HALF_OPEN":
             # Probe failed, re-open immediately
             self.open_until = now + open_for_seconds
@@ -67,6 +71,33 @@ class CircuitBreaker:
             self.open_until = now + open_for_seconds
             # When we eventually wake up (now > open_until), we want 1 probe.
             self._probe_allowed = True
+
+    def apply_persisted_state(
+        self,
+        *,
+        fail_count: int,
+        last_fail_ts: float,
+        state: str,
+        cooldown_until: float,
+        now: float,
+    ) -> None:
+        state_norm = (state or "closed").lower()
+        self.failures = max(0, int(fail_count))
+        self.last_fail_ts = float(last_fail_ts or 0.0)
+
+        if state_norm == "closed":
+            self.open_until = 0.0
+            self._probe_allowed = False
+            return
+
+        self.open_until = max(0.0, float(cooldown_until or 0.0))
+        if state_norm == "half_open":
+            if self.open_until > now:
+                self.open_until = now
+            self._probe_allowed = True
+            return
+
+        self._probe_allowed = True
 
 
 class AdaptiveSemaphore:
@@ -119,6 +150,7 @@ def call_with_resilience(
     sleep_fn: Optional[Callable[[float], None]] = None,
     kernel: Optional['CoherenceKernel'] = None,
     priority: Optional['Priority'] = None,
+    breaker_store: Optional['SqliteBreakerStore'] = None,
 ) -> Any:
     """
     Retries ONLY on transient capacity outages (503 / UNAVAILABLE).
@@ -133,7 +165,7 @@ def call_with_resilience(
     """
     # 1. Initialization
     if time_fn is None:
-        time_fn = time.monotonic
+        time_fn = time.time
     if sleep_fn is None:
         sleep_fn = time.sleep
 
@@ -169,6 +201,8 @@ def call_with_resilience(
                     "event": "coherence_collapse_halt",
                     "phi_risk": snap.phi_risk,
                     "E": snap.E,
+                    "V_raw": getattr(snap, "V_raw", -1.0),
+                    "V_report": getattr(snap, "V_report", -1.0),
                     "regime": "FAILURE"
                 })
             raise SystemHalt()
@@ -222,6 +256,11 @@ def call_with_resilience(
 
             # Check circuit state
             if breaker:
+                if breaker_store:
+                    try:
+                        breaker_store.load_state_into_breaker(model_key, breaker, now=time_fn())
+                    except Exception:
+                        pass
                 now = time_fn()
                 state = breaker.get_state(now)
                 
@@ -305,6 +344,11 @@ def call_with_resilience(
                                     "timestamp": datetime.now(timezone.utc).isoformat(),
                                 })
                         breaker.record_success()
+                        if breaker_store:
+                            try:
+                                breaker_store.persist_breaker(model_key, breaker, now=t0)
+                            except Exception:
+                                pass
                         if kernel:
                             kernel.record_breaker_reset()
                     
@@ -338,6 +382,11 @@ def call_with_resilience(
                         was_half_open = (breaker.get_state(now_fail) == "HALF_OPEN") or (breaker.open_until > 0 and now_fail > breaker.open_until)
                         
                         breaker.record_failure(now_fail, open_after=5, open_for_seconds=600)
+                        if breaker_store:
+                            try:
+                                breaker_store.persist_breaker(model_key, breaker, now=now_fail)
+                            except Exception:
+                                pass
                         
                         if was_half_open:
                              if log:

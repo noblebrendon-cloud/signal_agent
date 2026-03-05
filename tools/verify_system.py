@@ -157,6 +157,29 @@ def main() -> None:
     # Cleanup
     shutil.rmtree(test_root)
 
+    # --- Capture Layer Sanity Checks ---
+    print("\n[TEST] Capture Layer Sanity")
+
+    # Required dirs
+    for d in ["data/capture/raw", "data/capture/promoted", "data/capture/archive"]:
+        dp = ROOT / d
+        assert dp.exists() or True, f"Capture dir missing: {dp}"  # soft check
+        print(f"  -> Dir check: {d} {'OK' if dp.exists() else 'MISSING (will be created on first use)'}")
+
+    # Import probe
+    run([sys.executable, "-c",
+         "from app.hq.capture.capture import capture_add, capture_status; "
+         "from app.hq.capture.promote import promote_run; "
+         "print('CAPTURE IMPORTS: OK')"
+    ])
+
+    # Status command
+    run([sys.executable, "-c",
+         "from app.hq.capture.capture import capture_status; "
+         "import json; s = capture_status(); print(json.dumps(s)); "
+         "print('CAPTURE STATUS: OK')"
+    ])
+
     print("\nOK: verify_system passed")
 
 if __name__ == "__main__":

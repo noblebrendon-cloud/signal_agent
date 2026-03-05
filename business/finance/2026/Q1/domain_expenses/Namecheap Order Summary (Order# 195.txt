@@ -1,0 +1,74 @@
+Namecheap Order Summary (Order# 195017881)
+   
+DateTuesday, Feb 17, 2026, 4:33 PM (EST)
+SubjectNamecheap Order Summary (Order# 195017881)
+Order ID195017881
+
+--------------------------------------------------------------------------------
+Namecheap Order Summary
+Date: Feb 17, 2026 04:33:17 PM EST
+--------------------------------------------------------------------------------
+
+Hello,
+
+Thank you for choosing Namecheap. Here's a summary of your order.
+
+
+Order Details
+
+********************************************************************************
+Order Date     : Feb 17, 2026 04:33:09 PM
+Order Number   : 195017881
+Transaction ID : 237526765
+User Name      : $USERNAME$
+Address	       : Brendon, Coleman
+                 Clarity Systems Group LLC 
+                 Managing member 
+                 622 Beth Avenue
+                 
+                 IN
+                 Bluffton
+                 46714                 
+                 US
+Tax ID         : 41-4287207
+		
+
+Payment source : PAYPAL
+Initial Charge : $11.18
+Final Cost     : $11.18
+
+Total Refund   : N/A
+Refund Trans   : N/A
+N/A
+
+Full details for this order can be viewed at
+
+Order details are available only in HTML email. To see order details go to 
+ https://ap.www.namecheap.com/profile/billing/order/details/195017881/Order
+
+Additional Transaction Details:
+Order #        : noblebrendon150-66.18.188.44-0c9b48a61d65415e8761f68e12ff76c8
+Approval #     : 27495176XH627134H
+
+
+Hosting:
+If you've purchased a hosting plan, its activation and setup will start soon (https://www.namecheap.com/support/knowledgebase/article.aspx/148/22/how-long-does-it-take-to-get-my-hosting-account-activated/). Once both are complete, we'll send you a welcome email with your IP address and hosting account information.
+
+SSL Certificates: 
+If you've purchased an SSL certificate, you will need to enable the SSL on your server (https://www.namecheap.com/support/knowledgebase/article.aspx/10095/67/how-to-enable-an-ssl-certificate/). However, if you purchased a renewal PositiveSSL or EssentialSSL for a domain on Namecheap Shared Hosting, it should be installed automatically within an hour of the purchase.
+
+Premium domains:
+Please note that the premium purchase may take 24-72 hours to complete. We might get in touch with you to confirm purchase details. Please see our Knowledgebase(https://www.namecheap.com/support/knowledgebase/article.aspx/9990/35/what-is-a-premium-domain) for more information.
+
+Transfers: 
+If you are transferring domains that require an Auth Code (or "EPP code"), we'll let you know. If it's required, please obtain the Auth Code from your previous registrar and enter it via your Account Panel.
+
+Renewals: 
+We strongly encourage you to select auto-renewal for your domains and other products, whenever the option is available. We offer a variety of payment options for auto-renewals.
+
+Feel free to contact our Customer Service(https://www.namecheap.com/support.aspx) team if you have any questions or concerns. They're available 24/7.
+ 
+Regards, 
+Team  Namecheap 
+https://www.namecheap.com/ 
+----------------------------------

@@ -1,0 +1,259 @@
+---
+cluster_id: 36cf4a7da767
+file_count: 25
+created_utc: 2026-02-17T09:05:15Z
+---
+
+## Included Files
+
+- raw_2026-02-17T09-05-15_000Z.md
+- raw_2026-02-17T09-05-15_001Z.md
+- raw_2026-02-17T09-05-15_003Z.md
+- raw_2026-02-17T09-05-15_004Z.md
+- raw_2026-02-17T09-05-15_007Z.md
+- raw_2026-02-17T09-05-15_008Z.md
+- raw_2026-02-17T09-05-15_010Z.md
+- raw_2026-02-17T09-05-15_014Z.md
+- raw_2026-02-17T09-05-15_015Z.md
+- raw_2026-02-17T09-05-15_016Z.md
+- raw_2026-02-17T09-05-15_018Z.md
+- raw_2026-02-17T09-05-15_019Z.md
+- raw_2026-02-17T09-05-15_021Z.md
+- raw_2026-02-17T09-05-15_026Z.md
+- raw_2026-02-17T09-05-15_027Z.md
+- raw_2026-02-17T09-05-15_028Z.md
+- raw_2026-02-17T09-05-15_029Z.md
+- raw_2026-02-17T09-05-15_030Z.md
+- raw_2026-02-17T09-05-15_031Z.md
+- raw_2026-02-17T09-05-15_034Z.md
+- raw_2026-02-17T09-05-15_035Z.md
+- raw_2026-02-17T09-05-15_036Z.md
+- raw_2026-02-17T09-05-15_037Z.md
+- raw_2026-02-17T09-05-15_038Z.md
+- raw_2026-02-17T09-05-15_039Z.md
+
+## Extracted URLs
+
+- https://ai-safety.org/article/1152
+- https://ai-safety.org/article/2139
+- https://ai-safety.org/article/2430
+- https://ai-safety.org/article/2684
+- https://ai-safety.org/article/4266
+- https://ai-safety.org/article/4733
+- https://ai-safety.org/article/4846
+- https://ai-safety.org/article/5059
+- https://ai-safety.org/article/5193
+- https://ai-safety.org/article/5571
+- https://ai-safety.org/article/9409
+- https://alignment-forum.net/article/1430
+- https://alignment-forum.net/article/1713
+- https://alignment-forum.net/article/2040
+- https://alignment-forum.net/article/2307
+- https://alignment-forum.net/article/2638
+- https://alignment-forum.net/article/2674
+- https://alignment-forum.net/article/2791
+- https://alignment-forum.net/article/2865
+- https://alignment-forum.net/article/3347
+- https://alignment-forum.net/article/3740
+- https://alignment-forum.net/article/4150
+- https://alignment-forum.net/article/6053
+- https://alignment-forum.net/article/6152
+- https://alignment-forum.net/article/6362
+- https://alignment-forum.net/article/6759
+- https://alignment-forum.net/article/6890
+- https://alignment-forum.net/article/6892
+- https://alignment-forum.net/article/7108
+- https://alignment-forum.net/article/7252
+- https://alignment-forum.net/article/7347
+- https://alignment-forum.net/article/7437
+- https://alignment-forum.net/article/8484
+- https://alignment-forum.net/article/9254
+- https://deepmind-research.io/article/1040
+- https://deepmind-research.io/article/1601
+- https://deepmind-research.io/article/2771
+- https://deepmind-research.io/article/2786
+- https://deepmind-research.io/article/3419
+- https://deepmind-research.io/article/3600
+- https://deepmind-research.io/article/4937
+- https://deepmind-research.io/article/5742
+- https://deepmind-research.io/article/5890
+- https://deepmind-research.io/article/7338
+- https://deepmind-research.io/article/7561
+- https://deepmind-research.io/article/8272
+- https://deepmind-research.io/article/8668
+- https://deepmind-research.io/article/8800
+- https://deepmind-research.io/article/9147
+
+## Content
+
+drift embedding embedding vector stability diagnostic stability metric signal coherence coherence stability embedding embedding diagnostic metric coherence diagnostic embedding diagnostic signal embedding kernel metric drift coherence vector signal align drift vector embedding align stability stability signal stability align align metric drift coherence kernel diagnostic stability signal stability diagnostic drift metric align
+
+https://ai-safety.org/article/2139
+https://ai-safety.org/article/4733
+https://alignment-forum.net/article/2307
+
+---
+
+signal drift kernel align vector align align embedding drift stability metric vector diagnostic embedding vector kernel signal drift diagnostic embedding align coherence embedding coherence align signal drift stability embedding metric align embedding kernel signal kernel vector drift vector embedding diagnostic diagnostic drift metric signal metric signal align embedding vector diagnostic kernel stability coherence stability vector vector
+
+https://alignment-forum.net/article/2040
+https://alignment-forum.net/article/7252
+https://deepmind-research.io/article/8668
+
+---
+
+kernel signal embedding stability stability signal align signal signal kernel coherence stability coherence signal align stability embedding embedding embedding diagnostic kernel vector signal vector drift kernel embedding stability kernel diagnostic stability coherence diagnostic coherence stability embedding vector signal kernel kernel embedding signal coherence vector signal coherence signal drift kernel drift signal diagnostic kernel vector embedding drift embedding coherence metric diagnostic coherence align coherence coherence metric kernel diagnostic diagnostic vector coherence diagnostic stability vector stability metric stability embedding signal stability metric embedding metric metric coherence metric stability signal metric metric diagnostic align drift embedding align embedding drift signal vector drift kernel
+
+https://ai-safety.org/article/1152
+https://alignment-forum.net/article/2638
+
+---
+
+embedding diagnostic drift vector align stability embedding align drift vector kernel diagnostic drift metric diagnostic coherence diagnostic drift stability vector drift stability stability diagnostic vector drift drift metric embedding align embedding drift diagnostic kernel drift coherence stability signal drift coherence coherence align vector drift vector kernel diagnostic signal diagnostic coherence stability stability vector diagnostic coherence align metric diagnostic vector signal vector coherence drift align coherence align embedding embedding stability align diagnostic signal metric vector embedding vector vector signal coherence vector align signal embedding drift
+
+https://deepmind-research.io/article/2771
+
+---
+
+drift diagnostic kernel embedding drift kernel stability drift embedding drift align align diagnostic stability vector vector embedding signal vector embedding stability signal signal align diagnostic kernel signal coherence embedding signal signal metric coherence metric signal kernel coherence align drift signal signal diagnostic diagnostic metric embedding kernel embedding drift signal kernel coherence signal align signal vector kernel vector metric diagnostic coherence signal metric metric coherence stability signal vector kernel vector coherence drift signal align embedding kernel align align signal drift signal drift stability kernel coherence diagnostic coherence align embedding stability coherence
+
+https://ai-safety.org/article/4266
+
+---
+
+vector embedding vector kernel stability metric embedding kernel drift align vector metric metric stability vector drift stability metric coherence drift metric signal signal embedding stability metric embedding stability drift metric stability metric coherence align diagnostic signal align stability diagnostic align coherence signal kernel stability signal align kernel vector signal vector diagnostic drift metric diagnostic kernel kernel signal metric drift align embedding stability drift kernel embedding kernel metric metric signal align coherence kernel align vector kernel embedding align drift align drift metric drift diagnostic coherence diagnostic embedding stability embedding signal
+
+https://deepmind-research.io/article/4937
+https://deepmind-research.io/article/8800
+
+---
+
+diagnostic signal kernel kernel drift metric signal drift metric metric coherence metric stability embedding embedding drift stability vector embedding vector diagnostic stability vector coherence signal kernel metric kernel drift coherence embedding drift drift kernel stability embedding drift metric embedding signal stability diagnostic embedding vector drift vector stability coherence vector drift metric metric drift kernel stability kernel drift signal drift diagnostic diagnostic kernel kernel stability metric coherence signal align metric drift coherence stability embedding metric metric coherence drift metric coherence vector kernel diagnostic kernel drift vector metric signal kernel stability kernel align signal align align stability vector align signal kernel
+
+https://deepmind-research.io/article/7561
+https://deepmind-research.io/article/1601
+
+---
+
+drift align signal vector embedding vector diagnostic align diagnostic diagnostic drift vector drift kernel drift align stability kernel stability vector embedding signal diagnostic align stability signal coherence drift diagnostic stability kernel align drift metric signal align stability embedding kernel coherence metric diagnostic align metric embedding stability kernel drift signal stability vector coherence coherence drift kernel
+
+https://ai-safety.org/article/4846
+
+---
+
+kernel align diagnostic signal metric vector signal stability kernel metric signal drift coherence align embedding kernel kernel embedding align stability align diagnostic align coherence signal drift embedding stability kernel stability embedding metric coherence coherence align embedding vector metric embedding stability diagnostic embedding metric embedding embedding align vector metric coherence drift vector vector diagnostic drift vector stability coherence vector coherence align embedding metric align coherence vector drift coherence vector signal diagnostic stability stability kernel kernel
+
+https://deepmind-research.io/article/2786
+https://alignment-forum.net/article/9254
+
+---
+
+coherence diagnostic drift kernel coherence coherence kernel signal signal stability kernel kernel stability stability align metric vector stability vector drift metric metric diagnostic align signal metric diagnostic drift kernel diagnostic metric signal stability stability diagnostic embedding signal kernel embedding signal align kernel signal signal stability align signal align drift align vector kernel stability stability stability stability signal stability align vector diagnostic coherence metric diagnostic diagnostic align stability signal align signal coherence drift metric drift align stability metric diagnostic embedding vector kernel embedding stability align diagnostic align stability drift metric
+
+https://alignment-forum.net/article/1430
+
+---
+
+drift embedding vector drift drift align stability coherence kernel signal vector vector signal diagnostic embedding diagnostic diagnostic align stability signal coherence signal coherence kernel stability align metric signal metric signal signal drift stability signal coherence align vector metric kernel align stability signal stability embedding signal metric signal diagnostic stability signal drift align embedding align vector stability diagnostic stability diagnostic diagnostic embedding align align
+
+https://deepmind-research.io/article/3419
+https://ai-safety.org/article/2684
+https://ai-safety.org/article/5193
+
+---
+
+metric vector stability vector kernel kernel metric metric kernel metric metric align align vector kernel stability kernel kernel drift drift metric coherence align diagnostic stability drift kernel kernel coherence coherence align drift stability stability metric metric diagnostic signal kernel metric diagnostic coherence kernel metric embedding align metric kernel diagnostic vector coherence kernel stability align stability diagnostic vector coherence embedding kernel kernel
+
+https://deepmind-research.io/article/3600
+https://alignment-forum.net/article/7108
+https://alignment-forum.net/article/7347
+
+---
+
+stability embedding kernel align coherence signal coherence signal diagnostic align embedding signal stability align embedding coherence align stability align vector vector coherence drift kernel vector kernel kernel metric coherence stability coherence drift embedding vector diagnostic metric diagnostic signal stability drift embedding drift stability coherence embedding signal metric kernel stability stability kernel metric diagnostic coherence diagnostic metric embedding vector drift signal coherence metric align embedding metric signal vector stability diagnostic align stability diagnostic diagnostic diagnostic diagnostic diagnostic coherence
+
+https://alignment-forum.net/article/1713
+https://deepmind-research.io/article/7338
+
+---
+
+metric align vector signal metric drift metric align diagnostic diagnostic diagnostic kernel metric drift kernel coherence align align stability signal metric drift coherence metric kernel drift metric metric embedding coherence metric kernel vector diagnostic metric signal vector embedding coherence metric stability embedding coherence kernel align signal vector signal embedding signal diagnostic metric kernel coherence vector diagnostic embedding diagnostic align kernel diagnostic signal align vector kernel diagnostic align diagnostic align drift
+
+https://alignment-forum.net/article/4150
+https://ai-safety.org/article/5571
+https://deepmind-research.io/article/5890
+
+---
+
+drift embedding kernel align kernel align diagnostic drift drift stability metric diagnostic signal signal align vector drift coherence drift stability align kernel drift kernel embedding embedding diagnostic drift diagnostic drift vector stability metric metric embedding embedding coherence diagnostic embedding embedding coherence stability signal align kernel stability vector coherence diagnostic vector signal kernel kernel embedding drift align drift coherence stability metric embedding diagnostic coherence vector signal vector coherence signal kernel
+
+https://deepmind-research.io/article/5742
+
+---
+
+drift metric metric stability align drift kernel diagnostic diagnostic kernel vector diagnostic kernel drift embedding stability align vector kernel drift vector coherence align drift metric embedding vector metric signal signal diagnostic align stability signal stability vector vector kernel align embedding coherence drift signal embedding kernel drift align drift metric metric
+
+https://alignment-forum.net/article/6890
+
+---
+
+stability kernel drift vector signal diagnostic drift stability drift align metric embedding embedding vector kernel vector kernel metric align signal diagnostic kernel diagnostic embedding embedding metric stability diagnostic kernel diagnostic align stability metric stability coherence diagnostic diagnostic embedding metric diagnostic vector vector align diagnostic kernel stability embedding metric kernel stability diagnostic kernel coherence
+
+https://ai-safety.org/article/9409
+https://alignment-forum.net/article/8484
+
+---
+
+kernel drift coherence signal drift coherence embedding metric stability coherence signal align stability diagnostic coherence stability kernel coherence drift signal vector vector signal align signal kernel signal signal stability diagnostic vector align stability vector diagnostic signal diagnostic vector embedding coherence coherence drift kernel diagnostic signal diagnostic signal embedding embedding kernel align vector drift embedding stability coherence signal metric coherence embedding embedding stability stability metric coherence kernel metric coherence embedding coherence signal kernel embedding diagnostic embedding coherence vector diagnostic drift embedding metric align metric metric align
+
+https://alignment-forum.net/article/3347
+
+---
+
+drift drift coherence diagnostic metric vector signal diagnostic kernel coherence align signal diagnostic align signal signal vector drift signal vector diagnostic kernel embedding embedding drift vector kernel coherence diagnostic signal signal diagnostic diagnostic vector signal embedding drift embedding align stability kernel align stability diagnostic embedding coherence drift signal metric metric coherence stability embedding metric diagnostic embedding kernel embedding align drift coherence embedding embedding stability kernel embedding metric embedding signal embedding diagnostic align drift signal kernel diagnostic
+
+https://alignment-forum.net/article/6053
+https://alignment-forum.net/article/6892
+https://deepmind-research.io/article/9147
+
+---
+
+align coherence embedding metric vector signal stability drift vector metric embedding metric signal diagnostic align signal vector stability diagnostic align coherence stability signal embedding stability align metric metric metric signal align coherence drift kernel kernel embedding align diagnostic signal signal vector metric signal stability metric drift embedding stability stability drift vector signal vector signal align align stability stability coherence drift kernel
+
+https://alignment-forum.net/article/2674
+https://ai-safety.org/article/2430
+
+---
+
+kernel diagnostic diagnostic diagnostic signal stability coherence stability align diagnostic stability metric metric align signal coherence drift signal signal stability diagnostic embedding metric diagnostic vector signal vector vector drift drift drift kernel vector stability vector signal drift signal drift kernel stability align drift embedding kernel metric metric embedding kernel stability vector drift coherence signal align metric signal align kernel align signal metric vector drift align metric embedding kernel align vector signal align drift kernel metric embedding align
+
+https://alignment-forum.net/article/7437
+https://alignment-forum.net/article/2865
+
+---
+
+diagnostic vector diagnostic coherence kernel embedding kernel drift stability signal kernel vector drift embedding drift vector signal signal stability kernel metric kernel metric signal diagnostic diagnostic signal diagnostic coherence align diagnostic metric stability stability embedding align vector metric coherence metric signal align signal stability coherence stability drift embedding diagnostic diagnostic diagnostic metric metric embedding kernel align signal kernel metric diagnostic vector align coherence kernel stability drift signal stability stability vector align drift align kernel embedding diagnostic kernel align kernel stability kernel kernel align stability drift coherence stability
+
+https://alignment-forum.net/article/2791
+
+---
+
+embedding diagnostic vector diagnostic vector align diagnostic signal kernel embedding signal vector vector signal signal coherence metric embedding kernel metric signal signal coherence embedding embedding drift stability metric stability diagnostic vector align align embedding kernel stability drift kernel diagnostic align metric signal metric signal metric stability align align kernel metric vector drift metric metric stability vector align stability embedding drift stability vector align vector diagnostic signal signal metric vector metric signal signal vector kernel diagnostic vector diagnostic vector kernel drift vector vector align kernel metric coherence align coherence kernel vector embedding signal diagnostic diagnostic kernel signal kernel
+
+https://deepmind-research.io/article/8272
+https://alignment-forum.net/article/3740
+
+---
+
+coherence embedding drift coherence drift embedding diagnostic drift vector kernel metric kernel diagnostic diagnostic stability metric stability drift diagnostic align diagnostic coherence kernel diagnostic embedding signal stability embedding drift coherence kernel drift align stability kernel stability embedding embedding metric align metric signal vector metric vector embedding embedding coherence metric align diagnostic drift metric diagnostic vector align drift drift metric drift diagnostic stability vector signal coherence drift vector vector embedding vector align embedding signal kernel vector metric drift signal signal kernel stability stability signal diagnostic drift align
+
+https://alignment-forum.net/article/6362
+https://deepmind-research.io/article/1040
+
+---
+
+kernel align stability diagnostic signal embedding signal embedding kernel drift align drift align diagnostic metric vector metric kernel align coherence coherence stability kernel coherence stability vector kernel kernel coherence signal embedding vector drift vector drift stability align drift stability align vector coherence signal drift embedding signal stability stability coherence embedding kernel stability vector metric embedding diagnostic kernel coherence coherence align stability signal vector kernel stability embedding signal stability stability stability align align drift vector signal vector vector stability diagnostic metric coherence metric vector kernel align embedding vector signal metric kernel embedding stability stability vector stability metric
+
+https://alignment-forum.net/article/6759
+https://alignment-forum.net/article/6152
+https://ai-safety.org/article/5059

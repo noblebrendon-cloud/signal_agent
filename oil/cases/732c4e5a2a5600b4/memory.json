@@ -1,0 +1,15 @@
+{
+  "run_id": "732c4e5a2a5600b4",
+  "fingerprint_id": "dab4a2fbc3a1075f",
+  "artifact_path": "E:\\signal_agent\\oil\\artifacts\\incident_20260228T073730Z_732c4e5a2a5600b4.json",
+  "created_utc": "2026-02-28T07:37:30Z",
+  "origin_service": "payment",
+  "change_kind": "deploy",
+  "metric_kind": "business_kpi",
+  "hop_distance_class": "1",
+  "impact_domain": "revenue",
+  "confidence": 0.977619,
+  "action_category": "investigate",
+  "action_target_service": "payment",
+  "fallback_action_category": "rollback"
+}

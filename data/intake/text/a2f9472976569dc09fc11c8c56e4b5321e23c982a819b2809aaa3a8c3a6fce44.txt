@@ -1,0 +1,137 @@
+from __future__ import annotations
+
+import contextlib
+import json
+import os
+import time
+from dataclasses import dataclass
+from pathlib import Path
+from uuid import uuid4
+
+
+@dataclass(frozen=True)
+class AtomicWriteResult:
+    final_path: Path
+    tmp_path: Path
+    bytes_written: int
+
+
+def ensure_parent_dir(path: Path) -> None:
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+
+
+def atomic_write_text(final_path: Path, text: str, encoding: str = "utf-8") -> AtomicWriteResult:
+    final_path = Path(final_path)
+    ensure_parent_dir(final_path)
+
+    tmp_path = final_path.with_name(f".{final_path.name}.{uuid4().hex}.tmp")
+    payload = text.encode(encoding)
+
+    with open(tmp_path, "wb") as f:
+        f.write(payload)
+        f.flush()
+        os.fsync(f.fileno())
+
+    os.replace(tmp_path, final_path)
+    return AtomicWriteResult(final_path=final_path, tmp_path=tmp_path, bytes_written=len(payload))
+
+
+class _FileLock:
+    def __init__(self, path: Path, retries: int, base_sleep_s: float) -> None:
+        self.path = Path(path)
+        self.retries = retries
+        self.base_sleep_s = base_sleep_s
+        self._fh = None
+
+    def __enter__(self) -> "_FileLock":
+        ensure_parent_dir(self.path)
+        self._fh = open(self.path, "a+b")
+        if self._fh.tell() == 0:
+            self._fh.write(b"\0")
+            self._fh.flush()
+            os.fsync(self._fh.fileno())
+
+        for attempt in range(self.retries):
+            try:
+                self._try_lock_nonblocking()
+                return self
+            except OSError:
+                if attempt == self.retries - 1:
+                    raise TimeoutError(f"Unable to acquire lock: {self.path}")
+                time.sleep(self.base_sleep_s * (attempt + 1))
+        raise TimeoutError(f"Unable to acquire lock: {self.path}")
+
+    def __exit__(self, exc_type, exc, tb) -> None:
+        try:
+            self._unlock()
+        finally:
+            if self._fh is not None:
+                self._fh.close()
+                self._fh = None
+
+    def _try_lock_nonblocking(self) -> None:
+        if self._fh is None:
+            raise RuntimeError("Lock handle not initialized")
+
+        if os.name == "nt":
+            import msvcrt
+
+            self._fh.seek(0)
+            msvcrt.locking(self._fh.fileno(), msvcrt.LK_NBLCK, 1)
+            return
+
+        import fcntl
+
+        fcntl.flock(self._fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+
+    def _unlock(self) -> None:
+        if self._fh is None:
+            return
+
+        if os.name == "nt":
+            import msvcrt
+
+            self._fh.seek(0)
+            msvcrt.locking(self._fh.fileno(), msvcrt.LK_UNLCK, 1)
+            return
+
+        import fcntl
+
+        fcntl.flock(self._fh.fileno(), fcntl.LOCK_UN)
+
+
+def append_jsonl_atomic(
+    jsonl_path: Path,
+    record: dict,
+    lock_path: Path | None = None,
+    retries: int = 30,
+    base_sleep_s: float = 0.02,
+) -> None:
+    jsonl_path = Path(jsonl_path)
+    ensure_parent_dir(jsonl_path)
+
+    if lock_path is None:
+        lock_path = jsonl_path.with_suffix(jsonl_path.suffix + ".lock")
+    lock_path = Path(lock_path)
+    ensure_parent_dir(lock_path)
+
+    line = json.dumps(record, separators=(",", ":"), ensure_ascii=False) + "\n"
+    payload = line.encode("utf-8")
+
+    with _FileLock(lock_path, retries=retries, base_sleep_s=base_sleep_s):
+        with open(jsonl_path, "ab+") as f:
+            f.seek(0, os.SEEK_END)
+            start_pos = f.tell()
+            try:
+                written = f.write(payload)
+                if written != len(payload):
+                    raise OSError(f"Short write for {jsonl_path}: wrote {written} of {len(payload)} bytes")
+                f.flush()
+                os.fsync(f.fileno())
+            except Exception:
+                with contextlib.suppress(Exception):
+                    f.seek(start_pos)
+                    f.truncate(start_pos)
+                    f.flush()
+                    os.fsync(f.fileno())
+                raise

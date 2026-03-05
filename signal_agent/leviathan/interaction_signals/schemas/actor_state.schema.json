@@ -1,0 +1,12 @@
+﻿{"$schema":"http://json-schema.org/draft-07/schema#","title":"ActorState","type":"object",
+ "required":["actor_id"],
+ "properties":{"actor_id":{"type":"string"},
+  "trust_score":{"type":"number","minimum":0,"maximum":1},
+  "collab_readiness":{"type":"number","minimum":0,"maximum":1},
+  "integrity_index":{"type":"number","minimum":0,"maximum":1},
+  "transaction_pressure":{"type":"number","minimum":0,"maximum":1},
+  "mode_histogram_30":{"type":"object"},"mode_volatility_30":{"type":"number"},
+  "last_n_modes":{"type":"array"},"pressure_integrity":{"type":"number"},
+  "extraction_after_trust":{"type":"number"},"evasion_rate_30":{"type":"number"},
+  "shipping_rate_30":{"type":"number"},"last_mode":{"type":["string","null"]},
+  "transition_matrix":{"type":"object"}}}

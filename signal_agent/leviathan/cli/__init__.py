@@ -1,0 +1,2 @@
+"""Leviathan CLI package."""
+
