@@ -11,6 +11,7 @@ import argparse
 import hashlib
 import json
 import sys
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -41,7 +42,8 @@ def _build_event(text: str, actor_id: str, thread_id: str, seq: int) -> Event:
     normalized = " ".join(text.strip().split())
     material = f"{actor_id}|{thread_id}|{seq}|{normalized}".encode("utf-8")
     event_id = f"cli_{hashlib.sha256(material).hexdigest()[:12]}"
-    timestamp = f"2026-01-01T00:00:{seq % 60:02d}Z"
+    base = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    timestamp = (base + timedelta(seconds=max(1, int(seq)))).isoformat().replace("+00:00", "Z")
     return Event(
         event_id=event_id,
         actor_id=actor_id,

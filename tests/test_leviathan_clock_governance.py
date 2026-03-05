@@ -217,3 +217,30 @@ def test_multiple_clock_ticks_do_not_duplicate_ledger_writes(tmp_path: Path):
     assert len(entries) == 1
     assert entries[0].get("event", {}).get("event_id")
     assert proc.stdout.count("[Leviathan] processed event: event1.txt") == 1
+
+
+def test_ledger_timestamps_strictly_increasing_across_sequence_boundary(tmp_path: Path):
+    inbox = tmp_path / "inbox"
+    processed = tmp_path / "processed"
+    ledger = tmp_path / "causal_ledger.jsonl"
+    inbox.mkdir(parents=True, exist_ok=True)
+    processed.mkdir(parents=True, exist_ok=True)
+
+    for i in range(4):
+        (inbox / f"{i:02d}.txt").write_text(f"event {i}", encoding="utf-8")
+
+    config = tasks_module.LeviathanTaskConfig(
+        inbox_dir=inbox,
+        processed_dir=processed,
+        ledger_path=ledger,
+    )
+    runtime = tasks_module.LeviathanTaskRuntime(config, log_fn=lambda _msg: None)
+    runtime._seq = 58  # force boundary crossing for timestamp generation
+    runtime.process_inbox_once()
+
+    entries = _read_jsonl(ledger)
+    timestamps = [str(entry.get("event", {}).get("timestamp")) for entry in entries]
+    assert len(timestamps) == 4
+    assert timestamps == sorted(timestamps)
+    for idx in range(1, len(timestamps)):
+        assert timestamps[idx] > timestamps[idx - 1]
