@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 300" width="100%" height="100%">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#10b981" />
+    </marker>
+  </defs>
+  <style>
+    .node { fill: #1e293b; stroke: #475569; stroke-width: 2px; }
+    .label { font-family: 'Inter', sans-serif; font-size: 14px; fill: #f8fafc; text-anchor: middle; dominant-baseline: middle; }
+    .edge { stroke: #10b981; stroke-width: 3px; fill: none; }
+    .terminal-complete { stroke: #10b981; fill: rgba(16, 185, 129, 0.1); }
+    .unvisited { stroke-opacity: 0.2; }
+  </style>
+
+  <!-- Highlighted Baseline Path -->
+  <path d="M 120 150 L 220 150" class="edge" marker-end="url(#arrow)" />
+  <path d="M 220 150 L 320 150" class="edge" marker-end="url(#arrow)" />
+  <path d="M 320 150 L 420 150" class="edge" marker-end="url(#arrow)" />
+  <path d="M 420 150 L 520 150" class="edge" marker-end="url(#arrow)" />
+  <path d="M 520 150 L 680 70" class="edge" marker-end="url(#arrow)" />
+  
+  <!-- Nodes (Visited on Path) -->
+  <rect x="60" y="130" width="80" height="40" rx="6" class="node" />
+  <text x="100" y="152" class="label">Init</text>
+  <rect x="180" y="130" width="80" height="40" rx="6" class="node" />
+  <text x="220" y="152" class="label">Capture</text>
+  <rect x="260" y="130" width="120" height="40" rx="6" class="node" />
+  <text x="320" y="152" class="label">Protocol Session</text>
+  <rect x="360" y="130" width="120" height="40" rx="6" class="node" />
+  <text x="420" y="152" class="label">Artifact Compile</text>
+  <rect x="460" y="130" width="120" height="40" rx="6" class="node" />
+  <text x="520" y="152" class="label">Publication Gate</text>
+
+  <!-- Complete Terminal -->
+  <rect x="620" y="50" width="140" height="40" rx="6" class="node terminal-complete" />
+  <text x="690" y="72" class="label">Release Complete</text>
+</svg>

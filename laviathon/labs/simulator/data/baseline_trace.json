@@ -1,0 +1,93 @@
+{
+  "scenario": "Baseline Successful Run",
+  "scenario_path": "E:\\datasets\\ontology_source\\simulation_scenarios\\baseline.yaml",
+  "generated_at": "2026-03-11T01:59:18.176455",
+  "final_state": "Release Complete",
+  "success": true,
+  "events": [
+    {
+      "tick": 1,
+      "actor": "Operator",
+      "action": "initiate_capture",
+      "payload": {},
+      "violations": [],
+      "resulting_state": "Capture"
+    },
+    {
+      "tick": 2,
+      "actor": "System",
+      "action": "process_protocol",
+      "payload": {},
+      "violations": [],
+      "resulting_state": "Protocol Session"
+    },
+    {
+      "tick": 3,
+      "actor": "System",
+      "action": "compile_artifact",
+      "payload": {},
+      "violations": [],
+      "resulting_state": "Artifact Compile"
+    },
+    {
+      "tick": 4,
+      "actor": "System",
+      "action": "submit_to_gate",
+      "payload": {
+        "governance_approval": true
+      },
+      "violations": [],
+      "resulting_state": "Publication Gate"
+    },
+    {
+      "tick": 5,
+      "actor": "System",
+      "action": "release_artifact",
+      "payload": {},
+      "violations": [],
+      "resulting_state": "Release Complete"
+    }
+  ],
+  "transitions": [
+    {
+      "tick": 1,
+      "from_state": "Init",
+      "to_state": "Capture",
+      "event": "initiate_capture",
+      "allowed": true,
+      "reason": "Normal transition"
+    },
+    {
+      "tick": 2,
+      "from_state": "Capture",
+      "to_state": "Protocol Session",
+      "event": "process_protocol",
+      "allowed": true,
+      "reason": "Normal transition"
+    },
+    {
+      "tick": 3,
+      "from_state": "Protocol Session",
+      "to_state": "Artifact Compile",
+      "event": "compile_artifact",
+      "allowed": true,
+      "reason": "Normal transition"
+    },
+    {
+      "tick": 4,
+      "from_state": "Artifact Compile",
+      "to_state": "Publication Gate",
+      "event": "submit_to_gate",
+      "allowed": true,
+      "reason": "Normal transition"
+    },
+    {
+      "tick": 5,
+      "from_state": "Publication Gate",
+      "to_state": "Release Complete",
+      "event": "release_artifact",
+      "allowed": true,
+      "reason": "Normal transition"
+    }
+  ]
+}

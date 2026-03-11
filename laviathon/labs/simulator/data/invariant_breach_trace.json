@@ -1,0 +1,54 @@
+{
+  "scenario": "Invariant Breach Scenario",
+  "scenario_path": "E:\\datasets\\ontology_source\\simulation_scenarios\\invariant_breach.yaml",
+  "generated_at": "2026-03-11T01:59:19.122024",
+  "final_state": "Violation Halt",
+  "success": false,
+  "events": [
+    {
+      "tick": 1,
+      "actor": "Operator",
+      "action": "initiate_capture",
+      "payload": {},
+      "violations": [],
+      "resulting_state": "Capture"
+    },
+    {
+      "tick": 2,
+      "actor": "System",
+      "action": "submit_to_gate",
+      "payload": {
+        "governance_approval": true
+      },
+      "violations": [
+        {
+          "name": "Invariant_Artifact_Before_Publication",
+          "description": "Publication Gate requires Artifact Compile completion",
+          "scope": "Publication Gate",
+          "severity": "fatal",
+          "tick": 2,
+          "impacted_state": "Capture"
+        }
+      ],
+      "resulting_state": "Violation Halt"
+    }
+  ],
+  "transitions": [
+    {
+      "tick": 1,
+      "from_state": "Init",
+      "to_state": "Capture",
+      "event": "initiate_capture",
+      "allowed": true,
+      "reason": "Normal transition"
+    },
+    {
+      "tick": 2,
+      "from_state": "Capture",
+      "to_state": "Violation Halt",
+      "event": "submit_to_gate",
+      "allowed": false,
+      "reason": "Fatal invariant breach."
+    }
+  ]
+}

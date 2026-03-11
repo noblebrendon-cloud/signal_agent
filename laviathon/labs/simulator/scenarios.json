@@ -1,0 +1,14 @@
+{
+    "baseline": {
+        "label": "Baseline Successful Run",
+        "trace": "data/baseline_trace.json"
+    },
+    "invariant_breach": {
+        "label": "Invariant Breach",
+        "trace": "data/invariant_breach_trace.json"
+    },
+    "publication_gate_delay": {
+        "label": "Governance Delay",
+        "trace": "data/publication_gate_delay_trace.json"
+    }
+}

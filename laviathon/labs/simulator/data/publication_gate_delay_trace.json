@@ -1,0 +1,86 @@
+{
+  "scenario": "Publication Gate Delay",
+  "scenario_path": "E:\\datasets\\ontology_source\\simulation_scenarios\\publication_gate_delay.yaml",
+  "generated_at": "2026-03-11T01:59:20.306236",
+  "final_state": "Blocked",
+  "success": false,
+  "events": [
+    {
+      "tick": 1,
+      "actor": "Operator",
+      "action": "initiate_capture",
+      "payload": {},
+      "violations": [],
+      "resulting_state": "Capture"
+    },
+    {
+      "tick": 2,
+      "actor": "System",
+      "action": "process_protocol",
+      "payload": {},
+      "violations": [],
+      "resulting_state": "Protocol Session"
+    },
+    {
+      "tick": 3,
+      "actor": "System",
+      "action": "compile_artifact",
+      "payload": {},
+      "violations": [],
+      "resulting_state": "Artifact Compile"
+    },
+    {
+      "tick": 4,
+      "actor": "System",
+      "action": "submit_to_gate",
+      "payload": {
+        "governance_approval": false
+      },
+      "violations": [
+        {
+          "name": "Governance_Policy_Rejection",
+          "description": "Publication Gate rejected the payload due to governance bounds.",
+          "scope": "Publication Gate",
+          "severity": "error",
+          "tick": 4,
+          "impacted_state": "Artifact Compile"
+        }
+      ],
+      "resulting_state": "Blocked"
+    }
+  ],
+  "transitions": [
+    {
+      "tick": 1,
+      "from_state": "Init",
+      "to_state": "Capture",
+      "event": "initiate_capture",
+      "allowed": true,
+      "reason": "Normal transition"
+    },
+    {
+      "tick": 2,
+      "from_state": "Capture",
+      "to_state": "Protocol Session",
+      "event": "process_protocol",
+      "allowed": true,
+      "reason": "Normal transition"
+    },
+    {
+      "tick": 3,
+      "from_state": "Protocol Session",
+      "to_state": "Artifact Compile",
+      "event": "compile_artifact",
+      "allowed": true,
+      "reason": "Normal transition"
+    },
+    {
+      "tick": 4,
+      "from_state": "Artifact Compile",
+      "to_state": "Blocked",
+      "event": "submit_to_gate",
+      "allowed": false,
+      "reason": "Governance bounds rejected transition."
+    }
+  ]
+}

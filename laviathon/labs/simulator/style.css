@@ -1,0 +1,286 @@
+:root {
+    --bg-dark: #0a0a0c;
+    --panel-bg: #121216;
+    --border-color: #2a2a35;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --accent: #3b82f6;
+    --completion: #10b981;
+    --violation: #ef4444;
+    --blocked: #f59e0b;
+    --font-stack: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    background: radial-gradient(circle at top center, #1e1e24 0%, var(--bg-dark) 100%);
+    color: var(--text-main);
+    font-family: var(--font-stack);
+    line-height: 1.6;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 3rem 1.5rem;
+    min-height: 100vh;
+}
+
+.site-header {
+    text-align: center;
+    max-width: 800px;
+    margin-bottom: 3rem;
+}
+
+.badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--accent);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 999px;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.site-header h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.5rem;
+}
+
+.site-header h2 {
+    font-size: 1.25rem;
+    color: var(--text-muted);
+    font-weight: 400;
+    margin-bottom: 1.5rem;
+}
+
+.description {
+    font-size: 1rem;
+    color: #cbd5e1;
+    margin-bottom: 1.5rem;
+}
+
+.mcp-note {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-style: italic;
+    border-top: 1px solid var(--border-color);
+    padding-top: 1rem;
+    display: inline-block;
+}
+
+.simulator-layout {
+    width: 100%;
+    max-width: 1000px;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.panel {
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.panel h3 {
+    font-size: 1.2rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.75rem;
+}
+
+.svg-container {
+    width: 100%;
+    background: #0d0d10;
+    border-radius: 8px;
+    padding: 2rem;
+    display: flex;
+    justify-content: center;
+    border: 1px solid #1a1a24;
+    margin-bottom: 1rem;
+}
+
+.diagram-img {
+    max-width: 100%;
+    height: auto;
+}
+
+.panel-caption {
+    font-size: 0.85rem;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+/* Scenario Cards */
+.cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+.scenario-card {
+    background: #17171e;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.outcome-badge {
+    position: absolute;
+    top: -10px;
+    right: 1.5rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.outcome-badge.complete { background: var(--completion); color: #000; }
+.outcome-badge.violation { background: var(--violation); color: #fff; }
+.outcome-badge.blocked { background: var(--blocked); color: #000; }
+
+.scenario-card h4 {
+    font-size: 1.1rem;
+    margin-bottom: 0.75rem;
+    color: #fff;
+    margin-top: 0.5rem;
+}
+
+.scenario-card p {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin-bottom: 1.5rem;
+    flex: 1;
+}
+
+.card-meta {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    background: rgba(0,0,0,0.3);
+    padding: 0.75rem;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+/* Trace Evidence */
+.evidence-content p {
+    font-size: 0.95rem;
+    color: #cbd5e1;
+    margin-bottom: 1rem;
+}
+
+.artifact-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.75rem;
+    list-style: none;
+}
+
+.artifact-list li {
+    background: #1e1e26;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    border-left: 3px solid var(--accent);
+    font-family: monospace;
+    font-size: 0.85rem;
+    color: #e2e8f0;
+}
+
+/* Viewer Notes & Invitation */
+.viewer-notice {
+    background: rgba(245, 158, 11, 0.05);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    border-radius: 8px;
+    padding: 1.25rem;
+    text-align: center;
+    color: #cbd5e1;
+    font-size: 0.95rem;
+    margin-top: 1rem;
+}
+
+.tester-invitation {
+    text-align: center;
+    padding: 3rem 0;
+    border-top: 1px solid var(--border-color);
+    margin-top: 2rem;
+}
+
+.tester-invitation h3 {
+    font-size: 1.5rem;
+    margin-bottom: 0.75rem;
+    color: #fff;
+}
+
+.tester-invitation p {
+    color: var(--text-muted);
+    max-width: 600px;
+    margin: 0 auto 1.5rem;
+}
+
+.action-links {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: #2563eb; }
+
+.btn-outline { border: 1px solid var(--border-color); color: var(--text-main); }
+.btn-outline:hover { border-color: var(--text-muted); background: rgba(255,255,255,0.05); }
+
+/* Footer */
+.site-footer {
+    width: 100%;
+    margin-top: auto;
+    padding-top: 3rem;
+}
+
+.footer-inner {
+    border-top: 1px solid var(--border-color);
+    padding-top: 2rem;
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+}
+
+.footer-inner a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.85rem;
+    transition: color 0.2s;
+}
+
+.footer-inner a:hover { color: #fff; }
+
+@media (max-width: 768px) {
+    .action-links { flex-direction: column; }
+    .site-header h1 { font-size: 2rem; }
+    .footer-inner { flex-direction: column; align-items: center; gap: 1rem; }
+}
