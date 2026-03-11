@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 300" width="100%" height="100%">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#f59e0b" />
+    </marker>
+  </defs>
+  <style>
+    .node { fill: #1e293b; stroke: #475569; stroke-width: 2px; }
+    .label { font-family: 'Inter', sans-serif; font-size: 14px; fill: #f8fafc; text-anchor: middle; dominant-baseline: middle; }
+    .edge-valid { stroke: #3b82f6; stroke-width: 3px; fill: none; }
+    .edge-blocked { stroke: #f59e0b; stroke-width: 3px; stroke-dasharray: 6 4; fill: none; }
+    .terminal-blocked { stroke: #f59e0b; fill: rgba(245, 158, 11, 0.1); }
+  </style>
+
+  <!-- Path -->
+  <path d="M 120 150 L 220 150" class="edge-valid" />
+  <path d="M 220 150 L 320 150" class="edge-valid" />
+  <path d="M 320 150 L 420 150" class="edge-valid" />
+  <path d="M 420 150 L 520 150" class="edge-blocked" marker-end="url(#arrow)" />
+  <path d="M 520 150 L 680 150" class="edge-blocked" marker-end="url(#arrow)" />
+  
+  <rect x="60" y="130" width="80" height="40" rx="6" class="node" />
+  <text x="100" y="152" class="label">Init</text>
+  <rect x="180" y="130" width="80" height="40" rx="6" class="node" />
+  <text x="220" y="152" class="label">Capture</text>
+  <rect x="260" y="130" width="120" height="40" rx="6" class="node" />
+  <text x="320" y="152" class="label">Protocol Session</text>
+  <rect x="360" y="130" width="120" height="40" rx="6" class="node" />
+  <text x="420" y="152" class="label">Artifact Compile</text>
+
+  <!-- Blocked Terminal -->
+  <rect x="620" y="130" width="140" height="40" rx="6" class="node terminal-blocked" />
+  <text x="690" y="152" class="label" style="fill:#f59e0b; font-weight:700;">Blocked</text>
+</svg>

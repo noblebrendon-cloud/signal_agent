@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Architecture Simulation Layer | Leviathon</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="site-header">
+        <span class="badge">Early Access Research Release</span>
+        <h1>Architecture Simulation Layer</h1>
+        <h2>Deterministic workflow execution, boundary testing, and traceable state outcomes</h2>
+        <p class="description">
+            The simulator models the core research workflows as a formal deterministic finite-state machine. By structuring operational logic topologically, the architecture explicitly forces compliance before release. The current release demonstrates three boundary-tested trace scenarios yielding strict, inspectable terminal bounds.
+        </p>
+        <p class="mcp-note">
+            MCP-compatible integration available for controlled agent execution and inspection.
+        </p>
+    </header>
+
+    <main class="simulator-layout">
+        
+        <section class="panel architecture-overview">
+            <h3>Architecture Overview</h3>
+            <div class="svg-container">
+                <!-- Fallback to inline or image -->
+                <img src="assets/architecture_overview.svg" alt="Canonical Architecture Flow" class="diagram-img">
+            </div>
+            <p class="panel-caption">The canonical trajectory mapping explicit flow dependencies against terminating bounds.</p>
+        </section>
+
+        <section class="panel verified-scenarios">
+            <h3>Verified Scenarios</h3>
+            <div class="cards-grid">
+                <!-- Card 1 -->
+                <div class="scenario-card">
+                    <span class="outcome-badge complete">Release Complete</span>
+                    <h4>Baseline Successful Run</h4>
+                    <p>A valid deterministic traversal cleanly passing protocols and compiling artifacts through the formal publication gate.</p>
+                    <div class="card-meta">
+                        <span>Transitions: 5</span>
+                        <span>Terminal: <strong>Release Complete</strong></span>
+                    </div>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="scenario-card">
+                    <span class="outcome-badge violation">Violation Halt</span>
+                    <h4>Invariant Breach</h4>
+                    <p>A forced invalid transition triggering an invariant fault. Evaluates execution attempts to leap explicitly bounded logic barriers without requisite signatures.</p>
+                    <div class="card-meta">
+                        <span>Transitions: 2</span>
+                        <span>Terminal: <strong>Violation Halt</strong></span>
+                    </div>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="scenario-card">
+                    <span class="outcome-badge blocked">Blocked</span>
+                    <h4>Governance Delay</h4>
+                    <p>A properly structured release request validly positioned at the Publication Gate, subsequently rejected by external governance logic. Remains patiently blocked without collapsing.</p>
+                    <div class="card-meta">
+                        <span>Transitions: 4</span>
+                        <span>Terminal: <strong>Blocked</strong></span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel trace-evidence">
+            <h3>Inspectable Trace Evidence</h3>
+            <div class="evidence-content">
+                <p>Every operational execution generates an explicit audit trail providing structured data evaluating transition events, node states, and payload compliance limits. These artifacts act as definitive chronological evidence over the state-machine trajectory.</p>
+                <ul class="artifact-list">
+                    <li><code>simulation_trace.json</code></li>
+                    <li><code>simulation_trace.yaml</code></li>
+                    <li><code>transition_log.csv</code></li>
+                    <li><code>violation_report.yaml</code></li>
+                    <li><code>simulation_summary.md</code></li>
+                    <li><code>state_timeline.dot</code></li>
+                </ul>
+            </div>
+        </section>
+
+        <section class="viewer-notice">
+            <p><strong>Note:</strong> The interactive runtime graph viewer is currently in active visual refinement. The underlying architecture logic, baseline simulations, and terminal scenario validations natively available within the backend trace output logs remain robust, deterministic, and securely positioned for immediate structural review.</p>
+        </section>
+
+        <section class="tester-invitation">
+            <h3>Review Integration Capabilities</h3>
+            <p>If you are interested in parsing these bounded topologies, auditing simulated trajectories, or evaluating protocol compliance, early review access is available upon request.</p>
+            <div class="action-links">
+                <a href="mailto:hello@laviathon.com" class="btn btn-primary">Request Tester Access</a>
+                <a href="#" class="btn btn-outline">Read the Documentation</a>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-inner">
+            <a href="#">Documentation</a>
+            <a href="mailto:hello@laviathon.com">Request Tester Access</a>
+            <a href="/">Return to Leviathon Home</a>
+        </div>
+    </footer>
+</body>
+</html>

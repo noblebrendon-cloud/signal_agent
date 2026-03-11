@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 300" width="100%" height="100%">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#ef4444" />
+    </marker>
+  </defs>
+  <style>
+    .node { fill: #1e293b; stroke: #475569; stroke-width: 2px; }
+    .label { font-family: 'Inter', sans-serif; font-size: 14px; fill: #f8fafc; text-anchor: middle; dominant-baseline: middle; }
+    .edge { stroke: #ef4444; stroke-width: 3px; stroke-dasharray: 6 4; fill: none; }
+    .edge-valid { stroke: #3b82f6; stroke-width: 3px; fill: none; }
+    .terminal-violation { stroke: #ef4444; fill: rgba(239, 68, 68, 0.1); }
+  </style>
+
+  <!-- Attempted Breach Path -->
+  <path d="M 120 150 L 220 150" class="edge-valid" />
+  <path d="M 220 150 L 680 230" class="edge" marker-end="url(#arrow)" />
+  
+  <rect x="60" y="130" width="80" height="40" rx="6" class="node" />
+  <text x="100" y="152" class="label">Init</text>
+  
+  <rect x="180" y="130" width="80" height="40" rx="6" class="node" />
+  <text x="220" y="152" class="label">Capture</text>
+
+  <!-- Violation Halt -->
+  <rect x="620" y="210" width="140" height="40" rx="6" class="node terminal-violation" />
+  <text x="690" y="232" class="label" style="fill:#ef4444; font-weight:700;">Violation Halt</text>
+</svg>
