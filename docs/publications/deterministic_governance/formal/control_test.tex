@@ -1,0 +1,20 @@
+\[
+\mathrm{ControlIllusion}(s) \iff
+\neg \mathrm{Comprehension}(s)
+\lor
+\neg \mathrm{TimingAuthority}(s)
+\lor
+\neg \mathrm{InterventionCapability}(s)
+\lor
+\neg \mathrm{Verification}(s)
+\lor
+\neg \mathrm{BoundaryEnforcement}(s)
+\]
+
+\[
+\mathrm{GovernedControl}(s) \iff \neg \mathrm{ControlIllusion}(s)
+\]
+
+\[
+\mathrm{RepoAssessment}(\mathrm{operator\_write\_path}) = \mathrm{GovernedControl}
+\]

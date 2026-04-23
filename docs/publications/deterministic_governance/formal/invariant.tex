@@ -1,0 +1,20 @@
+\[
+\mathrm{ValidTransition}(t) \iff
+\mathrm{PolicyAllowed}(t)
+\land
+\mathrm{DeclaredIntentComplete}(t)
+\land
+\mathrm{ObservedEffectsMatchDeclaredEffects}(t)
+\land
+\mathrm{RecordedInLineage}(t)
+\land
+\mathrm{NoMutationOutsideDeclaration}(t)
+\]
+
+\[
+\mathrm{InvalidTransition}(t) \iff \neg \mathrm{ValidTransition}(t)
+\]
+
+\[
+\mathrm{RepoProofScope}_{strong} = \mathrm{GovernedOperatorWritePath}
+\]

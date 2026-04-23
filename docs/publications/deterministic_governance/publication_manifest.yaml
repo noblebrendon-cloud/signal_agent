@@ -1,0 +1,66 @@
+bundle:
+  id: deterministic_governance_control_illusion
+  version: v1
+  date: 2026-04-20
+  repo_root: E:\\signal_agent
+  publication_root: docs/publications/deterministic_governance
+  purpose: >
+    Publication-grade evidence bundle mapping deterministic governance and
+    control-illusion detection onto live repo surfaces.
+  claim_labels:
+    - repo-proven
+    - repo-supported
+    - theoretical
+
+files:
+  - path: README.md
+    role: bundle index and scope statement
+  - path: deterministic_governance.md
+    role: formal narrative for the deterministic governance model
+  - path: repo_surface_inventory.md
+    role: exact inventory of enforcement and publication surfaces
+  - path: invariant_mapping.md
+    role: invariant-to-repo mapping across code, config, tests, and docs
+  - path: control_illusion_test.md
+    role: definition and repo evaluation of control illusion
+  - path: implementation_evidence.md
+    role: concept-by-surface evidence table
+  - path: failure_modes.md
+    role: documented risks, partial proof zones, and hardening targets
+  - path: README_patch_proposal.md
+    role: minimal top-level README insertion proposal
+  - path: diagrams/illusion_model.mmd
+    role: human-in-the-loop illusion diagram
+  - path: diagrams/governed_model.mmd
+    role: constraint-governed transformation diagram
+  - path: diagrams/invariant_flow.mmd
+    role: determinism invariant flow diagram
+  - path: diagrams/enforcement_surface_map.mmd
+    role: repo enforcement surface map
+  - path: diagrams/failure_modes_map.mmd
+    role: failure mode map
+  - path: formal/definitions.md
+    role: term definitions and claim-scope legend
+  - path: formal/invariant.tex
+    role: TeX rendering of the determinism invariant
+  - path: formal/control_test.tex
+    role: TeX rendering of the control-illusion test
+  - path: release/CITATION.cff
+    role: citation metadata for the bundle
+  - path: release/zenodo_metadata.json
+    role: Zenodo-style deposit metadata
+  - path: release/release_notes_v1.md
+    role: first release notes for the publication bundle
+
+reuse_of_existing_repo_surfaces:
+  - docs/publications/
+  - services/concept_formalization_spine/
+  - services/release_orchestrator/runner.py
+
+write_scope:
+  allowed:
+    - docs/publications/deterministic_governance/**
+  avoided:
+    - runtime governance code changes
+    - unrelated repo edits
+    - silent README modification

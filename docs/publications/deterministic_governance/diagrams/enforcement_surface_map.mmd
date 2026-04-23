@@ -1,0 +1,24 @@
+flowchart TD
+    A[transition_gate.py]
+    B[state_machine.yaml]
+    C[operator runtime]
+    D[operator configs]
+    E[io_contract.py]
+    F[state and run ledgers]
+    G[capture promote router curate]
+    H[lineage and audit readers]
+    I[docs/publications]
+    J[concept_formalization_spine]
+    K[release_orchestrator]
+
+    A --> F
+    B --> A
+    D --> C
+    C --> F
+    E --> F
+    G --> F
+    H --> F
+    I --> J
+    J --> K
+    G -. partial proof .-> H
+    K -. partial boundary-verification parity .-> F

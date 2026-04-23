@@ -1,0 +1,21 @@
+flowchart TD
+    A[Requested transition]
+    B{Policy allowed for current state?}
+    C{Declared intent complete?}
+    D{Observed effects match declared effects?}
+    E{Recorded in ledger or lineage?}
+    F{No mutation outside declaration?}
+    G[Valid transition]
+    H[Invalid transition]
+
+    A --> B
+    B -->|yes| C
+    B -->|no| H
+    C -->|yes| D
+    C -->|no| H
+    D -->|yes| E
+    D -->|no| H
+    E -->|yes| F
+    E -->|no| H
+    F -->|yes| G
+    F -->|no| H

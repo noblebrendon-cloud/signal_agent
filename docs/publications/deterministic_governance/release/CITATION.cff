@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "If you use this bundle, please cite it as a repository publication artifact."
+title: "Deterministic Governance / Control Illusion Bundle"
+version: "v1"
+date-released: 2026-04-20
+type: report
+authors:
+  - family-names: "Noble"
+    given-names: "Brendon"
+repository-code: "https://github.com/noblebrendon-cloud/signal_agent"
+url: "https://github.com/noblebrendon-cloud/signal_agent/tree/main/docs/publications/deterministic_governance"
+abstract: >
+  Release-ready publication bundle mapping deterministic governance and
+  control-illusion detection onto live enforcement, ledger, routing, and
+  publication surfaces in the Signal Agent repository.
+license: "UNLICENSED"

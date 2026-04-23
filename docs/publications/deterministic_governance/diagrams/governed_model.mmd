@@ -1,0 +1,12 @@
+flowchart LR
+    A[AI request or plan]
+    B[Declared workflow and intent]
+    C[Transition gate and policy]
+    D[Declared read/write boundary]
+    E[Mutation execution]
+    F[Observed effect verification]
+    G[Ledger and lineage append]
+
+    A --> B --> C --> D --> E --> F --> G
+    C -->|reject or hold| X[Fail-closed denial]
+    F -->|undeclared mutation or mismatch| X
