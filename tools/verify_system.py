@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib.util
 import subprocess
 import sys
 from pathlib import Path
@@ -10,10 +11,71 @@ def run(cmd: list[str]) -> None:
     print("\n$ " + " ".join(cmd))
     subprocess.run(cmd, check=True)
 
+
+def _required_import_probe() -> str:
+    return "import yaml; print('CORE_IMPORTS: OK')"
+
+
+def _optional_import_probe() -> str:
+    # Intake format extractors are lazy-loaded. Their availability should be
+    # reported deterministically, but absence must not hide unrelated repo-wide
+    # regressions or block core verification flows.
+    return (
+        "import importlib.util, json; "
+        "modules = ['docx', 'ebooklib', 'bs4', 'pdfminer.high_level', 'pypdf']; "
+        "status = {module: (importlib.util.find_spec(module) is not None) for module in modules}; "
+        "print('OPTIONAL_IMPORT_STATUS:' + json.dumps(status, sort_keys=True))"
+    )
+
+
+def _agent_fallback_probe() -> str:
+    return (
+        "from app.agent import SignalAgent; "
+        "agent = SignalAgent(); "
+        "out = agent.generate('test'); "
+        "expected = f'[ok:{agent.config.models[1]}]'; "
+        "print(out); "
+        "assert expected in out, f'Fallback failed, expected {expected}, got: {out}'"
+    )
+
+
+def _load_run_checker():
+    checker_path = ROOT / "signal_agent" / "operator" / "invariant_checker.py"
+    module_name = "signal_agent.operator.invariant_checker"
+    spec = importlib.util.spec_from_file_location(module_name, checker_path)
+    assert spec is not None and spec.loader is not None, f"Unable to load invariant checker from {checker_path}"
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    return module.run_checker
+
+
+def _run_invariant_checker() -> None:
+    print("\n[CHECK] Invariant Checker V1")
+    run_checker = _load_run_checker()
+    report = run_checker(ROOT)
+    for warning in report.warnings:
+        module_part = f" module={warning.module_id}" if warning.module_id else ""
+        path_part = f" path={warning.path}" if warning.path else ""
+        print(f"  WARN {warning.code}{module_part}{path_part}: {warning.detail}")
+
+    if not report.ok:
+        print("  FAIL invariant checker reported structural violations:")
+        for failure in report.failures:
+            module_part = f" module={failure.module_id}" if failure.module_id else ""
+            path_part = f" path={failure.path}" if failure.path else ""
+            print(f"    - {failure.code}{module_part}{path_part}: {failure.detail}")
+        raise SystemExit("Invariant checker failed; refusing to continue verify_system.")
+
+    print("  -> Invariant checker OK")
+
+
 def main() -> None:
     agent_src = (ROOT / "app" / "agent.py").read_text(encoding="utf-8")
     assert "class SignalAgent" in agent_src, "agent.py drift: SignalAgent missing"
     assert "class IntakeSystem" not in agent_src, "agent.py drift: IntakeSystem leaked into agent.py"
+
+    _run_invariant_checker()
 
     # STOP GMAIL posture: fail if a gmail ingest module exists
     blocked = [
@@ -27,12 +89,11 @@ def main() -> None:
     # Dependency sanity
     run([sys.executable, "-m", "pip", "check"])
 
-    # Import probe
-    run([sys.executable, "-c",
-         "import yaml, docx; from pypdf import PdfReader; import ebooklib; "
-         "from ebooklib import epub; from bs4 import BeautifulSoup; "
-         "import pdfminer.high_level; print('IMPORTS: OK')"
-    ])
+    # Required dependency probe
+    run([sys.executable, "-c", _required_import_probe()])
+
+    # Optional dependency probe
+    run([sys.executable, "-c", _optional_import_probe()])
 
     # Resilience tests
     run([sys.executable, "-m", "tools.test_resilience"])
@@ -46,12 +107,7 @@ def main() -> None:
     # But user asked: "Add a check that SignalAgent.generate() successfully falls back from fail503_provider to stub_provider"
     
     # We can do this by running a small script that asserts the output.
-    run([sys.executable, "-c", 
-         "from app.agent import SignalAgent; "
-         "out = SignalAgent().generate('test'); "
-         "print(out); "
-         "assert '[ok:gemini-3-pro]' in out, f'Fallback failed, got: {out}'"
-    ])
+    run([sys.executable, "-c", _agent_fallback_probe()])
 
     # PDF extractor probe (module exists + callable)
     run([sys.executable, "-c",
@@ -76,11 +132,11 @@ def main() -> None:
     src.write_text("fixed content version 1", encoding="utf-8")
     
     # Run 1
-    run([sys.executable, "app/hq/curation/curate.py", "--path", str(src)])
+    run([sys.executable, "-m", "app.hq.curation.curate", "--path", str(src), "--no-governor"])
     
     # Run 2 (Re-create source because move action deletes it)
     src.write_text("fixed content version 1", encoding="utf-8")
-    run([sys.executable, "app/hq/curation/curate.py", "--path", str(src)])
+    run([sys.executable, "-m", "app.hq.curation.curate", "--path", str(src), "--no-governor"])
     
     # Assert
     registry = ROOT / "data" / "artifact_registry.jsonl"
@@ -110,10 +166,10 @@ def main() -> None:
     src_unique.write_text(unique_content, encoding="utf-8")
     
     # Run 1
-    run([sys.executable, "app/hq/curation/curate.py", "--path", str(src_unique)])
+    run([sys.executable, "-m", "app.hq.curation.curate", "--path", str(src_unique), "--no-governor"])
     # Run 2
     src_unique.write_text(unique_content, encoding="utf-8")
-    run([sys.executable, "app/hq/curation/curate.py", "--path", str(src_unique)])
+    run([sys.executable, "-m", "app.hq.curation.curate", "--path", str(src_unique), "--no-governor"])
     
     # Verify exact 1 record for this unique content
     count = 0
@@ -142,7 +198,7 @@ def main() -> None:
     content_norm = f"normalization_test_{time.time()}"
     f1.write_text(content_norm, encoding="utf-8")
     
-    run([sys.executable, "app/hq/curation/curate.py", "--path", str(f1)])
+    run([sys.executable, "-m", "app.hq.curation.curate", "--path", str(f1), "--no-governor"])
     
     # Verify match
     h_norm = hashlib.sha256(content_norm.encode("utf-8")).hexdigest()

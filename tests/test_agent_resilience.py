@@ -57,5 +57,18 @@ class TestAgentResilience(unittest.TestCase):
         self.assertEqual(delays_1, delays_2, "Same request_id should yield same jitter delays")
         self.assertNotEqual(delays_1, delays_3, "Different request_id should yield different jitter delays")
 
+    def test_fallback_output_uses_fully_qualified_model_key(self):
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            cfg = AgentConfig(
+                analytics_log=tmp / "events.jsonl",
+                breaker_db_path=tmp / "breakers.sqlite",
+            )
+            agent = SignalAgent(cfg)
+
+            out = agent.generate("test", request_id="fallback_identity")
+
+        self.assertIn(f"[ok:{cfg.models[1]}]", out)
+
 if __name__ == "__main__":
     unittest.main()
