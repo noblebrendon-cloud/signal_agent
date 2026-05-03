@@ -1,25 +1,11 @@
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
-import pytest
-
-jsonschema = pytest.importorskip(
-    "jsonschema",
-    reason="jsonschema>=4 is recommended for governed shell Phase 2 schema validation",
-)
-from jsonschema import Draft202012Validator
+from app.governed_shell.schema_validate import validate_command_proposal
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-SCHEMA_PATH = REPO_ROOT / "app" / "governed_shell" / "schemas" / "command_proposal.v1.json"
-
-
-def _validator() -> Draft202012Validator:
-    schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
-    Draft202012Validator.check_schema(schema)
-    return Draft202012Validator(schema)
 
 
 def _valid_proposal() -> dict:
@@ -72,9 +58,9 @@ def _valid_proposal() -> dict:
 
 
 def _assert_invalid(payload: dict) -> None:
-    validator = _validator()
-    errors = sorted(validator.iter_errors(payload), key=lambda err: list(err.absolute_path))
-    assert errors, "expected schema validation failure"
+    result = validate_command_proposal(payload)
+    assert result.clean is False
+    assert result.errors, "expected schema validation failure"
 
 
 def test_command_text_field_fails() -> None:
@@ -111,3 +97,10 @@ def test_start_process_fails() -> None:
     payload = _valid_proposal()
     payload["operations"][0]["cmdlet_id"] = "Start-Process"
     _assert_invalid(payload)
+
+
+def test_shell_metacharacter_path_requires_path_validation_layer() -> None:
+    payload = _valid_proposal()
+    payload["path_refs"][0]["relative_path"] = "docs/operator;whoami"
+    result = validate_command_proposal(payload)
+    assert result.clean is True

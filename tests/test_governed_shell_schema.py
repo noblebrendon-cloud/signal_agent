@@ -5,12 +5,14 @@ import json
 from pathlib import Path
 
 import pytest
-
-jsonschema = pytest.importorskip(
-    "jsonschema",
-    reason="jsonschema>=4 is recommended for governed shell Phase 2 schema validation",
-)
 from jsonschema import Draft202012Validator
+
+from app.governed_shell.errors import ProposalLoadError, ProposalSchemaError
+from app.governed_shell.proposal import load_json_text, load_proposal
+from app.governed_shell.schema_validate import (
+    require_valid_command_proposal,
+    validate_command_proposal,
+)
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -159,47 +161,92 @@ def test_all_governed_shell_schemas_are_valid_draft_2020_12_schemas() -> None:
 
 
 def test_valid_read_only_proposal_passes_schema_validation() -> None:
-    _assert_valid("command_proposal.v1.json", _valid_read_only_proposal())
+    result = validate_command_proposal(_valid_read_only_proposal())
+    assert result.clean is True
+    assert result.errors == []
+    assert result.schema_version == "command_proposal.v1"
 
 
 def test_valid_dry_run_registered_script_proposal_passes_schema_validation() -> None:
-    _assert_valid("command_proposal.v1.json", _valid_dry_run_script_proposal())
+    result = validate_command_proposal(_valid_dry_run_script_proposal())
+    assert result.clean is True
+    assert result.errors == []
+
+
+def test_valid_proposal_loads_from_text() -> None:
+    proposal = load_json_text(json.dumps(_valid_read_only_proposal()))
+    assert type(proposal) is dict
+    assert proposal["proposal_id"] == "proposal_read_only_001"
+
+
+def test_valid_proposal_loads_from_path(tmp_path: Path) -> None:
+    proposal_path = tmp_path / "proposal.json"
+    proposal_path.write_text(json.dumps(_valid_read_only_proposal()), encoding="utf-8")
+
+    proposal = load_proposal(proposal_path)
+
+    assert type(proposal) is dict
+    assert proposal["proposal_id"] == "proposal_read_only_001"
+
+
+def test_malformed_json_raises_proposal_load_error() -> None:
+    with pytest.raises(ProposalLoadError):
+        load_json_text('{"proposal_id": ')
 
 
 def test_malformed_proposal_fails_schema_validation() -> None:
     payload = _valid_read_only_proposal()
     payload["operations"] = "not-a-list"
-    _assert_invalid("command_proposal.v1.json", payload)
+    result = validate_command_proposal(payload)
+    assert result.clean is False
+    assert result.errors
 
 
 def test_additional_unknown_field_fails() -> None:
     payload = _valid_read_only_proposal()
     payload["unexpected"] = True
-    _assert_invalid("command_proposal.v1.json", payload)
+    result = validate_command_proposal(payload)
+    assert result.clean is False
+    assert result.errors
 
 
 def test_path_traversal_using_parent_segments_fails() -> None:
     payload = _valid_read_only_proposal()
     payload["path_refs"][0]["relative_path"] = "../docs/operator"
-    _assert_invalid("command_proposal.v1.json", payload)
+    result = validate_command_proposal(payload)
+    assert result.clean is False
+    assert result.errors
 
 
 def test_absolute_path_fails() -> None:
     payload = _valid_read_only_proposal()
     payload["path_refs"][0]["relative_path"] = "C:\\temp\\operator"
-    _assert_invalid("command_proposal.v1.json", payload)
+    result = validate_command_proposal(payload)
+    assert result.clean is False
+    assert result.errors
 
 
 def test_unknown_operation_type_fails() -> None:
     payload = _valid_read_only_proposal()
     payload["operations"][0]["operation_type"] = "shell_command"
-    _assert_invalid("command_proposal.v1.json", payload)
+    result = validate_command_proposal(payload)
+    assert result.clean is False
+    assert result.errors
+
+
+def test_require_valid_command_proposal_raises_on_invalid_payload() -> None:
+    payload = _valid_read_only_proposal()
+    payload["operations"] = []
+
+    with pytest.raises(ProposalSchemaError):
+        require_valid_command_proposal(payload)
 
 
 def test_model_declared_risk_is_annotation_only_shape() -> None:
     payload = _valid_read_only_proposal()
     payload["model_annotations"]["proposal_hash_hint"] = "sha256:" + ("a" * 64)
-    _assert_valid("command_proposal.v1.json", payload)
+    validated = require_valid_command_proposal(payload)
+    assert validated is payload
 
 
 def test_valid_audit_event_schema_shape() -> None:
