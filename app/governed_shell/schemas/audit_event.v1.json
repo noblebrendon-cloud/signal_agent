@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://signal-agent.local/schemas/governed_shell/audit_event.v1.json",
+  "title": "Governed Shell Audit Event v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "record_type",
+    "event_id",
+    "session_id",
+    "event_index",
+    "timestamp_utc",
+    "event_type",
+    "status",
+    "proposal_hash",
+    "plan_hash",
+    "policy_hash",
+    "risk_level",
+    "decision_code",
+    "prev_hash",
+    "record_hash"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "format": "uri"
+    },
+    "schema_version": {
+      "const": "audit_event.v1"
+    },
+    "record_type": {
+      "const": "governed_shell_audit_event"
+    },
+    "event_id": {
+      "$ref": "#/$defs/safeIdentifier"
+    },
+    "session_id": {
+      "$ref": "#/$defs/safeIdentifier"
+    },
+    "event_index": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "timestamp_utc": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "proposal_reviewed",
+        "plan_approved",
+        "simulation_recorded",
+        "replay_verified",
+        "log_verified"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "allowed",
+        "rejected",
+        "failed",
+        "verified"
+      ]
+    },
+    "proposal_id": {
+      "$ref": "#/$defs/safeIdentifier"
+    },
+    "proposal_hash": {
+      "$ref": "#/$defs/hashString"
+    },
+    "plan_id": {
+      "$ref": "#/$defs/safeIdentifier"
+    },
+    "plan_hash": {
+      "$ref": "#/$defs/hashString"
+    },
+    "policy_hash": {
+      "$ref": "#/$defs/hashString"
+    },
+    "risk_level": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ]
+    },
+    "decision_code": {
+      "$ref": "#/$defs/safeIdentifier"
+    },
+    "snapshot_ref": {
+      "$ref": "#/$defs/relativeRepoPath"
+    },
+    "receipt_ref": {
+      "$ref": "#/$defs/relativeRepoPath"
+    },
+    "prev_hash": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/hashString"
+        }
+      ]
+    },
+    "record_hash": {
+      "$ref": "#/$defs/hashString"
+    }
+  },
+  "$defs": {
+    "safeIdentifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120,
+      "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+    },
+    "hashString": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "relativeRepoPath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 260,
+      "pattern": "^[^\\r\\n]+$",
+      "allOf": [
+        {
+          "not": {
+            "pattern": "^(?:[A-Za-z]:[\\\\/]|[\\\\/])"
+          }
+        },
+        {
+          "not": {
+            "pattern": "(^|[\\\\/])\\.\\.($|[\\\\/])"
+          }
+        }
+      ]
+    }
+  }
+}
