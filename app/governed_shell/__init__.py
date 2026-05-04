@@ -1,15 +1,18 @@
 """Governed shell package.
 
-Phase 4 exposes proposal loading, schema validation, normalization,
-policy review, append-only audit logging, and replay verification only.
-Execution, approval, simulation, and runner integration remain
-intentionally unimplemented in this phase.
+Phase 5 exposes proposal loading, schema validation, normalization,
+policy review, append-only audit logging, replay verification, exact-hash
+confirmation, and sealed execution plan creation only. Execution,
+simulation, and runner integration remain intentionally unimplemented in
+this phase.
 """
 
 from pathlib import Path
 
 from .errors import (
     AuditLogError,
+    ConfirmationError,
+    ExecutionPlanError,
     GovernedShellError,
     PolicyDeniedError,
     PolicyLoadError,
@@ -19,6 +22,16 @@ from .errors import (
     ProposalPathError,
     ProposalSchemaError,
     ReplayVerificationError,
+)
+from .confirm import ConfirmationResult, check_confirmation, require_confirmation
+from .execution_plan import (
+    PlanVerificationResult,
+    build_execution_plan,
+    canonical_plan_json,
+    compute_plan_hash,
+    seal_execution_plan,
+    verify_execution_plan,
+    write_sealed_plan,
 )
 from .logstore import (
     AUDIT_ZERO_HASH,
@@ -61,6 +74,8 @@ __all__ = [
     "SCHEMA_DIR",
     "AUDIT_ZERO_HASH",
     "AuditLogError",
+    "ConfirmationError",
+    "ExecutionPlanError",
     "ReplayVerificationError",
     "GovernedShellError",
     "PolicyDeniedError",
@@ -78,6 +93,8 @@ __all__ = [
     "RiskReport",
     "AuditVerificationResult",
     "ReplayResult",
+    "ConfirmationResult",
+    "PlanVerificationResult",
     "load_proposal",
     "load_json_text",
     "dump_canonical_json",
@@ -101,4 +118,12 @@ __all__ = [
     "replay_session",
     "summarize_review_chain",
     "verify_log",
+    "check_confirmation",
+    "require_confirmation",
+    "build_execution_plan",
+    "canonical_plan_json",
+    "compute_plan_hash",
+    "seal_execution_plan",
+    "verify_execution_plan",
+    "write_sealed_plan",
 ]

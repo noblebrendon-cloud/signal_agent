@@ -9,14 +9,19 @@
     "plan_id",
     "created_at",
     "session_id",
+    "proposal_id",
     "proposal_hash",
+    "proposal_canonical",
     "policy_hash",
-    "execution_mode",
+    "decision",
+    "matched_binding_id",
+    "effective_risk",
+    "confirmation",
     "network_allowed",
     "privilege_escalation_allowed",
-    "risk",
-    "confirmation",
-    "sealed_operations",
+    "declared_reads",
+    "declared_writes",
+    "operations",
     "plan_hash"
   ],
   "properties": {
@@ -37,18 +42,40 @@
     "session_id": {
       "$ref": "#/$defs/safeIdentifier"
     },
+    "proposal_id": {
+      "$ref": "#/$defs/safeIdentifier"
+    },
     "proposal_hash": {
       "$ref": "#/$defs/hashString"
+    },
+    "proposal_canonical": {
+      "type": "string",
+      "minLength": 2
     },
     "policy_hash": {
       "$ref": "#/$defs/hashString"
     },
-    "execution_mode": {
+    "decision": {
       "type": "string",
       "enum": [
-        "simulate",
-        "local_execute"
+        "allow",
+        "require_confirmation"
       ]
+    },
+    "matched_binding_id": {
+      "$ref": "#/$defs/safeIdentifier"
+    },
+    "effective_risk": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ]
+    },
+    "confirmation": {
+      "$ref": "#/$defs/confirmation"
     },
     "network_allowed": {
       "type": "boolean"
@@ -56,17 +83,23 @@
     "privilege_escalation_allowed": {
       "type": "boolean"
     },
-    "risk": {
-      "$ref": "#/$defs/risk"
+    "declared_reads": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/declaredSurface"
+      }
     },
-    "confirmation": {
-      "$ref": "#/$defs/confirmation"
+    "declared_writes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/declaredSurface"
+      }
     },
-    "sealed_operations": {
+    "operations": {
       "type": "array",
       "minItems": 1,
       "items": {
-        "$ref": "#/$defs/sealedOperation"
+        "$ref": "#/$defs/operation"
       }
     },
     "plan_hash": {
@@ -84,64 +117,104 @@
       "type": "string",
       "pattern": "^sha256:[0-9a-f]{64}$"
     },
-    "resolvedPath": {
-      "type": "string",
-      "minLength": 1,
-      "maxLength": 260,
-      "pattern": "^[^\\r\\n]+$"
-    },
-    "risk": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "level",
-        "authoritative"
-      ],
-      "properties": {
-        "level": {
-          "type": "string",
-          "enum": [
-            "low",
-            "medium",
-            "high",
-            "critical"
-          ]
-        },
-        "authoritative": {
-          "const": true
-        },
-        "model_declared_risk_level": {
-          "type": "string",
-          "enum": [
-            "low",
-            "medium",
-            "high",
-            "critical"
-          ]
-        }
-      }
-    },
     "confirmation": {
       "type": "object",
       "additionalProperties": false,
       "required": [
         "required",
-        "operator_supplied_hash",
-        "matched"
+        "mode",
+        "proposal_hash",
+        "supplied_hash",
+        "matched",
+        "reason_code",
+        "issues"
       ],
       "properties": {
         "required": {
           "type": "boolean"
         },
-        "operator_supplied_hash": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "none",
+            "session_confirmation",
+            "exact_proposal_hash"
+          ]
+        },
+        "proposal_hash": {
           "$ref": "#/$defs/hashString"
+        },
+        "supplied_hash": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/hashString"
+            }
+          ]
         },
         "matched": {
           "type": "boolean"
+        },
+        "reason_code": {
+          "$ref": "#/$defs/safeIdentifier"
+        },
+        "issues": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
-    "sealedTypedValue": {
+    "declaredSurface": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "binding_id",
+        "parameter",
+        "path_ref_id",
+        "root_id",
+        "relative_path"
+      ],
+      "properties": {
+        "binding_id": {
+          "$ref": "#/$defs/safeIdentifier"
+        },
+        "parameter": {
+          "$ref": "#/$defs/safeIdentifier"
+        },
+        "path_ref_id": {
+          "$ref": "#/$defs/safeIdentifier"
+        },
+        "root_id": {
+          "$ref": "#/$defs/safeIdentifier"
+        },
+        "relative_path": {
+          "$ref": "#/$defs/relativePath"
+        }
+      }
+    },
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 260,
+      "pattern": "^[^\\r\\n]+$",
+      "allOf": [
+        {
+          "not": {
+            "pattern": "^(?:[A-Za-z]:[\\\\/]|[\\\\/])"
+          }
+        },
+        {
+          "not": {
+            "pattern": "(^|[\\\\/])\\.\\.($|[\\\\/])"
+          }
+        }
+      ]
+    },
+    "typedValue": {
       "type": "object",
       "additionalProperties": false,
       "required": [
@@ -159,7 +232,7 @@
             "boolean",
             "number",
             "integer",
-            "path"
+            "path_ref"
           ]
         },
         "string_value": {
@@ -175,8 +248,8 @@
         "integer_value": {
           "type": "integer"
         },
-        "resolved_abs_path": {
-          "$ref": "#/$defs/resolvedPath"
+        "path_ref": {
+          "$ref": "#/$defs/safeIdentifier"
         }
       },
       "oneOf": [
@@ -222,27 +295,24 @@
         },
         {
           "required": [
-            "resolved_abs_path"
+            "path_ref"
           ],
           "properties": {
             "value_type": {
-              "const": "path"
+              "const": "path_ref"
             }
           }
         }
       ]
     },
-    "powershellCmdletSealed": {
+    "powershellCmdletOperation": {
       "type": "object",
       "additionalProperties": false,
       "required": [
         "op_id",
         "operation_type",
-        "binding_id",
-        "resolved_root",
-        "binding_hash",
-        "simulate_supported",
-        "arguments"
+        "cmdlet_id",
+        "parameters"
       ],
       "properties": {
         "op_id": {
@@ -251,36 +321,25 @@
         "operation_type": {
           "const": "powershell_cmdlet"
         },
-        "binding_id": {
+        "cmdlet_id": {
           "$ref": "#/$defs/safeIdentifier"
         },
-        "resolved_root": {
-          "$ref": "#/$defs/resolvedPath"
-        },
-        "binding_hash": {
-          "$ref": "#/$defs/hashString"
-        },
-        "simulate_supported": {
-          "type": "boolean"
-        },
-        "arguments": {
+        "parameters": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/sealedTypedValue"
+            "$ref": "#/$defs/typedValue"
           }
         }
       }
     },
-    "registeredScriptSealed": {
+    "registeredScriptOperation": {
       "type": "object",
       "additionalProperties": false,
       "required": [
         "op_id",
         "operation_type",
-        "binding_id",
-        "binding_hash",
+        "script_id",
         "execution_mode",
-        "simulate_supported",
         "arguments"
       ],
       "properties": {
@@ -290,34 +349,27 @@
         "operation_type": {
           "const": "registered_script"
         },
-        "binding_id": {
+        "script_id": {
           "$ref": "#/$defs/safeIdentifier"
-        },
-        "binding_hash": {
-          "$ref": "#/$defs/hashString"
         },
         "execution_mode": {
           "const": "dry_run"
         },
-        "simulate_supported": {
-          "type": "boolean"
-        },
         "arguments": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/sealedTypedValue"
+            "$ref": "#/$defs/typedValue"
           }
         }
       }
     },
-    "registeredNativeSealed": {
+    "registeredNativeOperation": {
       "type": "object",
       "additionalProperties": false,
       "required": [
         "op_id",
         "operation_type",
-        "binding_id",
-        "binding_hash",
+        "native_id",
         "arguments"
       ],
       "properties": {
@@ -327,30 +379,27 @@
         "operation_type": {
           "const": "registered_native"
         },
-        "binding_id": {
+        "native_id": {
           "$ref": "#/$defs/safeIdentifier"
-        },
-        "binding_hash": {
-          "$ref": "#/$defs/hashString"
         },
         "arguments": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/sealedTypedValue"
+            "$ref": "#/$defs/typedValue"
           }
         }
       }
     },
-    "sealedOperation": {
+    "operation": {
       "oneOf": [
         {
-          "$ref": "#/$defs/powershellCmdletSealed"
+          "$ref": "#/$defs/powershellCmdletOperation"
         },
         {
-          "$ref": "#/$defs/registeredScriptSealed"
+          "$ref": "#/$defs/registeredScriptOperation"
         },
         {
-          "$ref": "#/$defs/registeredNativeSealed"
+          "$ref": "#/$defs/registeredNativeOperation"
         }
       ]
     }

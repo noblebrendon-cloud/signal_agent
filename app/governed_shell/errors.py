@@ -39,3 +39,11 @@ class AuditLogError(GovernedShellError):
 
 class ReplayVerificationError(GovernedShellError):
     """Raised when governed shell replay or verification cannot complete safely."""
+
+
+class ConfirmationError(GovernedShellError):
+    """Raised when exact proposal-hash confirmation fails."""
+
+
+class ExecutionPlanError(GovernedShellError):
+    """Raised when a governed shell execution plan cannot be built, verified, or written."""

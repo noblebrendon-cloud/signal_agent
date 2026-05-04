@@ -85,6 +85,25 @@ Phase 4 still does not implement:
 - state mutation outside the audit ledger itself
 - repair of corrupted ledgers
 
+## Phase 5 Scope
+
+Phase 5 adds only exact-hash confirmation and sealed plan creation:
+
+- exact proposal-hash confirmation checks
+- sealed execution plan construction from normalized proposals and policy decisions
+- deterministic `plan_hash` computation and verification
+- atomic writing of sealed plan JSON
+
+Phase 5 still does not implement:
+
+- execution
+- PowerShell invocation
+- simulation behavior
+- proposal approval workflows
+- runner behavior
+- stdout or stderr capture
+- process creation
+
 ## Proposal Contract Direction
 
 The proposal contract is intentionally narrow:
@@ -142,6 +161,12 @@ The Phase 4 audit layer is also intentionally narrow:
 - it records review state only
 - it does not imply execution exists
 - it fails closed on malformed JSONL, schema drift, broken `prev_hash`, incorrect `record_hash`, or non-monotonic `event_index`
+
+The Phase 5 plan layer is similarly narrow:
+
+- it creates plans only
+- it requires exact proposal-hash confirmation when policy requires it
+- it does not execute or simulate the plan it writes
 
 ## Validation Direction
 

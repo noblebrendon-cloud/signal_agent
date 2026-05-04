@@ -35,6 +35,15 @@ Phase 4 is complete when the repository contains:
 - read-only replay by session
 - read-only verify-log support that fails closed on tampering
 
+## Phase 5 Acceptance Criteria
+
+Phase 5 is complete when the repository contains:
+
+- exact proposal-hash confirmation utilities
+- sealed execution plan construction from normalized proposal and policy review state
+- deterministic `plan_hash` verification
+- atomic sealed-plan JSON writing without execution behavior
+
 ## Required Proofs
 
 The governed shell tests must prove:
@@ -57,6 +66,9 @@ The governed shell tests must prove:
 - broken `prev_hash` values are detected
 - malformed JSONL is detected
 - missing replay sessions report not clean
+- confirmation-required proposals fail without an exact full hash match
+- sealed plan hashes verify and fail after mutation
+- denied policy decisions cannot create plans
 
 ## Explicit Non-Goals
 
@@ -80,7 +92,16 @@ Phase 4 still does not implement:
 - sealed execution plans
 - repair of corrupted ledgers
 
-Any claim that governed shell execution exists after Phase 4 is incorrect.
+Phase 5 still does not implement:
+
+- execution
+- PowerShell invocation
+- simulation behavior
+- proposal approval
+- runner behavior
+- process creation or output capture
+
+Any claim that governed shell execution exists after Phase 5 is incorrect.
 
 ## MVP Boundary Notes
 

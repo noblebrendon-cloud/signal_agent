@@ -283,34 +283,44 @@ def test_valid_execution_plan_schema_shape() -> None:
         "plan_id": "plan_001",
         "created_at": "2026-05-03T12:00:00Z",
         "session_id": "session_001",
+        "proposal_id": "proposal_001",
         "proposal_hash": "sha256:" + ("1" * 64),
+        "proposal_canonical": "{\"proposal_id\":\"proposal_001\"}",
         "policy_hash": "sha256:" + ("2" * 64),
-        "execution_mode": "simulate",
+        "decision": "allow",
+        "matched_binding_id": "ps.get_child_items_v1",
+        "effective_risk": "low",
         "network_allowed": False,
         "privilege_escalation_allowed": False,
-        "risk": {
-            "level": "medium",
-            "authoritative": True,
-            "model_declared_risk_level": "low",
-        },
         "confirmation": {
-            "required": True,
-            "operator_supplied_hash": "sha256:" + ("3" * 64),
-            "matched": True,
+            "required": False,
+            "mode": "none",
+            "proposal_hash": "sha256:" + ("1" * 64),
+            "supplied_hash": None,
+            "matched": False,
+            "reason_code": "confirmation_not_required",
+            "issues": [],
         },
-        "sealed_operations": [
+        "declared_reads": [
+            {
+                "binding_id": "ps.get_child_items_v1",
+                "parameter": "target_path_ref",
+                "path_ref_id": "docs_operator_dir",
+                "root_id": "workspace",
+                "relative_path": "docs/operator",
+            }
+        ],
+        "declared_writes": [],
+        "operations": [
             {
                 "op_id": "op_list_docs",
                 "operation_type": "powershell_cmdlet",
-                "binding_id": "ps.get_child_items_v1",
-                "resolved_root": "E:\\signal_agent",
-                "binding_hash": "sha256:" + ("4" * 64),
-                "simulate_supported": True,
-                "arguments": [
+                "cmdlet_id": "ps.get_child_items_v1",
+                "parameters": [
                     {
-                        "name": "target_path",
-                        "value_type": "path",
-                        "resolved_abs_path": "E:\\signal_agent\\docs\\operator",
+                        "name": "target_path_ref",
+                        "value_type": "path_ref",
+                        "path_ref": "docs_operator_dir",
                     },
                     {
                         "name": "recurse",
