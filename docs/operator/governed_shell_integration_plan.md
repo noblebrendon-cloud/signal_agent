@@ -194,6 +194,25 @@ The Phase 6 simulation layer remains narrow:
 - it produces receipts only with `executed=false`
 - it does not invoke a shell, subprocess, or runner
 
+## Phase 7 Scope
+
+Phase 7 adds only a local deterministic CLI surface:
+
+- proposal stub creation with no model involvement
+- proposal validation and policy review commands
+- sealed-plan approval with exact-hash confirmation
+- simulation-only receipt creation from sealed plans
+- read-only replay and verify-log commands
+
+Phase 7 still does not implement:
+
+- real execution
+- subprocess creation
+- shell command invocation
+- runner behavior
+- network dispatch
+- model integration
+
 ## Validation Direction
 
 The Phase 1 schemas are written in strict Draft 2020-12 style and are intended to be enforced with `jsonschema>=4`.

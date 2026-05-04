@@ -83,6 +83,7 @@ No candidate modules remain.
 
 - Retention checkpoint: `docs/operator/retention_pre_external_v1_checkpoint.md`
 - Retention subsystem guide: `docs/operator/retention_subsystem_guide.md`
+- Continue-later retention Stage 7 dry-run project: [README.md](continue_later/retention_stage7_dry_run/README.md)
 
 ## known_boundary_conflicts
 
@@ -100,3 +101,8 @@ Ongoing maintenance boundaries still matter:
 2. Preserve `letters_of_light_core` as a deprecated historical/superseded record and do not return it to the live remediation queue.
 3. Require focused re-review for any future change that adds new write surfaces, expands public interfaces, or blurs the established split boundaries of the active modules.
 4. Keep `retention` registered as one governed module unless a later real sender admission boundary creates a distinct authoritative module surface.
+
+## Weekly Internal Review
+
+- [docs/operator/weekly_internal_review/EXECUTIVE_SUMMARY.md](weekly_internal_review/EXECUTIVE_SUMMARY.md)
+

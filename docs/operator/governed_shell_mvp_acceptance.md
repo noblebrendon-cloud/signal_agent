@@ -82,6 +82,15 @@ The governed shell tests must prove:
 - simulation receipts verify and fail after mutation
 - simulation audit events preserve a clean verify-log chain
 
+## Phase 7 Acceptance Criteria
+
+Phase 7 is complete when the repository contains:
+
+- a deterministic CLI entrypoint at `python -m app.governed_shell.cli`
+- proposal stub, policy-test, review, approve, simulate, verify-log, and replay commands
+- JSON-only command output suitable for local operator control
+- no command path that executes, dispatches, or invokes an external runner
+
 ## Explicit Non-Goals
 
 Phases 1 through 3 do not implement:
@@ -121,6 +130,14 @@ Phase 6 still does not implement:
 - subprocess creation
 - runner behavior
 - proposal approval
+- model integration
+
+Phase 7 still does not implement:
+
+- real execution
+- subprocess creation
+- shell command invocation
+- runner behavior
 - model integration
 
 Any claim that governed shell execution exists after Phase 6 is incorrect.

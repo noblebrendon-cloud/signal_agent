@@ -1,10 +1,10 @@
 """Governed shell package.
 
-Phase 6 exposes proposal loading, schema validation, normalization,
+Phase 7 exposes proposal loading, schema validation, normalization,
 policy review, append-only audit logging, replay verification, exact-hash
 confirmation, sealed execution plan creation, metadata-only snapshots,
-and simulation-only receipts. Real execution and runner integration
-remain intentionally unimplemented in this phase.
+simulation-only receipts, and a local safe CLI surface. Real execution
+and runner integration remain intentionally unimplemented in this phase.
 """
 
 from pathlib import Path
