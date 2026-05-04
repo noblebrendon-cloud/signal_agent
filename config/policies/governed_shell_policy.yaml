@@ -1,0 +1,110 @@
+policy_id: governed_shell_policy
+policy_version: 1
+default_action: deny
+network_allowed: false
+privilege_escalation_allowed: false
+
+roots:
+  workspace:
+    enabled: true
+    allowed_path_kinds:
+      - file
+      - directory
+  reports:
+    enabled: true
+    allowed_path_kinds:
+      - file
+      - directory
+
+cmdlet_catalog:
+  ps.get_child_items_v1:
+    enabled: true
+    type: powershell_cmdlet
+    operation_type: powershell_cmdlet
+    allowed_roots:
+      - workspace
+      - reports
+    allowed_parameters:
+      target_path_ref:
+        value_type: path_ref
+        required: true
+      file:
+        value_type: boolean
+        required: false
+      directory:
+        value_type: boolean
+        required: false
+      recurse:
+        value_type: boolean
+        required: false
+      filter:
+        value_type: string
+        required: false
+    declared_reads:
+      - source: parameter
+        parameter: target_path_ref
+    declared_writes: []
+    network_allowed: false
+    privilege_escalation_allowed: false
+    destructive: false
+    read_only: true
+
+script_catalog:
+  retention.simulate_execute_send_v1:
+    enabled: false
+    type: registered_script
+    operation_type: registered_script
+    reason: disabled_in_mvp
+
+native_catalog: {}
+
+global_deny:
+  forbidden_fields:
+    - command_text
+    - shell_text
+    - script_text
+    - inline_command
+    - powershell_command
+  forbidden_tokens:
+    - Invoke-Expression
+    - Start-Process
+    - Invoke-Command
+    - Enter-PSSession
+    - New-Object
+    - Add-Type
+    - powershell
+    - pwsh
+    - cmd.exe
+    - -Command
+    - EncodedCommand
+  path_escape_indicators:
+    - ..
+    - ../
+    - ..\
+
+risk_rules:
+  ps.get_child_items_v1:
+    recurse_false:
+      effective_risk: low
+      risk_factors:
+        - read_only_listing
+        - non_recursive_read
+    recurse_true:
+      effective_risk: medium
+      risk_factors:
+        - read_only_listing
+        - recursive_read
+
+confirmation_rules:
+  low:
+    required: false
+    mode: none
+  medium:
+    required: true
+    mode: session_confirmation
+  high:
+    required: true
+    mode: exact_proposal_hash
+  critical:
+    required: true
+    mode: exact_proposal_hash

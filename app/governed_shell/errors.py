@@ -19,3 +19,15 @@ class ProposalNormalizationError(GovernedShellError):
 
 class ProposalPathError(GovernedShellError):
     """Raised when symbolic path references are invalid or unsafe."""
+
+
+class PolicyLoadError(GovernedShellError):
+    """Raised when a governed shell policy file cannot be loaded."""
+
+
+class PolicyValidationError(GovernedShellError):
+    """Raised when a governed shell policy payload is malformed."""
+
+
+class PolicyDeniedError(GovernedShellError):
+    """Raised when a governed shell proposal is denied by policy review."""

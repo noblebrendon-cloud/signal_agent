@@ -31,6 +31,42 @@ Phase 1 does not implement:
 - audit ledger writers
 - replay verification code
 
+## Phase 2 Scope
+
+Phase 2 adds only the repo-native validation layer:
+
+- proposal JSON loading
+- command proposal schema validation
+- deterministic canonical JSON rendering
+- stable proposal hashing
+- symbolic path reference validation
+
+Phase 2 still does not implement:
+
+- policy decisions
+- execution
+- simulation behavior
+- audit logging
+
+## Phase 3 Scope
+
+Phase 3 adds only deterministic policy review:
+
+- config-driven default-deny policy loading
+- command catalog matching
+- authoritative risk recomputation
+- confirmation requirement reporting
+- deterministic policy review reports
+
+Phase 3 still does not implement:
+
+- execution
+- PowerShell invocation
+- runner behavior
+- audit logging
+- sealed plan creation
+- state writes
+
 ## Proposal Contract Direction
 
 The proposal contract is intentionally narrow:
@@ -67,7 +103,7 @@ Later phases should preserve these constraints:
 
 ## Policy Direction
 
-Later phases should be default-deny:
+Phase 3 policy review is default-deny:
 
 - unknown command rejects
 - unknown parameter rejects
@@ -76,6 +112,12 @@ Later phases should be default-deny:
 - missing dry-run support rejects
 - logging failure rejects
 - snapshot failure rejects
+
+The MVP policy catalog is intentionally narrow:
+
+- `ps.get_child_items_v1` is the only enabled binding
+- `registered_script` remains structurally representable but disabled
+- `registered_native` remains denied in MVP
 
 ## Validation Direction
 

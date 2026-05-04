@@ -8,9 +8,27 @@ Phase 1 is complete when the repository contains:
 - strict JSON Schema contracts under `app/governed_shell/schemas/`
 - pytest coverage for schema validation and raw-shell rejection
 
+## Phase 2 Acceptance Criteria
+
+Phase 2 is complete when the repository contains:
+
+- governed shell proposal loading helpers
+- explicit schema validation helpers
+- deterministic canonical JSON and proposal hashing
+- path validation that rejects absolute paths and traversal
+
+## Phase 3 Acceptance Criteria
+
+Phase 3 is complete when the repository contains:
+
+- a config-driven default-deny governed shell policy
+- deterministic policy review helpers
+- authoritative risk recomputation
+- explicit denial of unknown commands, unknown parameters, unknown roots, native operations, network requests, and privilege escalation requests
+
 ## Required Proofs
 
-The Phase 1 tests must prove:
+The governed shell tests must prove:
 
 - a valid read-only proposal passes schema validation
 - a valid dry-run `registered_script` proposal passes schema validation
@@ -21,27 +39,35 @@ The Phase 1 tests must prove:
 - path traversal fails
 - absolute paths fail
 - unknown operation types fail
+- canonical hashing is stable across key ordering
+- recursive read risk escalates above low risk
+- unknown or disabled bindings fail closed
+- policy loading failures fail closed
 
 ## Explicit Non-Goals
 
-Phase 1 does not implement:
+Phases 1 through 3 do not implement:
 
 - execution
 - simulation behavior
 - runner behavior
-- policy engine behavior
+- PowerShell invocation
+- audit logging
+- sealed plan creation
 - model integration
 - registered script execution
+- module registration
 
-Any claim that governed shell execution exists after Phase 1 is incorrect.
+Any claim that governed shell execution exists after Phase 3 is incorrect.
 
 ## MVP Boundary Notes
 
 - `registered_native` is present only as a structural schema shape
-- it is not executable in MVP planning
+- it is denied in MVP policy review
 - dry-run `registered_script` proposals may validate structurally
 - structural validation is not execution authorization
+- disabled script bindings remain denied even after schema validation
 
 ## Validator Note
 
-`jsonschema>=4` is the recommended validator dependency for later phases that add enforcement code. If unavailable in another environment, Phase 1 schema tests should skip clearly rather than silently falling back to permissive behavior.
+`jsonschema>=4` is the required schema validator for the governed shell enforcement layers in Phases 2 and 3. The Phase 3 policy layer must fail closed rather than silently falling back to permissive behavior.
