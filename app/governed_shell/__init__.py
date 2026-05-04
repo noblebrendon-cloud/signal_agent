@@ -1,13 +1,15 @@
 """Governed shell package.
 
-Phase 2 exposes proposal loading, schema validation, normalization, and
-canonical hashing only. Execution, policy evaluation, simulation, and
-runner integration remain intentionally unimplemented in this phase.
+Phase 4 exposes proposal loading, schema validation, normalization,
+policy review, append-only audit logging, and replay verification only.
+Execution, approval, simulation, and runner integration remain
+intentionally unimplemented in this phase.
 """
 
 from pathlib import Path
 
 from .errors import (
+    AuditLogError,
     GovernedShellError,
     PolicyDeniedError,
     PolicyLoadError,
@@ -16,6 +18,17 @@ from .errors import (
     ProposalNormalizationError,
     ProposalPathError,
     ProposalSchemaError,
+    ReplayVerificationError,
+)
+from .logstore import (
+    AUDIT_ZERO_HASH,
+    AuditVerificationResult,
+    append_audit_event,
+    build_review_event,
+    canonical_event_json,
+    compute_event_hash,
+    read_audit_events,
+    verify_audit_chain,
 )
 from .normalize import (
     NormalizedProposal,
@@ -34,6 +47,7 @@ from .policy import (
     validate_policy,
 )
 from .proposal import dump_canonical_json, load_json_text, load_proposal
+from .replay import ReplayResult, replay_session, summarize_review_chain, verify_log
 from .risk import RiskReport, derive_effective_risk
 from .schema_validate import (
     ValidationResult,
@@ -45,6 +59,9 @@ SCHEMA_DIR = Path(__file__).resolve().parent / "schemas"
 
 __all__ = [
     "SCHEMA_DIR",
+    "AUDIT_ZERO_HASH",
+    "AuditLogError",
+    "ReplayVerificationError",
     "GovernedShellError",
     "PolicyDeniedError",
     "PolicyLoadError",
@@ -59,6 +76,8 @@ __all__ = [
     "PolicyValidationResult",
     "PolicyDecision",
     "RiskReport",
+    "AuditVerificationResult",
+    "ReplayResult",
     "load_proposal",
     "load_json_text",
     "dump_canonical_json",
@@ -73,4 +92,13 @@ __all__ = [
     "evaluate_policy",
     "require_policy_allowed",
     "derive_effective_risk",
+    "canonical_event_json",
+    "compute_event_hash",
+    "read_audit_events",
+    "verify_audit_chain",
+    "append_audit_event",
+    "build_review_event",
+    "replay_session",
+    "summarize_review_chain",
+    "verify_log",
 ]

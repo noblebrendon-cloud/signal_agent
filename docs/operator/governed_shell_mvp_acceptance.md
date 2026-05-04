@@ -26,6 +26,15 @@ Phase 3 is complete when the repository contains:
 - authoritative risk recomputation
 - explicit denial of unknown commands, unknown parameters, unknown roots, native operations, network requests, and privilege escalation requests
 
+## Phase 4 Acceptance Criteria
+
+Phase 4 is complete when the repository contains:
+
+- an append-only governed-shell audit ledger
+- deterministic record hashing and `prev_hash` chaining
+- read-only replay by session
+- read-only verify-log support that fails closed on tampering
+
 ## Required Proofs
 
 The governed shell tests must prove:
@@ -43,6 +52,11 @@ The governed shell tests must prove:
 - recursive read risk escalates above low risk
 - unknown or disabled bindings fail closed
 - policy loading failures fail closed
+- audit hash chains verify on clean ledgers
+- edited records are detected
+- broken `prev_hash` values are detected
+- malformed JSONL is detected
+- missing replay sessions report not clean
 
 ## Explicit Non-Goals
 
@@ -58,7 +72,15 @@ Phases 1 through 3 do not implement:
 - registered script execution
 - module registration
 
-Any claim that governed shell execution exists after Phase 3 is incorrect.
+Phase 4 still does not implement:
+
+- execution
+- PowerShell invocation
+- proposal approval
+- sealed execution plans
+- repair of corrupted ledgers
+
+Any claim that governed shell execution exists after Phase 4 is incorrect.
 
 ## MVP Boundary Notes
 

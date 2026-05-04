@@ -67,6 +67,24 @@ Phase 3 still does not implement:
 - sealed plan creation
 - state writes
 
+## Phase 4 Scope
+
+Phase 4 adds only append-only review evidence:
+
+- append-only JSONL audit logging for review events
+- deterministic record hashing and hash-chain linking
+- read-only replay by session
+- read-only log verification
+
+Phase 4 still does not implement:
+
+- execution
+- PowerShell invocation
+- proposal approval
+- sealed plan creation
+- state mutation outside the audit ledger itself
+- repair of corrupted ledgers
+
 ## Proposal Contract Direction
 
 The proposal contract is intentionally narrow:
@@ -118,6 +136,12 @@ The MVP policy catalog is intentionally narrow:
 - `ps.get_child_items_v1` is the only enabled binding
 - `registered_script` remains structurally representable but disabled
 - `registered_native` remains denied in MVP
+
+The Phase 4 audit layer is also intentionally narrow:
+
+- it records review state only
+- it does not imply execution exists
+- it fails closed on malformed JSONL, schema drift, broken `prev_hash`, incorrect `record_hash`, or non-monotonic `event_index`
 
 ## Validation Direction
 

@@ -268,7 +268,10 @@ def test_valid_audit_event_schema_shape() -> None:
         "decision_code": "schema_invalid",
         "snapshot_ref": "data/state/governed_shell/snapshots/session_001.json",
         "receipt_ref": "data/state/governed_shell/approved/plan_001.json",
-        "prev_hash": None,
+        "details": {
+            "issues": ["schema_invalid"],
+        },
+        "prev_hash": "sha256:" + ("0" * 64),
         "record_hash": "sha256:" + ("4" * 64),
     }
     _assert_valid("audit_event.v1.json", payload)

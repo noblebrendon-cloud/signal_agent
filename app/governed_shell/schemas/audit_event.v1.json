@@ -13,11 +13,16 @@
     "timestamp_utc",
     "event_type",
     "status",
+    "proposal_id",
     "proposal_hash",
+    "plan_id",
     "plan_hash",
     "policy_hash",
     "risk_level",
     "decision_code",
+    "snapshot_ref",
+    "receipt_ref",
+    "details",
     "prev_hash",
     "record_hash"
   ],
@@ -62,7 +67,8 @@
         "allowed",
         "rejected",
         "failed",
-        "verified"
+        "verified",
+        "require_confirmation"
       ]
     },
     "proposal_id": {
@@ -98,15 +104,22 @@
     "receipt_ref": {
       "$ref": "#/$defs/relativeRepoPath"
     },
-    "prev_hash": {
-      "anyOf": [
-        {
-          "type": "null"
-        },
-        {
-          "$ref": "#/$defs/hashString"
+    "details": {
+      "type": "object",
+      "propertyNames": {
+        "not": {
+          "enum": [
+            "command_text",
+            "shell_text",
+            "script_text",
+            "inline_command",
+            "powershell_command"
+          ]
         }
-      ]
+      }
+    },
+    "prev_hash": {
+      "$ref": "#/$defs/hashString"
     },
     "record_hash": {
       "$ref": "#/$defs/hashString"

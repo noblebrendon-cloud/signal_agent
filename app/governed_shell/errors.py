@@ -31,3 +31,11 @@ class PolicyValidationError(GovernedShellError):
 
 class PolicyDeniedError(GovernedShellError):
     """Raised when a governed shell proposal is denied by policy review."""
+
+
+class AuditLogError(GovernedShellError):
+    """Raised when governed shell audit events cannot be appended or loaded safely."""
+
+
+class ReplayVerificationError(GovernedShellError):
+    """Raised when governed shell replay or verification cannot complete safely."""
