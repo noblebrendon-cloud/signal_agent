@@ -47,3 +47,11 @@ class ConfirmationError(GovernedShellError):
 
 class ExecutionPlanError(GovernedShellError):
     """Raised when a governed shell execution plan cannot be built, verified, or written."""
+
+
+class SnapshotError(GovernedShellError):
+    """Raised when governed shell snapshot metadata cannot be built, verified, or written."""
+
+
+class SimulationError(GovernedShellError):
+    """Raised when simulation-only plan handling cannot complete safely."""

@@ -44,6 +44,15 @@ Phase 5 is complete when the repository contains:
 - deterministic `plan_hash` verification
 - atomic sealed-plan JSON writing without execution behavior
 
+## Phase 6 Acceptance Criteria
+
+Phase 6 is complete when the repository contains:
+
+- metadata-only snapshot manifests derived from sealed plan declared paths
+- deterministic snapshot hashing and verification
+- simulation-only receipts with `executed=false`
+- optional simulation audit trail events that remain append-only and replayable
+
 ## Required Proofs
 
 The governed shell tests must prove:
@@ -69,6 +78,9 @@ The governed shell tests must prove:
 - confirmation-required proposals fail without an exact full hash match
 - sealed plan hashes verify and fail after mutation
 - denied policy decisions cannot create plans
+- snapshot manifests verify and fail after mutation
+- simulation receipts verify and fail after mutation
+- simulation audit events preserve a clean verify-log chain
 
 ## Explicit Non-Goals
 
@@ -101,7 +113,17 @@ Phase 5 still does not implement:
 - runner behavior
 - process creation or output capture
 
-Any claim that governed shell execution exists after Phase 5 is incorrect.
+Phase 6 still does not implement:
+
+- real execution
+- PowerShell invocation
+- shell command invocation
+- subprocess creation
+- runner behavior
+- proposal approval
+- model integration
+
+Any claim that governed shell execution exists after Phase 6 is incorrect.
 
 ## MVP Boundary Notes
 

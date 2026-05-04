@@ -56,6 +56,9 @@
       "enum": [
         "proposal_reviewed",
         "plan_approved",
+        "simulation_started",
+        "simulation_finished",
+        "simulation_failed",
         "simulation_recorded",
         "replay_verified",
         "log_verified"
@@ -67,6 +70,8 @@
         "allowed",
         "rejected",
         "failed",
+        "started",
+        "simulated",
         "verified",
         "require_confirmation"
       ]

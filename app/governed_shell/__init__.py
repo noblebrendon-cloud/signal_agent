@@ -1,10 +1,10 @@
 """Governed shell package.
 
-Phase 5 exposes proposal loading, schema validation, normalization,
+Phase 6 exposes proposal loading, schema validation, normalization,
 policy review, append-only audit logging, replay verification, exact-hash
-confirmation, and sealed execution plan creation only. Execution,
-simulation, and runner integration remain intentionally unimplemented in
-this phase.
+confirmation, sealed execution plan creation, metadata-only snapshots,
+and simulation-only receipts. Real execution and runner integration
+remain intentionally unimplemented in this phase.
 """
 
 from pathlib import Path
@@ -22,6 +22,15 @@ from .errors import (
     ProposalPathError,
     ProposalSchemaError,
     ReplayVerificationError,
+    SimulationError,
+    SnapshotError,
+)
+from .executor import (
+    SimulationVerificationResult,
+    build_simulation_receipt,
+    compute_receipt_hash,
+    simulate_plan,
+    verify_simulation_receipt,
 )
 from .confirm import ConfirmationResult, check_confirmation, require_confirmation
 from .execution_plan import (
@@ -67,6 +76,13 @@ from .schema_validate import (
     require_valid_command_proposal,
     validate_command_proposal,
 )
+from .snapshot import (
+    SnapshotVerificationResult,
+    build_snapshot_manifest,
+    compute_snapshot_hash,
+    verify_snapshot_manifest,
+    write_snapshot_manifest,
+)
 
 SCHEMA_DIR = Path(__file__).resolve().parent / "schemas"
 
@@ -77,6 +93,8 @@ __all__ = [
     "ConfirmationError",
     "ExecutionPlanError",
     "ReplayVerificationError",
+    "SimulationError",
+    "SnapshotError",
     "GovernedShellError",
     "PolicyDeniedError",
     "PolicyLoadError",
@@ -95,6 +113,8 @@ __all__ = [
     "ReplayResult",
     "ConfirmationResult",
     "PlanVerificationResult",
+    "SnapshotVerificationResult",
+    "SimulationVerificationResult",
     "load_proposal",
     "load_json_text",
     "dump_canonical_json",
@@ -126,4 +146,12 @@ __all__ = [
     "seal_execution_plan",
     "verify_execution_plan",
     "write_sealed_plan",
+    "build_snapshot_manifest",
+    "compute_snapshot_hash",
+    "verify_snapshot_manifest",
+    "write_snapshot_manifest",
+    "build_simulation_receipt",
+    "compute_receipt_hash",
+    "simulate_plan",
+    "verify_simulation_receipt",
 ]

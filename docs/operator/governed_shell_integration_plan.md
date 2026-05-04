@@ -104,6 +104,25 @@ Phase 5 still does not implement:
 - stdout or stderr capture
 - process creation
 
+## Phase 6 Scope
+
+Phase 6 adds only metadata-only snapshotting and simulation receipts:
+
+- pre-snapshot manifest creation from sealed plan declared paths
+- deterministic snapshot hashing and verification
+- simulation-only receipt construction from verified sealed plans
+- optional simulation audit events with no execution behavior
+
+Phase 6 still does not implement:
+
+- real execution
+- subprocess creation
+- shell command invocation
+- runner behavior
+- PowerShell invocation
+- network access
+- stdout or stderr capture
+
 ## Proposal Contract Direction
 
 The proposal contract is intentionally narrow:
@@ -167,6 +186,13 @@ The Phase 5 plan layer is similarly narrow:
 - it creates plans only
 - it requires exact proposal-hash confirmation when policy requires it
 - it does not execute or simulate the plan it writes
+
+The Phase 6 simulation layer remains narrow:
+
+- it snapshots only declared plan read/write surfaces
+- it records metadata only and does not read arbitrary file contents
+- it produces receipts only with `executed=false`
+- it does not invoke a shell, subprocess, or runner
 
 ## Validation Direction
 

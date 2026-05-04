@@ -277,6 +277,34 @@ def test_valid_audit_event_schema_shape() -> None:
     _assert_valid("audit_event.v1.json", payload)
 
 
+def test_valid_simulation_audit_event_schema_shape() -> None:
+    payload = {
+        "schema_version": "audit_event.v1",
+        "record_type": "governed_shell_audit_event",
+        "event_id": "simulation_started.session_001.1",
+        "session_id": "session_001",
+        "event_index": 1,
+        "timestamp_utc": "2026-05-03T12:00:00Z",
+        "event_type": "simulation_started",
+        "status": "started",
+        "proposal_id": "proposal_001",
+        "proposal_hash": "sha256:" + ("1" * 64),
+        "plan_id": "plan_001",
+        "plan_hash": "sha256:" + ("2" * 64),
+        "policy_hash": "sha256:" + ("3" * 64),
+        "risk_level": "low",
+        "decision_code": "simulation_started",
+        "snapshot_ref": "data/state/governed_shell/snapshots/snapshot_001.json",
+        "receipt_ref": "data/state/governed_shell/receipts/receipt_001.json",
+        "details": {
+            "mode": "simulation_only",
+        },
+        "prev_hash": "sha256:" + ("0" * 64),
+        "record_hash": "sha256:" + ("4" * 64),
+    }
+    _assert_valid("audit_event.v1.json", payload)
+
+
 def test_valid_execution_plan_schema_shape() -> None:
     payload = {
         "schema_version": "execution_plan.v1",
