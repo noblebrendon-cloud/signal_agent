@@ -1,4 +1,15 @@
-﻿# Python
+# ─────────────────────────────────────────────────────────────────────────────
+# SECRET-BEARING FILES — never commit
+# ─────────────────────────────────────────────────────────────────────────────
+config/integrations/shopify_crawler.yaml
+config/integrations/printful.yaml
+config/integrations/*.secret.yaml
+config/secrets/
+.env
+.env.*
+!.env.example
+
+# Python
 __pycache__/
 *.pyc
 .pytest_cache/
