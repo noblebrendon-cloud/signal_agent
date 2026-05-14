@@ -215,8 +215,9 @@ The first three stages are fully implemented with ledger evidence. The remaining
 | Daily witness | **[IMPLEMENTED]** | 5-stage structured check, append-only witness ledger |
 | System health | **[IMPLEMENTED]** | Reconciliation, coherence failures, blocked transitions |
 | HQ dashboard | **[EMERGING]** | FastAPI UI exists but ungoverned |
-| Spine observability | **[EMERGING]** | Models exist; store and CLI not yet implemented |
-| Cross-spine audience tracking | **[FUTURE]** | Planned in convergence plan |
+| Local spine observability Stage 1 | **[IMPLEMENTED]** | Models, append-only store, CLI, summary, under-tracked detection; `tests/test_spine_observability.py` target result: 11 passed |
+| External spine ingestion / dashboard integration | **[FUTURE]** | No APIs, scraping, external posting, messaging, or dashboard wiring in Stage 1 |
+| Cross-spine audience tracking | **[FUTURE]** | Planned beyond local manual metric snapshots |
 
 ---
 

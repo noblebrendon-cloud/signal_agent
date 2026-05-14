@@ -154,15 +154,19 @@
 
 ## 8. Spine Observability
 
-**[EMERGING]** — model code exists but store and CLI are not yet implemented
+**[IMPLEMENTED]** — local Spine Observability Stage 1 is implemented.
+
+This status is bounded to local, append-only spine/platform/metric records, deterministic CLI output, grouped summaries, and under-tracked detection. It does not include external platform ingestion, dashboard integration, posting automation, messaging, scraping, APIs, or other external actions.
 
 | Component | Path | Status |
 |---|---|---|
-| Spine models | `app/spine_observability/models.py` (313 lines) | Untracked; has `build_spine_record`, `build_platform_account_record`, `build_metric_snapshot_record`, full validation, `external_action_allowed: false` enforcement |
-| Module init | `app/spine_observability/__init__.py` | Untracked |
-| Spine router config | `config/spine_router.yaml` (6 spine definitions) | Tracked; routing keywords and domains |
-| Convergence plan | `docs/operator/spine_laviathon_convergence_stage1_plan.md` | Untracked |
-| Store, CLI, tests | Not yet created | Planned in convergence plan |
+| Spine models | `app/spine_observability/models.py` | **Implemented** — `build_spine_record`, `build_platform_account_record`, `build_metric_snapshot_record`, validation, deterministic IDs, `external_action_allowed: false` enforcement |
+| Append-only store | `app/spine_observability/store.py` | **Implemented** — uses local hash-chained JSONL records through `app.retention.jsonl_store.append_record` |
+| Summary layer | `app/spine_observability/summary.py` | **Implemented** — summarizes by spine and reports under-tracked platforms |
+| CLI | `app/spine_observability/cli.py` | **Implemented** — add/list spines, add/list platform accounts, add metric snapshots, summary, under-tracked report |
+| Tests | `tests/test_spine_observability.py` | **Implemented** — targeted result for commit `6501ba6`: 11 passed |
+| Spine router config | `config/spine_router.yaml` | **Separate emerging surface** — routing keywords and domains; not part of local Stage 1 observability commit |
+| External ingestion / dashboards / automation | Not implemented | **[FUTURE]** — intentionally out of scope for Stage 1 |
 
 ---
 

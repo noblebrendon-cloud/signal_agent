@@ -66,14 +66,20 @@ spines:
 
 ## 4. Spine Observability Model
 
-**[EMERGING]** — model code exists, store and CLI do not
+**[IMPLEMENTED]** — local Spine Observability Stage 1 is implemented.
 
-### Existing Code
+This implementation records and summarizes local spine/platform/metric state only. It does not ingest from external platforms, scrape, post, message, call APIs, or integrate with a dashboard.
+
+### Implemented Code
 
 | File | Status | Content |
 |---|---|---|
-| `app/spine_observability/__init__.py` | Untracked | Module docstring |
-| `app/spine_observability/models.py` (313 lines) | Untracked | Full implementation: `build_spine_record`, `build_platform_account_record`, `build_metric_snapshot_record` |
+| `app/spine_observability/__init__.py` | Implemented | Module docstring |
+| `app/spine_observability/models.py` | Implemented | `build_spine_record`, `build_platform_account_record`, `build_metric_snapshot_record`, deterministic IDs, validation |
+| `app/spine_observability/store.py` | Implemented | Append-only local JSONL store for spines, platform accounts, and metric snapshots |
+| `app/spine_observability/summary.py` | Implemented | Summary by spine and under-tracked platform detection |
+| `app/spine_observability/cli.py` | Implemented | Deterministic JSON CLI output for local Stage 1 commands |
+| `tests/test_spine_observability.py` | Implemented | Targeted coverage; commit `6501ba6` result: 11 passed |
 
 ### Record Types Defined
 
@@ -111,28 +117,29 @@ ALLOWED_PLATFORMS = (
 
 ---
 
-## 5. Planned Ledger Files
+## 5. Local Ledger Files
 
-**[EMERGING]** — defined in convergence plan, not yet created
+**[IMPLEMENTED]** — created on demand under `data/state/` by the local append-only store.
 
 | Ledger | Path | Record type |
 |---|---|---|
-| Spine definitions | `data/state/spines.jsonl` | `spine` |
-| Platform accounts | `data/state/spine_platforms.jsonl` | `platform_account` |
-| Metric snapshots | `data/state/spine_metrics.jsonl` | `metric_snapshot` |
-| Laviathon observations | `data/state/laviathon_observations.jsonl` | `laviathon_observation` |
+| Spine definitions | `data/state/spine_observability_spines.jsonl` | `spine` |
+| Platform accounts | `data/state/spine_observability_platforms.jsonl` | `platform_account` |
+| Metric snapshots | `data/state/spine_observability_metric_snapshots.jsonl` | `metric_snapshot` |
+| Laviathon observations | Not implemented in this module | **[FUTURE]** / separate evaluator boundary |
 
 ---
 
-## 6. Planned CLI Commands
+## 6. CLI Commands
 
-**[EMERGING]** — defined in convergence plan, not yet implemented
+**[IMPLEMENTED]** — local-only commands in `app/spine_observability/cli.py`.
 
 ```
 python -m app.spine_observability.cli add-spine --name <name> --description <desc>
 python -m app.spine_observability.cli list-spines
-python -m app.spine_observability.cli add-platform --spine-name <name> --platform <platform> --label <label> --content-lane <lane>
-python -m app.spine_observability.cli add-metric --platform-account-id <id> --captured-at <ts> --window-start <ts> --window-end <ts> --metrics <json>
+python -m app.spine_observability.cli add-platform --spine-name <name> --platform <platform> --account-label <label> --content-lane <lane>
+python -m app.spine_observability.cli list-platforms
+python -m app.spine_observability.cli add-metric --platform-account-id <id> --captured-at <ts> --metric-window-start <ts> --metric-window-end <ts> --metric KEY=VALUE
 python -m app.spine_observability.cli spine-summary --format text|json
 python -m app.spine_observability.cli under-tracked --days 7
 ```
@@ -145,11 +152,11 @@ python -m app.spine_observability.cli under-tracked --days 7
 
 | Retention pattern | Spine observability usage |
 |---|---|
-| `app/retention/jsonl_store.py` → `append_record` | Will be used for all spine ledger writes |
-| `app/retention/identity.py` → deterministic IDs | Already used in `spine_observability/models.py` |
-| `app/retention/cli.py` → argparse pattern | Will be replicated for spine CLI |
-| Hash-chained records (`prev_hash` → `record_hash`) | Will use same chain via `append_record` |
-| Test isolation via `SIGNAL_AGENT_ROOT` | Will follow same monkeypatch fixture pattern |
+| `app/retention/jsonl_store.py` → `append_record` | Used for all spine ledger writes |
+| `app/retention/identity.py` → deterministic IDs | Used in `spine_observability/models.py` |
+| `app/retention/cli.py` → argparse pattern | Reused for `spine_observability/cli.py` |
+| Hash-chained records (`prev_hash` → `record_hash`) | Used through `append_record` |
+| Test isolation via `SIGNAL_AGENT_ROOT` | Used in `tests/test_spine_observability.py` |
 
 ---
 
