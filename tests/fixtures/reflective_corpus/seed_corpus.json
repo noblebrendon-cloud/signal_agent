@@ -1,0 +1,86 @@
+{
+  "fixture_scope": "test_only",
+  "external_action_allowed": false,
+  "themes": [
+    {
+      "name": "Mission vs Monetization",
+      "signal_terms": [
+        "mission",
+        "monetization",
+        "sustainability",
+        "business model"
+      ],
+      "expected_fragment_numbers": [
+        1,
+        4
+      ]
+    },
+    {
+      "name": "Christian Creator Infrastructure",
+      "signal_terms": [
+        "christian creators",
+        "theology",
+        "media",
+        "community",
+        "education",
+        "infrastructure"
+      ],
+      "expected_fragment_numbers": [
+        2,
+        5
+      ]
+    },
+    {
+      "name": "Continuity vs Virality",
+      "signal_terms": [
+        "virality",
+        "thematic identity",
+        "memory",
+        "living corpus",
+        "engagement"
+      ],
+      "expected_fragment_numbers": [
+        3,
+        6
+      ]
+    }
+  ],
+  "fragments": [
+    {
+      "number": 1,
+      "source_type": "note",
+      "source_ref": "fixture:reflective_corpus:001",
+      "text": "There is a difference between sustaining a mission and manufacturing one for sustainability."
+    },
+    {
+      "number": 2,
+      "source_type": "note",
+      "source_ref": "fixture:reflective_corpus:002",
+      "text": "Christian creators are often building theology, media, community, and education with almost no infrastructure beneath them."
+    },
+    {
+      "number": 3,
+      "source_type": "note",
+      "source_ref": "fixture:reflective_corpus:003",
+      "text": "Virality is event-based, but thematic identity is memory-based."
+    },
+    {
+      "number": 4,
+      "source_type": "note",
+      "source_ref": "fixture:reflective_corpus:004",
+      "text": "The mission existed before the business model."
+    },
+    {
+      "number": 5,
+      "source_type": "note",
+      "source_ref": "fixture:reflective_corpus:005",
+      "text": "Media is not secondary anymore. It is infrastructure."
+    },
+    {
+      "number": 6,
+      "source_type": "note",
+      "source_ref": "fixture:reflective_corpus:006",
+      "text": "A living corpus matters more than disposable engagement."
+    }
+  ]
+}
