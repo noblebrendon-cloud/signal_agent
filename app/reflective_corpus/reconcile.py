@@ -21,6 +21,7 @@ from app.reflective_corpus.store import (
     THEMES_FILE,
 )
 from app.retention.identity import get_repo_root, get_state_root
+from app.retention.jsonl_store import compute_record_hash
 
 
 LEDGER_FILES = (
@@ -65,6 +66,7 @@ def reconcile_reflective_corpus_state(*, repo_root: Path | None = None) -> dict[
 
     failures.extend(_validate_records(rows_by_ledger))
     failures.extend(_detect_duplicate_ids(rows_by_ledger))
+    failures.extend(_detect_hash_issues(rows_by_ledger))
     failures.extend(_detect_reference_issues(rows_by_ledger))
 
     failures = _sort_issues(failures)
@@ -78,6 +80,7 @@ def reconcile_reflective_corpus_state(*, repo_root: Path | None = None) -> dict[
     return {
         "schema_version": "1.0",
         "command": "corpus-reconcile",
+        "external_action_allowed": False,
         "clean": not failures,
         "summary": summary,
         "failures": failures,
@@ -226,6 +229,44 @@ def _detect_duplicate_ids(rows_by_ledger: dict[str, list[dict[str, Any]]]) -> li
                 )
             else:
                 seen[value] = row["line_number"]
+    return failures
+
+
+def _detect_hash_issues(rows_by_ledger: dict[str, list[dict[str, Any]]]) -> list[dict[str, Any]]:
+    failures: list[dict[str, Any]] = []
+    for ledger_name in LEDGER_FILES:
+        previous_record_hash: str | None = None
+        for row in rows_by_ledger.get(ledger_name, []):
+            record = row["record"]
+            line_number = row["line_number"]
+            stored_record_hash = record.get("record_hash")
+            expected_record_hash = compute_record_hash(record)
+            if stored_record_hash != expected_record_hash:
+                failures.append(
+                    _issue(
+                        "record_hash_mismatch",
+                        ledger_name,
+                        line_number=line_number,
+                        record_id=_record_id(record),
+                        expected_record_hash=expected_record_hash,
+                        observed_record_hash=stored_record_hash,
+                    )
+                )
+
+            observed_prev_hash = record.get("prev_hash")
+            if observed_prev_hash != previous_record_hash:
+                failures.append(
+                    _issue(
+                        "prev_hash_mismatch",
+                        ledger_name,
+                        line_number=line_number,
+                        record_id=_record_id(record),
+                        expected_prev_hash=previous_record_hash,
+                        observed_prev_hash=observed_prev_hash,
+                    )
+                )
+
+            previous_record_hash = stored_record_hash if isinstance(stored_record_hash, str) else expected_record_hash
     return failures
 
 

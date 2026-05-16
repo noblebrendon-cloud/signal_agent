@@ -62,6 +62,7 @@ def test_clean_corpus_passes(corpus_root: Path) -> None:
     report = reconcile_reflective_corpus_state(repo_root=corpus_root)
 
     assert report["clean"] is True
+    assert report["external_action_allowed"] is False
     assert report["summary"]["failure_count"] == 0
     assert report["summary"]["fragment_count"] == 1
     assert report["summary"]["theme_count"] == 1
@@ -165,6 +166,35 @@ def test_invalid_status_duplicate_ids_and_empty_text_fail(corpus_root: Path) -> 
     assert "empty_fragment_text" in issue_types
     assert "duplicate_id" in issue_types
     assert "invalid_status" in issue_types
+
+
+def test_reconcile_detects_broken_hash_chain(corpus_root: Path) -> None:
+    append_fragment(
+        build_fragment_record(
+            source_type="note",
+            source_ref="journal:001",
+            text="The first append establishes the chain.",
+        )
+    )
+    append_fragment(
+        build_fragment_record(
+            source_type="note",
+            source_ref="journal:002",
+            text="The second append should point to the first hash.",
+        )
+    )
+
+    path = corpus_root / "data" / "state" / FRAGMENTS_FILE
+    records = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+    records[1]["prev_hash"] = "broken-prev-hash"
+    _write_jsonl(path, records)
+
+    report = reconcile_reflective_corpus_state(repo_root=corpus_root)
+    issue_types = {failure["issue_type"] for failure in report["failures"]}
+
+    assert report["clean"] is False
+    assert "prev_hash_mismatch" in issue_types
+    assert "record_hash_mismatch" in issue_types
 
 
 def _write_jsonl(path: Path, records: list[dict]) -> None:

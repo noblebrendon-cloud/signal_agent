@@ -137,6 +137,7 @@ def test_corpus_reconcile_cli_outputs_clean_report(corpus_root: Path, capsys: py
     payload = _read_stdout_json(capsys)
 
     assert result == 0
+    assert payload["external_action_allowed"] is False
     assert payload["clean"] is True
     assert payload["command"] == "corpus-reconcile"
 
