@@ -4,6 +4,16 @@ import argparse
 import json
 from typing import Any
 
+from app.spine_observability.laviathon import (
+    ALLOWED_OBSERVATION_TYPES,
+    ALLOWED_REVIEW_STATUSES,
+    ALLOWED_SPINE_TARGETS,
+)
+from app.spine_observability.laviathon_store import (
+    append_laviathon_observation,
+    list_laviathon_observations,
+    list_review_candidates,
+)
 from app.spine_observability.models import ALLOWED_PLATFORMS
 from app.spine_observability.store import (
     add_metric_snapshot,
@@ -109,6 +119,37 @@ def build_parser() -> argparse.ArgumentParser:
     under_tracked_parser.add_argument("--as-of")
     under_tracked_parser.set_defaults(func=run_spine_under_tracked)
 
+    laviathon_add_parser = subparsers.add_parser(
+        "laviathon-add-observation",
+        help="Append a validated local-only Laviathon observation",
+    )
+    laviathon_add_parser.add_argument("--created-at", required=True)
+    laviathon_add_parser.add_argument("--source-context", required=True)
+    laviathon_add_parser.add_argument("--spine-target", required=True, choices=ALLOWED_SPINE_TARGETS)
+    laviathon_add_parser.add_argument("--observation-type", required=True, choices=ALLOWED_OBSERVATION_TYPES)
+    laviathon_add_parser.add_argument("--claim", required=True)
+    laviathon_add_parser.add_argument("--evidence", required=True)
+    laviathon_add_parser.add_argument("--recommendation", required=True)
+    laviathon_add_parser.add_argument("--public-safe", required=True, type=_parse_bool)
+    laviathon_add_parser.add_argument("--requires-human-review", type=_parse_bool)
+    laviathon_add_parser.add_argument("--review-status", choices=ALLOWED_REVIEW_STATUSES)
+    laviathon_add_parser.add_argument("--external-action-allowed", type=_parse_bool, default=False)
+    laviathon_add_parser.set_defaults(func=run_laviathon_add_observation)
+
+    laviathon_list_parser = subparsers.add_parser(
+        "laviathon-list-observations",
+        help="List locally stored Laviathon observations",
+    )
+    laviathon_list_parser.set_defaults(func=run_laviathon_list_observations)
+
+    laviathon_review_parser = subparsers.add_parser(
+        "laviathon-review-candidates",
+        help="List local Laviathon observations requiring human review",
+    )
+    laviathon_review_parser.add_argument("--include-all-statuses", action="store_true")
+    laviathon_review_parser.add_argument("--observation-type", choices=ALLOWED_OBSERVATION_TYPES)
+    laviathon_review_parser.set_defaults(func=run_laviathon_review_candidates)
+
     return parser
 
 
@@ -192,6 +233,44 @@ def run_spine_under_tracked(args: argparse.Namespace) -> int:
     return 0
 
 
+def run_laviathon_add_observation(args: argparse.Namespace) -> int:
+    observation = {
+        "created_at": args.created_at,
+        "source_context": args.source_context,
+        "spine_target": args.spine_target,
+        "observation_type": args.observation_type,
+        "claim": args.claim,
+        "evidence": args.evidence,
+        "recommendation": args.recommendation,
+        "public_safe": args.public_safe,
+        "external_action_allowed": args.external_action_allowed,
+    }
+    if args.requires_human_review is not None:
+        observation["requires_human_review"] = args.requires_human_review
+    if args.review_status is not None:
+        observation["review_status"] = args.review_status
+    _print_json(append_laviathon_observation(observation))
+    return 0
+
+
+def run_laviathon_list_observations(args: argparse.Namespace) -> int:
+    del args
+    _print_json({"observations": list_laviathon_observations()})
+    return 0
+
+
+def run_laviathon_review_candidates(args: argparse.Namespace) -> int:
+    _print_json(
+        {
+            "review_candidates": list_review_candidates(
+                include_all_statuses=args.include_all_statuses,
+                observation_type=args.observation_type,
+            )
+        }
+    )
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -244,6 +323,15 @@ def _non_negative_int(value: str) -> int:
     if parsed < 0:
         raise argparse.ArgumentTypeError("value_must_be_non_negative")
     return parsed
+
+
+def _parse_bool(value: str) -> bool:
+    normalized = str(value or "").strip().lower()
+    if normalized in {"true", "1", "yes"}:
+        return True
+    if normalized in {"false", "0", "no"}:
+        return False
+    raise argparse.ArgumentTypeError("value_must_be_boolean")
 
 
 if __name__ == "__main__":

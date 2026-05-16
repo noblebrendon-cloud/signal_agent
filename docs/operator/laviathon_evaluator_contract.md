@@ -54,11 +54,11 @@ Laviathon output is human-approved output only.
 - Generates deterministic `observation_id` values from stable observation content.
 - Rejects invalid, unsafe, or identity-confused records fail-closed.
 - Appends only validated observations to `data/state/laviathon_observations.jsonl`.
+- Exposes minimal local CLI commands for append, list, and review-candidate reads.
 - Adds tests for valid normalization, invalid values, safety gates, defaults, determinism, append-only persistence, and source-level external-action primitives.
 
 ## What This Patch Does Not Do
 
-- Does not add a CLI.
 - Does not integrate with external services.
 - Does not collect metrics.
 - Does not publish or message.
@@ -83,6 +83,16 @@ The observation store is intentionally narrow:
 The review-candidates helper is read-only. It returns observations where `requires_human_review` is `true`, defaults to `review_status=pending`, and can explicitly include all review statuses for audit views.
 
 It may filter by `observation_type`, including `public_post_candidate`, but it does not approve, reject, post, schedule, message, or otherwise act on the candidate.
+
+## CLI Surface
+
+The local CLI exposes only bounded wrappers around the validator and store:
+
+- `laviathon-add-observation`
+- `laviathon-list-observations`
+- `laviathon-review-candidates`
+
+These commands print JSON, preserve `external_action_allowed=false`, and do not approve, reject, post, message, schedule, scrape, or call external services.
 
 ## Observation Fields
 
@@ -147,4 +157,4 @@ This validator does not depend on live platform data. It can target the conceptu
 
 ## Next Step
 
-After the validator, append-only store, and read-only review candidate helper remain stable, the next safe step is a small operator-facing surface for listing observations. Any future status transition or CLI patch should remain local-only, fail-closed, and human-review gated.
+After the validator, append-only store, read-only review candidate helper, and minimal CLI remain stable, the next safe step is a local-only human review status transition path. Any future status transition should remain fail-closed, append-only or audit-backed, and human-review gated.
