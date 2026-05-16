@@ -4,7 +4,7 @@
 
 This contract defines the smallest local-only Laviathon evaluator layer over Stage 1 Spine Observability. The evaluator records structured observations about system design, AI orchestration, execution integrity, and coherence risks without performing any external action.
 
-This patch is validator-only. It normalizes observation records and rejects unsafe or malformed records before any future ledger exists.
+The current implementation normalizes observation records, rejects unsafe or malformed records, and can append validated observations to a local-only JSONL ledger.
 
 ## Identity Boundary
 
@@ -29,9 +29,9 @@ Laviathon output is human-approved output only.
 
 ## Safety Contract
 
-- Local validation only.
-- No persistent ledger in this patch.
-- No runtime data writes.
+- Local validation first.
+- Append-only local persistence only.
+- Runtime writes are limited to `data/state/laviathon_observations.jsonl` under the active `SIGNAL_AGENT_ROOT`.
 - No network calls.
 - No APIs.
 - No scraping.
@@ -48,22 +48,34 @@ Laviathon output is human-approved output only.
 ## What This Patch Does
 
 - Adds a pure Laviathon observation validator under `app/spine_observability/laviathon.py`.
+- Adds a minimal append-only observation store under `app/spine_observability/laviathon_store.py`.
 - Defines narrow allowed values for `spine_target`, `observation_type`, and `review_status`.
 - Normalizes valid observation records into a deterministic shape.
 - Generates deterministic `observation_id` values from stable observation content.
 - Rejects invalid, unsafe, or identity-confused records fail-closed.
-- Adds tests for valid normalization, invalid values, safety gates, defaults, determinism, and source-level external-action primitives.
+- Appends only validated observations to `data/state/laviathon_observations.jsonl`.
+- Adds tests for valid normalization, invalid values, safety gates, defaults, determinism, append-only persistence, and source-level external-action primitives.
 
 ## What This Patch Does Not Do
 
-- Does not create an append-only observation ledger.
-- Does not write to `data/state/`.
 - Does not add a CLI.
 - Does not integrate with external services.
 - Does not collect metrics.
 - Does not publish or message.
 - Does not approve public output.
 - Does not change existing spine observability runtime behavior.
+- Does not commit generated runtime state.
+
+## Persistence Boundary
+
+The observation store is intentionally narrow:
+
+- It validates every observation with `normalize_observation` before append.
+- It writes only to `data/state/laviathon_observations.jsonl` at runtime.
+- It reuses the existing local JSONL hash-chain store pattern.
+- It lists stored observations read-only.
+- It rejects invalid observations before a state file is created or appended.
+- It does not create external side effects.
 
 ## Observation Fields
 
@@ -128,5 +140,4 @@ This validator does not depend on live platform data. It can target the conceptu
 
 ## Next Step
 
-Only after this validator is stable, add an append-only local observation ledger that reuses the existing spine observability and retention JSONL patterns. That future patch should remain local-only, hash-chained, fail-closed, and human-review gated.
-
+After the validator and append-only store remain stable, the next safe step is a small read-only/operator-facing surface for listing observations. Any future status transition or CLI patch should remain local-only, fail-closed, and human-review gated.
