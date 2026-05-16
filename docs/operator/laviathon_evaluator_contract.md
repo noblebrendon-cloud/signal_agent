@@ -74,8 +74,15 @@ The observation store is intentionally narrow:
 - It writes only to `data/state/laviathon_observations.jsonl` at runtime.
 - It reuses the existing local JSONL hash-chain store pattern.
 - It lists stored observations read-only.
+- It can list read-only human-review candidates without changing review status.
 - It rejects invalid observations before a state file is created or appended.
 - It does not create external side effects.
+
+## Review Candidates
+
+The review-candidates helper is read-only. It returns observations where `requires_human_review` is `true`, defaults to `review_status=pending`, and can explicitly include all review statuses for audit views.
+
+It may filter by `observation_type`, including `public_post_candidate`, but it does not approve, reject, post, schedule, message, or otherwise act on the candidate.
 
 ## Observation Fields
 
@@ -140,4 +147,4 @@ This validator does not depend on live platform data. It can target the conceptu
 
 ## Next Step
 
-After the validator and append-only store remain stable, the next safe step is a small read-only/operator-facing surface for listing observations. Any future status transition or CLI patch should remain local-only, fail-closed, and human-review gated.
+After the validator, append-only store, and read-only review candidate helper remain stable, the next safe step is a small operator-facing surface for listing observations. Any future status transition or CLI patch should remain local-only, fail-closed, and human-review gated.

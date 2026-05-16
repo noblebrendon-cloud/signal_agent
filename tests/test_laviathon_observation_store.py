@@ -9,6 +9,7 @@ from app.spine_observability.laviathon_store import (
     LAVIATHON_OBSERVATIONS_FILE,
     append_laviathon_observation,
     list_laviathon_observations,
+    list_review_candidates,
 )
 
 
@@ -131,6 +132,115 @@ def test_append_only_behavior_preserves_existing_lines(laviathon_root: Path) -> 
     assert len(_read_jsonl(path)) == 2
 
 
+def test_list_review_candidates_returns_pending_human_review_observations(laviathon_root: Path) -> None:
+    stored = append_laviathon_observation(_base_observation())
+
+    candidates = list_review_candidates()
+
+    assert candidates == [stored]
+    assert _state_path(laviathon_root).exists()
+
+
+def test_list_review_candidates_excludes_non_human_review_observations(laviathon_root: Path) -> None:
+    observation = _base_observation()
+    observation["requires_human_review"] = False
+    stored = append_laviathon_observation(observation)
+
+    assert stored["requires_human_review"] is False
+    assert list_review_candidates() == []
+    assert len(_read_jsonl(_state_path(laviathon_root))) == 1
+
+
+def test_list_review_candidates_excludes_approved_and_rejected_by_default(laviathon_root: Path) -> None:
+    del laviathon_root
+    approved = _base_observation()
+    approved["claim"] = "An approved local observation exists."
+    approved["review_status"] = "approved"
+    append_laviathon_observation(approved)
+    rejected = _base_observation()
+    rejected["claim"] = "A rejected local observation exists."
+    rejected["review_status"] = "rejected"
+    append_laviathon_observation(rejected)
+    pending = _base_observation()
+    pending["claim"] = "A pending local observation exists."
+    pending_stored = append_laviathon_observation(pending)
+
+    candidates = list_review_candidates()
+
+    assert candidates == [pending_stored]
+
+
+def test_list_review_candidates_include_all_statuses_includes_reviewed_records(laviathon_root: Path) -> None:
+    del laviathon_root
+    approved = _base_observation()
+    approved["claim"] = "An approved local observation exists."
+    approved["review_status"] = "approved"
+    approved_stored = append_laviathon_observation(approved)
+    rejected = _base_observation()
+    rejected["claim"] = "A rejected local observation exists."
+    rejected["review_status"] = "rejected"
+    rejected_stored = append_laviathon_observation(rejected)
+
+    candidates = list_review_candidates(include_all_statuses=True)
+
+    assert candidates == sorted(
+        [approved_stored, rejected_stored],
+        key=lambda row: (row["created_at"], row["observation_id"]),
+    )
+
+
+def test_list_review_candidates_filters_by_public_post_candidate(laviathon_root: Path) -> None:
+    del laviathon_root
+    critique = _base_observation()
+    critique["claim"] = "A critique candidate exists."
+    append_laviathon_observation(critique)
+    public_candidate = _base_observation()
+    public_candidate["observation_type"] = "public_post_candidate"
+    public_candidate["claim"] = "A public candidate requires human review."
+    public_candidate["public_safe"] = True
+    public_stored = append_laviathon_observation(public_candidate)
+
+    candidates = list_review_candidates(observation_type="public_post_candidate")
+
+    assert candidates == [public_stored]
+    assert candidates[0]["requires_human_review"] is True
+    assert candidates[0]["review_status"] == "pending"
+
+
+def test_list_review_candidates_ordering_is_deterministic(laviathon_root: Path) -> None:
+    del laviathon_root
+    later = _base_observation()
+    later["created_at"] = "2026-05-15T13:00:00Z"
+    later["claim"] = "Later candidate."
+    later_stored = append_laviathon_observation(later)
+    earlier = _base_observation()
+    earlier["created_at"] = "2026-05-15T11:00:00Z"
+    earlier["claim"] = "Earlier candidate."
+    earlier_stored = append_laviathon_observation(earlier)
+    same_time = _base_observation()
+    same_time["created_at"] = "2026-05-15T11:00:00Z"
+    same_time["claim"] = "Same timestamp candidate."
+    same_time_stored = append_laviathon_observation(same_time)
+
+    candidates = list_review_candidates()
+
+    assert candidates == sorted(
+        [later_stored, earlier_stored, same_time_stored],
+        key=lambda row: (row["created_at"], row["observation_id"]),
+    )
+
+
+def test_list_review_candidates_does_not_mutate_state_file(laviathon_root: Path) -> None:
+    append_laviathon_observation(_base_observation())
+    path = _state_path(laviathon_root)
+    before = path.read_text(encoding="utf-8")
+
+    assert list_review_candidates()
+
+    after = path.read_text(encoding="utf-8")
+    assert after == before
+
+
 def test_source_scan_has_no_network_or_external_action_primitives() -> None:
     module_root = Path(__file__).resolve().parents[1] / "app" / "spine_observability"
     source = "\n".join(
@@ -151,4 +261,3 @@ def test_source_scan_has_no_network_or_external_action_primitives() -> None:
     )
     for token in forbidden_tokens:
         assert token not in source
-
