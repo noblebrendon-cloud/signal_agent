@@ -4,6 +4,7 @@ intake_roots:
 
 routes:
   docs: "e:\\signal_agent\\data\\docs\\processed"
+  video_source: "e:\\signal_agent\\data\\media\\source"
   outputs: "e:\\signal_agent\\data\\outputs"
   archive: "e:\\signal_agent\\data\\archive"
   trash: "e:\\signal_agent\\data\\trash"
@@ -18,6 +19,9 @@ kinds:
   - ext: [".mp3", ".wav"]
     kind: "audio"
     route: "archive"
+  - ext: [".mp4", ".mov", ".m4v", ".mkv", ".webm", ".avi"]
+    kind: "video_source"
+    route: "video_source"
     
 defaults:
   route: "archive"
