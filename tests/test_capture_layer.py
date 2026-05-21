@@ -284,6 +284,47 @@ class TestPromoteLogsLineage(unittest.TestCase):
         self.assertEqual(entry["strategy"], "hybrid")
         self.assertIn("status", entry)
 
+    def test_initial_promotion_transition_is_gated(self):
+        self._create_raw("raw_2026-02-16T18-00-01_001Z.md",
+                         "Deterministic promotion cluster artifact")
+        self._create_raw("raw_2026-02-16T18-00-02_002Z.md",
+                         "Deterministic promotion cluster ledger")
+
+        result = promote_run(
+            threshold=0.1,
+            min_cluster_size=2,
+            capture_dir=self.capture_dir,
+        )
+
+        bundle_name = result["bundles"][0]["bundle"]
+        state_root = self.tmpdir / "data" / "state"
+        registry_path = state_root / "artifact_registry.jsonl"
+        event_path = state_root / "transition_gate_events.jsonl"
+
+        registry_rows = [
+            json.loads(line)
+            for line in registry_path.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+        event_rows = [
+            json.loads(line)
+            for line in event_path.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+
+        self.assertTrue(any(
+            row["artifact_id"] == bundle_name and row["state"] == "promoted"
+            for row in registry_rows
+        ))
+        promoted_event = next(
+            row for row in event_rows
+            if row.get("artifact_id") == bundle_name
+            and row.get("attempted_state") == "promoted"
+        )
+        self.assertEqual(promoted_event["event_type"], "transition_attempt")
+        self.assertIsNone(promoted_event["current_state"])
+        self.assertEqual(promoted_event["status"], "allowed")
+
 
 class TestPromoteResumableNoDuplicateBundle(unittest.TestCase):
     """5) Running promote twice does not create duplicate bundles."""

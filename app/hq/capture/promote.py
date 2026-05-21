@@ -19,6 +19,15 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+from app.utils.io_contract import append_jsonl_atomic
+
+
+CURATE_HANDOFF_MODE = "disabled"
+CURATION_HANDOFF_NOTE = (
+    "promote_run() stops at bundle creation, routing, and archive movement; "
+    "hq_curation is a separate downstream stage and is not invoked by default."
+)
+
 
 # ===================================================================
 # Built-in stopwords (minimal, no external deps)
@@ -62,6 +71,19 @@ def _get_capture_dir() -> Path:
     if override:
         return Path(override)
     return _get_root() / "data" / "capture"
+
+
+def _canonical_state_paths(capture_dir: Path) -> tuple[Path, Path]:
+    capture_root = capture_dir.resolve()
+    if capture_root.name == "capture" and capture_root.parent.name == "data":
+        repo_root = capture_root.parent.parent
+    else:
+        repo_root = capture_root.parent
+    state_root = repo_root / "data" / "state"
+    return (
+        state_root / "artifact_registry.jsonl",
+        state_root / "transition_gate_events.jsonl",
+    )
 
 
 def _parse_frontmatter(text: str) -> Tuple[Dict[str, str], str]:
@@ -365,7 +387,7 @@ def _build_bundle_content(cluster: _Cluster, cluster_cid: str) -> str:
 
 
 def _try_curate(bundle_path: Path) -> Tuple[bool, Optional[str]]:
-    """Attempt to hand off bundle to curate pipeline. Returns (success, ref)."""
+    """Legacy/manual curate handoff helper, excluded from the default runtime path."""
     try:
         from app.hq.curation.curate import curate_file
         result = curate_file(str(bundle_path))
@@ -384,11 +406,9 @@ def _append_promo_log(
     """Append to promotion_log.jsonl."""
     log_path = capture_dir / "promotion_log.jsonl"
     try:
-        line = json.dumps(entry, sort_keys=True) + "\n"
-        with open(log_path, "a", encoding="utf-8", newline="\n") as f:
-            f.write(line)
-    except OSError:
-        pass
+        append_jsonl_atomic(log_path, dict(sorted(entry.items())))
+    except Exception as exc:
+        raise RuntimeError(f"Failed to append promotion log to {log_path}") from exc
 
 
 def promote_run(
@@ -402,7 +422,7 @@ def promote_run(
     capture_dir: Optional[Path] = None,
 ) -> Dict[str, Any]:
     """
-    Run promotion: cluster raw captures, emit bundles, invoke curate, archive.
+    Run promotion: cluster raw captures, emit bundles, route them, and archive raw inputs.
 
     Returns summary dict.
     """
@@ -473,10 +493,70 @@ def promote_run(
         with open(bundle_path, "w", encoding="utf-8", newline="\n") as f:
             f.write(content)
 
+        artifact_id = bundle_name
+        registry_path, transition_ledger_path = _canonical_state_paths(base)
+        from shared.state_registry import record_state, get_state
+        from app.hq.governance import validate_transition, emit_transition_event, new_run_id
+
+        prior = get_state(artifact_id, registry_path=registry_path)
+        prior_state = prior.get("state") if prior else None
+        promotion_run_id = new_run_id("promote")
+        validation = validate_transition(
+            current_state=prior_state,
+            next_state="promoted",
+            lane_id="volatile_capture",
+            context={
+                "module": "app.hq.capture.promote",
+                "operation": "promote_run",
+                "cluster_id": cid,
+                "bundle_filename": bundle_name,
+                "candidate_cluster_members": filenames,
+            },
+        )
+        if not validation.get("allowed"):
+            emit_transition_event(
+                validation,
+                run_id=promotion_run_id,
+                artifact_id=artifact_id,
+                ledger_path=transition_ledger_path,
+                context={
+                    "module": "app.hq.capture.promote",
+                    "operation": "promote_run",
+                    "cluster_id": cid,
+                    "bundle_filename": bundle_name,
+                },
+                event_type="transition_rejected",
+            )
+            current_label = prior_state if prior_state else "missing"
+            raise RuntimeError(
+                f"Canonical gate rejected promotion: "
+                f"{current_label}->promoted: {validation.get('reason')}"
+            )
+
+        emit_transition_event(
+            validation,
+            run_id=promotion_run_id,
+            artifact_id=artifact_id,
+            ledger_path=transition_ledger_path,
+            context={
+                "module": "app.hq.capture.promote",
+                "operation": "promote_run",
+                "cluster_id": cid,
+                "bundle_filename": bundle_name,
+            },
+            event_type="transition_attempt",
+        )
+        record_state(
+            artifact_id=artifact_id,
+            state="promoted",
+            path=str(bundle_path),
+            registry_path=registry_path,
+        )
+
         # Spine router handoff (best-effort)
         route_result = _try_route(bundle_path)
 
-        # Curate handoff (DISABLED for Capture Layer Invariant Compliance)
+        # Curate handoff is intentionally outside the promoted runtime surface.
         # curated, curated_ref = _try_curate(bundle_path)
         curated = False
         curated_ref = None
@@ -506,7 +586,24 @@ def promote_run(
             "status": "ok" if curated else "partial",
             "error": None,
         }
+
         _append_promo_log(base, log_entry)
+
+        # Emit PromotionSucceeded event (best-effort)
+        try:
+            from shared.events import emit_event
+            emit_event(
+                "PromotionSucceeded",
+                artifact_id,
+                {
+                    "bundle_path": str(bundle_path),
+                    "cluster_id": cid,
+                    "file_count": len(cluster.docs),
+                },
+            )
+        except Exception:
+            pass
+
 
         bundles.append({
             "bundle": bundle_name,
