@@ -23,6 +23,8 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from app.utils.io_contract import append_jsonl_atomic, atomic_write_text
+
 
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
 _URL_RE = re.compile(r"https?://[^\s\)\]>\\\"']+", re.IGNORECASE)
@@ -112,11 +114,10 @@ def _load_state(state_path: Path) -> Dict[str, Any]:
 
 def _save_state(state_path: Path, state: Dict[str, Any]) -> None:
     try:
-        with open(state_path, "w", encoding="utf-8", newline="\n") as f:
-            json.dump(state, f, indent=2, sort_keys=True)
-            f.write("\n")
-    except OSError:
-        pass
+        payload = json.dumps(state, indent=2, sort_keys=True) + "\n"
+        atomic_write_text(state_path, payload)
+    except Exception as exc:
+        raise RuntimeError(f"Failed to persist instability state to {state_path}") from exc
 
 
 def _append_instability_log(
@@ -125,11 +126,9 @@ def _append_instability_log(
 ) -> None:
     log_path = capture_dir / "instability_log.jsonl"
     try:
-        line = json.dumps(entry, sort_keys=True) + "\n"
-        with open(log_path, "a", encoding="utf-8", newline="\n") as f:
-            f.write(line)
-    except OSError:
-        pass
+        append_jsonl_atomic(log_path, dict(sorted(entry.items())))
+    except Exception as exc:
+        raise RuntimeError(f"Failed to append instability log to {log_path}") from exc
 
 
 def scan_instability(

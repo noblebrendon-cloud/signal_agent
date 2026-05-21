@@ -21,6 +21,9 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
+DIAGNOSTIC_ONLY = True
+
+
 def _get_root() -> Path:
     override = os.environ.get("SIGNAL_AGENT_ROOT")
     if override:

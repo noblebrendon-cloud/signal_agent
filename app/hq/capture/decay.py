@@ -17,6 +17,8 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
+from app.utils.io_contract import append_jsonl_atomic
+
 
 def _get_root() -> Path:
     override = os.environ.get("SIGNAL_AGENT_ROOT")
@@ -86,11 +88,9 @@ def _append_decay_log(
     """Append to decay_log.jsonl."""
     log_path = capture_dir / "decay_log.jsonl"
     try:
-        line = json.dumps(entry, sort_keys=True) + "\n"
-        with open(log_path, "a", encoding="utf-8", newline="\n") as f:
-            f.write(line)
-    except OSError:
-        pass
+        append_jsonl_atomic(log_path, dict(sorted(entry.items())))
+    except Exception as exc:
+        raise RuntimeError(f"Failed to append decay log to {log_path}") from exc
 
 
 def decay_run(
