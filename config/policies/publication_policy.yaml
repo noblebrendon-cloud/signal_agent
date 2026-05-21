@@ -1,0 +1,37 @@
+version: 1
+policy_id: publication_policy
+status: provisional
+purpose: Govern when transformed or compiled artifacts are eligible to stage and emit from a lane-specific operational surface.
+inputs:
+  - transformed_artifact
+  - compiled_package
+  - stage_manifest
+  - artifact_registry_entry
+  - publication_metadata
+required_conditions:
+  - artifact has durable identity, path, and provenance
+  - required manifests, package indexes, or sidecars exist for the lane
+  - emission surface is explicit and lane-authorized
+  - audit-relevant references remain available after staging and emission
+allowed_actions:
+  - register durable artifacts or package outputs
+  - stage artifacts with required support files
+  - emit staged artifacts to approved output surfaces
+  - append package, status, or audit-facing records
+forbidden_actions:
+  - emit directly from captured, promoted, or merely routed states
+  - emit artifacts lacking provenance or durable registration
+  - mutate terminal artifact bytes in place without a new version or hash
+  - bypass audit evidence when producing emission-ready outputs
+pass_fail_outcomes:
+  pass:
+    description: Artifact becomes staged or emitted with enough evidence for later audit.
+  fail:
+    description: Publication attempt is held, rejected, or failed pending remediation or explicit denial.
+resulting_state_effects:
+  on_pass:
+    - staged
+    - emitted
+  on_hold: held
+  on_reject: rejected
+  on_fail: failed

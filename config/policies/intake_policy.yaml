@@ -1,0 +1,36 @@
+version: 1
+policy_id: intake_policy
+status: active
+purpose: Govern how volatile inbound signals become normalized and classifiable records without prematurely becoming durable artifacts.
+inputs:
+  - raw_signal
+  - intake_record
+  - capture_record
+  - clipboard_payload
+  - source_file_reference
+required_conditions:
+  - inbound payload or file reference exists
+  - at least one durable intake or capture record is appended before downstream advancement
+  - normalization, when applied, preserves semantic content while standardizing line endings and stripping invalid null bytes
+  - raw capture paths do not mutate data/artifact_registry.jsonl
+allowed_actions:
+  - persist inbound input to intake or capture surfaces
+  - append intake or capture ledger events
+  - normalize payloads into canonical text or structured form
+  - assign initial classification inputs for downstream routing
+forbidden_actions:
+  - direct artifact registration from volatile capture alone
+  - direct emission or publication from intake surfaces
+  - silent dropping of rejected or failed inbound inputs without a record
+pass_fail_outcomes:
+  pass:
+    description: Input becomes a governed captured or normalized object eligible for classification and constraint evaluation.
+  fail:
+    description: Input is held, rejected, or failed with recorded reason.
+resulting_state_effects:
+  on_pass:
+    - captured
+    - normalized
+  on_hold: held
+  on_reject: rejected
+  on_fail: failed

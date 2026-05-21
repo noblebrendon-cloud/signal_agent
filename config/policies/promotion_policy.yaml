@@ -1,0 +1,34 @@
+version: 1
+policy_id: promotion_policy
+status: active
+purpose: Govern deterministic promotion of captured inputs into routable bundles.
+inputs:
+  - captured_signal
+  - normalized_record
+  - classified_record
+  - promotion_config
+  - candidate_cluster_members
+required_conditions:
+  - candidate inputs already exist in capture or intake surfaces
+  - promotion decision is reproducible for a fixed input set and fixed configuration
+  - promotion writes an append-only promotion record
+  - promotion does not mutate data/artifact_registry.jsonl directly
+allowed_actions:
+  - cluster or isolate related captured inputs
+  - produce promoted bundle files
+  - append promotion ledger events
+  - archive or retire successfully promoted raw inputs according to repo rules
+forbidden_actions:
+  - direct emission from promoted bundles
+  - direct artifact registration without a downstream durable artifact step
+  - non-deterministic bundle assignment without recorded policy change
+pass_fail_outcomes:
+  pass:
+    description: Inputs become a promoted bundle eligible for explicit routing.
+  fail:
+    description: Promotion is held, rejected, or failed with bundle-level evidence.
+resulting_state_effects:
+  on_pass: promoted
+  on_hold: held
+  on_reject: rejected
+  on_fail: failed

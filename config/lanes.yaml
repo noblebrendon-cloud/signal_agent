@@ -1,0 +1,149 @@
+version: 1
+system_name: Signal Agent
+model: path2_lane_registry
+lanes:
+  - lane_id: volatile_capture
+    status: active
+    purpose: Handle volatile inbound signal intake, normalization, and structured task seeding before durable artifact production.
+    accepted_artifact_types:
+      - raw_signal
+      - intake_text_record
+      - clipboard_task
+    governing_policies:
+      - intake_policy
+    transform_stack:
+      - app/intake/intake.py
+      - app/hq/capture/capture.py
+      - services/clipboard_intake_spine/normalize_payload.py
+      - services/clipboard_intake_spine/classify_clipboard_task.py
+      - services/clipboard_intake_spine/route_clipboard_task.py
+    emission_surface:
+      - data/intake/intake.jsonl
+      - data/capture/raw/
+      - data/capture/capture_log.jsonl
+      - data/orchestration_core/queues/
+    failure_behavior: hold_or_fail_without_artifact_registration
+
+  - lane_id: content_publishing
+    status: active
+    purpose: Route promoted bundles into publishing-oriented transforms and package-ready outputs.
+    accepted_artifact_types:
+      - promoted_bundle
+      - docs
+      - narrated_video_package
+    governing_policies:
+      - promotion_policy
+      - routing_policy
+      - publication_policy
+    transform_stack:
+      - app/hq/capture/promote.py
+      - app/hq/capture/router.py
+      - app/agents/social_offload/social_offload.py
+      - signal_agent/cli/media_cli.py
+      - signal_agent/media/video_loop_builder.py
+    emission_surface:
+      - constraints/spines/content_publishing/incoming/
+      - data/social_offload/outputs/
+      - artifacts/videos/
+    failure_behavior: route_to_misc_review_or_hold
+
+  - lane_id: ai_stability_diagnostic
+    status: active
+    purpose: Route diagnostic bundles and derived outputs into the AI stability and drift audit path.
+    accepted_artifact_types:
+      - promoted_bundle
+      - drift_audit_report
+      - causal_ledger_entry
+    governing_policies:
+      - routing_policy
+      - publication_policy
+    transform_stack:
+      - app/hq/capture/router.py
+      - signal_agent/leviathan/diagnostic/drift_audit/run.py
+      - signal_agent/leviathan/diagnostic/causality/ledger.py
+    emission_surface:
+      - constraints/spines/ai_stability_diagnostic/incoming/
+      - docs/drift_audit/
+      - signal_agent/leviathan/diagnostic/causality/ledger/
+    failure_behavior: hold_and_require_audit_evidence
+
+  - lane_id: concept_formalization
+    status: partial
+    purpose: Formalize governed inputs into claims, maps, briefs, and whitepaper-class assets.
+    accepted_artifact_types:
+      - bundle_manifest
+      - lead_record
+      - claim_set
+      - concept_map
+      - whitepaper
+    governing_policies:
+      - routing_policy
+      - publication_policy
+    transform_stack:
+      - services/concept_formalization_spine/cf.py
+      - services/concept_formalization_spine/templates/
+      - services/concept_formalization_spine/schemas/
+    emission_surface:
+      - services/concept_formalization_spine/examples/
+      - services/concept_formalization_spine/examples/sample_project/export/
+    failure_behavior: fail_closed_pending_manual_review
+
+  - lane_id: video_packaging
+    status: active
+    purpose: Register canonical source videos and compile narrated video packages with durable manifests and indexes.
+    accepted_artifact_types:
+      - video_source
+      - source_video_manifest
+      - narrated_video_package
+    governing_policies:
+      - intake_policy
+      - publication_policy
+    transform_stack:
+      - signal_agent/media/source_video.py
+      - signal_agent/media/video_loop_builder.py
+    emission_surface:
+      - data/media/source/
+      - artifacts/videos/sources/
+      - artifacts/videos/
+    failure_behavior: block_on_missing_provenance_or_package_integrity
+
+  - lane_id: misc_review
+    status: active
+    purpose: Receive low-confidence, overflow, or not-yet-classifiable routed bundles for manual inspection.
+    accepted_artifact_types:
+      - promoted_bundle
+      - unclassified_bundle
+    governing_policies:
+      - routing_policy
+    transform_stack:
+      - app/hq/capture/router.py
+    emission_surface:
+      - constraints/spines/misc/incoming/
+    failure_behavior: manual_review_required
+
+  - lane_id: wtpu_content
+    status: active
+    purpose: Isolated content execution channel for WTPU persona, mapping raw thoughts to grounded, script-ready structures.
+    accepted_artifact_types:
+      - raw_thought
+      - wtpu_bundle
+    governing_policies:
+      - intake_policy
+      - wtpu_constraint_policy
+    transform_stack:
+      - signal_agent/content/wtpu_channel.py
+    emission_surface:
+      - signals/wtpu/
+    failure_behavior: hold_and_require_review
+reserved_spines:
+  - spine_id: social_field_theory
+    status: configured_not_operational
+    source: config/spine_router.yaml
+    note: Ruleset exists, but there is no active incoming directory or lane-level operational surface in this pass.
+  - spine_id: logistics_ops
+    status: configured_not_operational
+    source: config/spine_router.yaml
+    note: Ruleset exists, but there is no active incoming directory or lane-level operational surface in this pass.
+notes:
+  - Lane is the canonical Path 2 object. Spine remains a routing destination inside the lane model.
+  - Some emission surfaces are directories or registries rather than public channels because Path 2 is optimizing for governed operations, not public packaging.

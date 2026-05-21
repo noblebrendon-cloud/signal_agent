@@ -1,0 +1,306 @@
+version: 1
+system_name: Signal Agent
+model: path2_canonical_state_machine
+working_state_order:
+  - captured
+  - normalized
+  - classified
+  - constrained
+  - promoted
+  - routed
+  - transformed
+  - compiled
+  - staged
+  - emitted
+  - audited
+states:
+  captured:
+    kind: working
+    terminal: false
+    recoverable: true
+    blocked: false
+    description: Inbound signal or source input has been persisted and at least one intake or capture record exists.
+  normalized:
+    kind: working
+    terminal: false
+    recoverable: true
+    blocked: false
+    description: Payload has been converted to canonical text or structured form.
+  classified:
+    kind: working
+    terminal: false
+    recoverable: true
+    blocked: false
+    description: Object has an explicit routing or processing class.
+  constrained:
+    kind: working
+    terminal: false
+    recoverable: true
+    blocked: false
+    description: Governance and policy checks have been evaluated for the next transition.
+  promoted:
+    kind: working
+    terminal: false
+    recoverable: true
+    blocked: false
+    description: Captured inputs have been grouped into a routable bundle.
+  routed:
+    kind: working
+    terminal: false
+    recoverable: true
+    blocked: false
+    description: Bundle or governed object has an explicit lane or spine destination.
+  transformed:
+    kind: working
+    terminal: false
+    recoverable: true
+    blocked: false
+    description: A lane-specific transform has produced a derivative governed output.
+  compiled:
+    kind: working
+    terminal: false
+    recoverable: true
+    blocked: false
+    description: One or more transformed outputs have been assembled into a durable package or deliverable set.
+  staged:
+    kind: working
+    terminal: false
+    recoverable: true
+    blocked: false
+    description: Output is ready for emission and has required manifests or sidecar materials.
+  emitted:
+    kind: working
+    terminal: false
+    recoverable: true
+    blocked: false
+    description: Output has been delivered to its intended emission surface.
+  audited:
+    kind: terminal
+    terminal: true
+    recoverable: false
+    blocked: false
+    description: Lineage and outcome have enough durable evidence for audit.
+  held:
+    kind: control
+    terminal: false
+    recoverable: true
+    blocked: true
+    resume_target: previous_non_control_state
+    max_duration_seconds: 86400
+    expiry_target: rejected
+    description: Progress is paused pending governance release, review, or prerequisites. Auto-rejected after 24h.
+  rejected:
+    kind: control_terminal
+    terminal: true
+    recoverable: false
+    blocked: true
+    description: Governance denied continuation for the current run or object.
+  failed:
+    kind: control
+    terminal: false
+    recoverable: true
+    blocked: true
+    resume_target: previous_safe_working_state
+    max_duration_seconds: 3600
+    expiry_target: rejected
+    description: Execution or integrity failed, but remediation may allow recovery. Auto-rejected after 1h.
+  aborted:
+    kind: control_terminal
+    terminal: true
+    recoverable: false
+    blocked: true
+    description: Execution was intentionally terminated.
+gates:
+  intake_policy:
+    purpose: Validate raw input handling, normalization eligibility, and early integrity rules.
+  promotion_policy:
+    purpose: Validate deterministic bundle formation and promotion logging.
+  routing_policy:
+    purpose: Validate lane assignment, fallback behavior, and routing record creation.
+  artifact_gate:
+    purpose: Validate durable output identity, provenance, and registration.
+  publication_policy:
+    purpose: Validate staging completeness and emission eligibility.
+  audit_gate:
+    purpose: Validate lineage completeness and audit evidence.
+  governance_gate:
+    purpose: Hold, reject, release, or override transitions.
+  abort_gate:
+    purpose: Intentionally terminate the current run or object.
+transitions:
+  - from_missing: true
+    to: captured
+    verb: capture
+    gate: intake_policy
+  - from_missing: true
+    to: promoted
+    verb: promote
+    gate: promotion_policy
+  - from: captured
+    to: normalized
+    verb: normalize
+    gate: intake_policy
+  - from: normalized
+    to: classified
+    verb: classify
+    gate: intake_policy
+  - from: classified
+    to: constrained
+    verb: constrain
+    gate: governance_gate
+  - from: constrained
+    to: promoted
+    verb: promote
+    gate: promotion_policy
+  - from: promoted
+    to: routed
+    verb: route
+    gate: routing_policy
+  - from: routed
+    to: transformed
+    verb: transform
+    gate: artifact_gate
+  - from: transformed
+    to: compiled
+    verb: compile
+    gate: artifact_gate
+  - from: compiled
+    to: staged
+    verb: stage
+    gate: publication_policy
+  - from: staged
+    to: emitted
+    verb: emit
+    gate: publication_policy
+  - from: emitted
+    to: audited
+    verb: audit
+    gate: audit_gate
+  - from_any:
+      - captured
+      - normalized
+      - classified
+      - constrained
+      - promoted
+      - routed
+      - transformed
+      - compiled
+      - staged
+      - emitted
+    to: held
+    verb: constrain
+    gate: governance_gate
+  - from_any:
+      - captured
+      - normalized
+      - classified
+      - constrained
+      - promoted
+      - routed
+      - transformed
+      - compiled
+      - staged
+      - emitted
+    to: rejected
+    verb: constrain
+    gate: governance_gate
+  - from_any:
+      - captured
+      - normalized
+      - classified
+      - constrained
+      - promoted
+      - routed
+      - transformed
+      - compiled
+      - staged
+      - emitted
+    to: failed
+    verb: audit
+    gate: artifact_gate
+  - from_any:
+      - captured
+      - normalized
+      - classified
+      - constrained
+      - promoted
+      - routed
+      - transformed
+      - compiled
+      - staged
+      - emitted
+      - held
+      - failed
+    to: aborted
+    verb: audit
+    gate: abort_gate
+  - from: held
+    to: previous_non_control_state
+    verb: constrain
+    gate: governance_gate
+  - from: failed
+    to: previous_safe_working_state
+    verb: audit
+    gate: governance_gate
+forbidden_transitions:
+  - from: captured
+    to:
+      - promoted
+      - routed
+      - transformed
+      - compiled
+      - staged
+      - emitted
+      - audited
+    reason: Early states must not skip normalization, classification, and governance.
+  - from: normalized
+    to:
+      - promoted
+      - routed
+      - transformed
+      - compiled
+      - staged
+      - emitted
+      - audited
+    reason: Normalized objects must be classified and constrained before downstream progression.
+  - from: classified
+    to:
+      - routed
+      - transformed
+      - compiled
+      - staged
+      - emitted
+      - audited
+    reason: Classified objects must pass constraint and promotion before routing.
+  - from: promoted
+    to:
+      - compiled
+      - staged
+      - emitted
+      - audited
+    reason: Promoted bundles must be routed and lane-transformed before compilation or emission.
+  - from: routed
+    to:
+      - staged
+      - emitted
+      - audited
+    reason: Routed objects must be transformed, and usually compiled, before staging or emission.
+  - from: held
+    to:
+      - emitted
+      - audited
+    reason: Held objects must first return to a working state.
+  - from: failed
+    to:
+      - emitted
+      - audited
+    reason: Failed objects require remediation and re-entry before continuation.
+  - from: rejected
+    to: any
+    reason: Rejection is terminal for the current run or object.
+  - from: aborted
+    to: any
+    reason: Abort is terminal for the current run or object.
+notes:
+  - Artifact registration is a required record action during transform, compile, or stage, not a separate canonical verb.
+  - Some current repo flows only partially implement this graph; the file is normative for Path 2 hardening.

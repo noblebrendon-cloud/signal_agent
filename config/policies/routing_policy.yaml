@@ -1,0 +1,34 @@
+version: 1
+policy_id: routing_policy
+status: active
+purpose: Govern deterministic assignment of promoted bundles or governed objects into explicit lanes and spine destinations.
+inputs:
+  - promoted_bundle
+  - routing_features
+  - lane_registry_entry
+  - spine_router_ruleset
+required_conditions:
+  - input has already reached promoted or equivalent governed state
+  - routing decision is reproducible for a fixed input and fixed ruleset
+  - selected lane or fallback lane exists before queue mutation
+  - routing ledger event records destination, score, and router ruleset identity when available
+allowed_actions:
+  - score candidate lanes or spines
+  - assign one explicit destination
+  - fall back to misc_review on low confidence or no clear match
+  - append routing ledger events
+forbidden_actions:
+  - route raw uncaptured input directly into downstream lanes
+  - mutate the original promoted bundle in place during routing
+  - bypass fallback handling when confidence is too low
+  - emit to external output surfaces as part of routing alone
+pass_fail_outcomes:
+  pass:
+    description: Object is routed into exactly one lane or approved fallback destination with recorded evidence.
+  fail:
+    description: Routing is held, rejected, or failed with a reason that can be audited.
+resulting_state_effects:
+  on_pass: routed
+  on_hold: held
+  on_reject: rejected
+  on_fail: failed
