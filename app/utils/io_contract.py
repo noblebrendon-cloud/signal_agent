@@ -6,6 +6,7 @@ import os
 import time
 from dataclasses import dataclass
 from pathlib import Path
+from typing import BinaryIO, Callable
 from uuid import uuid4
 
 
@@ -100,6 +101,24 @@ class _FileLock:
         fcntl.flock(self._fh.fileno(), fcntl.LOCK_UN)
 
 
+def _append_jsonl_payload_locked(handle: BinaryIO, jsonl_path: Path, payload: bytes) -> None:
+    handle.seek(0, os.SEEK_END)
+    start_pos = handle.tell()
+    try:
+        written = handle.write(payload)
+        if written != len(payload):
+            raise OSError(f"Short write for {jsonl_path}: wrote {written} of {len(payload)} bytes")
+        handle.flush()
+        os.fsync(handle.fileno())
+    except Exception:
+        with contextlib.suppress(Exception):
+            handle.seek(start_pos)
+            handle.truncate(start_pos)
+            handle.flush()
+            os.fsync(handle.fileno())
+        raise
+
+
 def append_jsonl_atomic(
     jsonl_path: Path,
     record: dict,
@@ -120,18 +139,30 @@ def append_jsonl_atomic(
 
     with _FileLock(lock_path, retries=retries, base_sleep_s=base_sleep_s):
         with open(jsonl_path, "ab+") as f:
-            f.seek(0, os.SEEK_END)
-            start_pos = f.tell()
-            try:
-                written = f.write(payload)
-                if written != len(payload):
-                    raise OSError(f"Short write for {jsonl_path}: wrote {written} of {len(payload)} bytes")
-                f.flush()
-                os.fsync(f.fileno())
-            except Exception:
-                with contextlib.suppress(Exception):
-                    f.seek(start_pos)
-                    f.truncate(start_pos)
-                    f.flush()
-                    os.fsync(f.fileno())
-                raise
+            _append_jsonl_payload_locked(f, jsonl_path, payload)
+
+
+def append_jsonl_atomic_with_factory(
+    jsonl_path: Path,
+    record_factory: Callable[[BinaryIO], dict],
+    lock_path: Path | None = None,
+    retries: int = 30,
+    base_sleep_s: float = 0.02,
+) -> dict:
+    jsonl_path = Path(jsonl_path)
+    ensure_parent_dir(jsonl_path)
+
+    if lock_path is None:
+        lock_path = jsonl_path.with_suffix(jsonl_path.suffix + ".lock")
+    lock_path = Path(lock_path)
+    ensure_parent_dir(lock_path)
+
+    with _FileLock(lock_path, retries=retries, base_sleep_s=base_sleep_s):
+        with open(jsonl_path, "ab+") as f:
+            record = record_factory(f)
+            if not isinstance(record, dict):
+                raise TypeError("record_factory must return a dict")
+            line = json.dumps(record, separators=(",", ":"), ensure_ascii=False) + "\n"
+            payload = line.encode("utf-8")
+            _append_jsonl_payload_locked(f, jsonl_path, payload)
+            return record
