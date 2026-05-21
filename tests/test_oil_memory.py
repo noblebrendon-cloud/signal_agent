@@ -287,9 +287,10 @@ class TestFindSimilar:
         assert len(result) <= 3
 
     def test_similarity_score_in_results(self):
-        query = _make_index_entry("fp-001", "art-001.json")
+        recent_ts = (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        query = _make_index_entry("fp-001", "art-001.json", created_utc=recent_ts)
         query["run_id"] = "run-q1"
-        other = _make_index_entry("fp-002", "art-002.json")
+        other = _make_index_entry("fp-002", "art-002.json", created_utc=recent_ts)
         other["run_id"] = "run-q2"
         idx = [query, other]
         result = find_similar("fp-001", idx, current_run_id="run-q1", min_score=0)
@@ -298,14 +299,18 @@ class TestFindSimilar:
         assert result[0]["similarity_score"] == 7  # perfect match on all dimensions
 
     def test_result_sorted_by_score_descending(self):
+        recent_ts = (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
         query = _make_index_entry("fp-001", "art-001.json",
-                                  origin_service="payment", change_kind="deploy")
+                                  origin_service="payment", change_kind="deploy",
+                                  created_utc=recent_ts)
         query["run_id"] = "rq"
         high = _make_index_entry("fp-002", "art-002.json",
-                                 origin_service="payment", change_kind="deploy")  # score=7
+                                 origin_service="payment", change_kind="deploy",
+                                 created_utc=recent_ts)  # score=7
         high["run_id"] = "rh"
         low = _make_index_entry("fp-003", "art-003.json",
-                                origin_service="auth", change_kind="config")      # score=0
+                                origin_service="auth", change_kind="config",
+                                created_utc=recent_ts)      # score=0
         low["run_id"] = "rl"
         idx = [query, high, low]
         result = find_similar("fp-001", idx, current_run_id="rq", min_score=0)
@@ -450,9 +455,11 @@ class TestV041DIM:
 
     def test_min_score_zero_returns_all_nonzero(self):
         """min_score=0 returns all candidates with score>0 (legacy compatible)."""
-        query = self._e("run-q", origin="payment")
+        recent_ts = (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        query = self._e("run-q", origin="payment", created_utc=recent_ts)
         partial = self._e("run-p", origin="payment", change_kind="config",
-                          metric_kind="error_rate", impact_domain="access")  # score=3
+                          metric_kind="error_rate", impact_domain="access",
+                          created_utc=recent_ts)  # score=3
         idx = [query, partial]
         results_thresh = find_similar("fp-001", idx, current_run_id="run-q", min_score=5)
         results_zero   = find_similar("fp-001", idx, current_run_id="run-q", min_score=0)
