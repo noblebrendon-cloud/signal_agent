@@ -1,4 +1,4 @@
-﻿"""
+"""
 OIL Memory -- Append-Only Outcome Store (v0.7)
 
 v0.7 additions:
@@ -23,10 +23,11 @@ load_outcomes() returns dict[run_id, list[outcome_entry]] for join with index.
 from __future__ import annotations
 
 import json
-import os
 from collections import deque
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+
+from app.utils.io_contract import append_jsonl_atomic
 
 _VALID_KINDS = frozenset(["resolved", "mitigated", "false_positive", "ignored"])
 _DEFAULT_OUTCOMES = Path(__file__).resolve().parent / "outcomes.jsonl"
@@ -91,7 +92,6 @@ def append_outcome(
             f"Must be one of: {sorted(_VALID_KINDS)}"
         )
     path = outcomes_path or _DEFAULT_OUTCOMES
-    path.parent.mkdir(parents=True, exist_ok=True)
 
     entry = {
         "record_type":  "outcome",
@@ -101,13 +101,7 @@ def append_outcome(
         "created_utc":  created_utc or _utc_iso(),
         "notes":        notes,
     }
-    line = json.dumps(entry, ensure_ascii=False, separators=(",", ":")) + "\n"
-
-    fd = os.open(str(path), os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o644)
-    try:
-        os.write(fd, line.encode("utf-8"))
-    finally:
-        os.close(fd)
+    append_jsonl_atomic(jsonl_path=path, record=entry)
 
 
 def load_outcomes(

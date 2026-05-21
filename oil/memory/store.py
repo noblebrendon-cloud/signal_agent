@@ -1,4 +1,4 @@
-﻿"""
+"""
 OIL Memory -- Append-Only Incident Store (v0.5)
 
 v0.5 adds action fields to each JSONL line:
@@ -33,9 +33,10 @@ Similarity scoring:
 from __future__ import annotations
 
 import json
-import os
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+
+from app.utils.io_contract import append_jsonl_atomic
 
 _DEFAULT_INDEX = Path(__file__).resolve().parent / "index.jsonl"
 
@@ -65,10 +66,9 @@ def append_entry(
     v0.6: fallback_action_category added (compound action support).
     v0.5: action_category and action_target_service added.
     v0.4.1: run_id for stable identity.
-    Uses os.O_APPEND for atomic append; creates file if missing.
+    Uses the governed JSONL append helper; creates the file if missing.
     """
     path = index_path or _DEFAULT_INDEX
-    path.parent.mkdir(parents=True, exist_ok=True)
 
     entry = {
         "record_type":              "memory_index",
@@ -87,13 +87,7 @@ def append_entry(
         "action_target_service":    action_target_service,
         "fallback_action_category": fallback_action_category,
     }
-    line = json.dumps(entry, ensure_ascii=False, separators=(",", ":")) + "\n"
-
-    fd = os.open(str(path), os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o644)
-    try:
-        os.write(fd, line.encode("utf-8"))
-    finally:
-        os.close(fd)
+    append_jsonl_atomic(jsonl_path=path, record=entry)
 
 
 def load_index(index_path: Path | None = None) -> list[dict]:

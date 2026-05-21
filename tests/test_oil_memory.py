@@ -178,6 +178,34 @@ class TestAppendEntry:
         assert entries[0]["fingerprint_id"] == "first"
         assert entries[1]["fingerprint_id"] == "second"
 
+    def test_append_entry_uses_governed_jsonl_helper(self, tmp_path, monkeypatch):
+        from oil.memory import store as memory_store
+
+        idx = tmp_path / "test.jsonl"
+        observed = {}
+
+        def fake_append_jsonl_atomic(*, jsonl_path, record):
+            observed["path"] = jsonl_path
+            observed["record"] = record
+
+        monkeypatch.setattr(memory_store, "append_jsonl_atomic", fake_append_jsonl_atomic)
+
+        memory_store.append_entry(
+            "fp-governed",
+            "art-governed.json",
+            "payment",
+            "deploy",
+            "latency",
+            "1",
+            "transactions",
+            0.9,
+            idx,
+        )
+
+        assert observed["path"] == idx
+        assert observed["record"]["record_type"] == "memory_index"
+        assert observed["record"]["fingerprint_id"] == "fp-governed"
+
 
 class TestLoadIndex:
     def test_returns_empty_when_file_missing(self, tmp_path):
@@ -655,6 +683,38 @@ class TestV06OutcomeMemory:
         from oil.memory.outcomes import append_outcome
         with pytest.raises(ValueError, match="Invalid outcome_kind"):
             append_outcome("run-z", "destroyed", outcomes_path=tmp_path / "o.jsonl")
+
+    def test_append_outcome_uses_governed_jsonl_helper(self, tmp_path, monkeypatch):
+        from oil.memory import outcomes as memory_outcomes
+
+        outcomes_path = tmp_path / "outcomes.jsonl"
+        observed = {}
+
+        def fake_append_jsonl_atomic(*, jsonl_path, record):
+            observed["path"] = jsonl_path
+            observed["record"] = record
+
+        monkeypatch.setattr(memory_outcomes, "append_jsonl_atomic", fake_append_jsonl_atomic)
+
+        memory_outcomes.append_outcome(
+            "run-governed",
+            "resolved",
+            created_utc="2026-05-21T12:00:00Z",
+            notes="proved",
+            outcomes_path=outcomes_path,
+        )
+
+        assert observed == {
+            "path": outcomes_path,
+            "record": {
+                "record_type": "outcome",
+                "record_version": "1",
+                "run_id": "run-governed",
+                "outcome_kind": "resolved",
+                "created_utc": "2026-05-21T12:00:00Z",
+                "notes": "proved",
+            },
+        }
 
     # ─── CLI run_outcome tool ─────────────────────────────────────────────
 
