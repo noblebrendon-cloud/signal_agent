@@ -1,3 +1,11 @@
+"""Batch file-ingestion boundary for intake.
+
+This module owns deterministic batch ingestion of supported filesystem files
+into normalized text snapshots plus intake-ledger events. Volatile fragment
+capture, promotion, routing, decay, and instability flows belong to
+`app.hq.capture`, even when file extensions overlap.
+"""
+
 import json
 import hashlib
 import os
@@ -7,6 +15,8 @@ from pathlib import Path
 from typing import Dict, Any, Optional, List, Set
 
 import yaml
+from app.hq.governance import emit_transition_event, new_run_id, validate_transition
+from app.utils.io_contract import append_jsonl_atomic
 
 # --- Configuration ---
 ROOT = Path(__file__).resolve().parents[2] # Adjusted for app/intake/intake.py
@@ -23,6 +33,8 @@ EXCLUDE_DIRS = {
     'dist', 'build', 'outputs', 'intake'
 }
 MAX_FILE_SIZE_MB = 50
+SUPPORTED_INTAKE_EXTENSIONS = frozenset({".pdf", ".docx", ".epub", ".txt", ".md", ".py"})
+TEXT_PASSTHROUGH_EXTENSIONS = frozenset({".txt", ".md", ".py"})
 
 # --- Helper Functions ---
 
@@ -43,6 +55,46 @@ def normalize_text(text: str) -> str:
     text = text.replace("\r\n", "\n").replace("\r", "\n")
     text = text.replace("\x00", "") # Strip null bytes
     return text.strip()
+
+
+def is_supported_input_type(path: Path) -> bool:
+    """Authoritative allowlist for promoted intake file ingestion."""
+    return path.suffix.lower() in SUPPORTED_INTAKE_EXTENSIONS
+
+
+def sanitize_extracted_text(text: str) -> str:
+    """Canonical intake sanitization boundary for extracted text."""
+    sanitized = normalize_text(text)
+    if not sanitized:
+        raise ValueError("sanitization_empty_content")
+    return sanitized
+
+
+def _safe_emit_upstream_transition(
+    *,
+    current_state: str,
+    next_state: str,
+    run_id: str,
+    envelope_id: str,
+    lane_id: str,
+    context: Dict[str, Any],
+) -> None:
+    try:
+        validation = validate_transition(
+            current_state=current_state,
+            next_state=next_state,
+            lane_id=lane_id,
+            context=context,
+        )
+        emit_transition_event(
+            validation,
+            run_id=run_id,
+            envelope_id=envelope_id,
+            context=context,
+            event_type="upstream_state_stamp",
+        )
+    except Exception:
+        return
 
 class IntakeSystem:
     def __init__(
@@ -96,8 +148,10 @@ class IntakeSystem:
         if "timestamp" not in event:
             event = {"timestamp": datetime.now(timezone.utc).isoformat(), **event}
 
-        with open(INTAKE_LEDGER, "a", encoding="utf-8") as f:
-            f.write(json.dumps(event) + "\n")
+        try:
+            append_jsonl_atomic(INTAKE_LEDGER, event)
+        except Exception as exc:
+            raise RuntimeError(f"Failed to append intake ledger event to {INTAKE_LEDGER}") from exc
 
     def log_posture_shift(self):
         """Explicitly log the transition to MOD mode (Integrity Mode)."""
@@ -159,16 +213,22 @@ class IntakeSystem:
     def extract_text_content(self, path: Path) -> str:
         """Router for text extraction."""
         suffix = path.suffix.lower()
-        if suffix == ".pdf":
-            return self.extract_pdf(path)
-        elif suffix == ".docx":
-            return self.extract_docx(path)
-        elif suffix == ".epub":
-            return self.extract_epub(path)
-        elif suffix in {".txt", ".md", ".json", ".yaml", ".yml", ".py", ".sh", ".js", ".css", ".html"}:
-            return path.read_text(encoding="utf-8", errors="ignore")
-        else:
-            raise ValueError(f"Unsupported format: {suffix}")
+        if not is_supported_input_type(path):
+            raise ValueError(f"unsupported_input_type:{suffix}")
+
+        try:
+            if suffix == ".pdf":
+                return self.extract_pdf(path)
+            elif suffix == ".docx":
+                return self.extract_docx(path)
+            elif suffix == ".epub":
+                return self.extract_epub(path)
+            elif suffix in TEXT_PASSTHROUGH_EXTENSIONS:
+                return path.read_text(encoding="utf-8", errors="ignore")
+        except Exception as exc:
+            raise RuntimeError(f"extractor_failure:{suffix}:{exc}") from exc
+
+        raise RuntimeError(f"extractor_failure:{suffix}:no_extractor_registered")
 
     def process_file(self, path: Path):
         self.stats["total"] += 1
@@ -196,10 +256,16 @@ class IntakeSystem:
             return
 
         # 3. Supported Extension Check
-        supported_exts = {".pdf", ".docx", ".epub", ".txt", ".md", ".py"}
-        if path.suffix.lower() not in supported_exts:
-            # Silent skip or log as unsupported? User said "Only include extensions you support"
-            # We will just skip silently to avoid spamming the log with random assets
+        if not is_supported_input_type(path):
+            self.append_event({
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "source_path": rel_path,
+                "status": "skipped_unsupported",
+                "doc_type": path.suffix.lower()[1:],
+                "error_message": f"unsupported_input_type:{path.suffix.lower()}",
+                "mode": self.mode,
+            })
+            self.stats["skipped_ignored"] += 1
             return
 
         self.stats["supported"] += 1
@@ -228,14 +294,16 @@ class IntakeSystem:
             # 5. Extraction
             print(f"Ingesting: {rel_path} [{self.mode}]")
             raw_text = self.extract_text_content(path)
-            text = normalize_text(raw_text)
-
-            if not text:
-                raise ValueError("Extracted text is empty")
+            text = sanitize_extracted_text(raw_text)
 
             text_hash = get_text_sha256(text)
             out_filename = f"{text_hash}.txt"
             out_path = INTAKE_TEXT_DIR / out_filename
+            run_id = new_run_id("intake")
+            lane_id = "volatile_capture"
+            classification = path.suffix.lower()[1:]
+            timestamp_utc = datetime.now(timezone.utc).isoformat()
+            lifecycle_path = "captured>normalized>classified"
 
             # 6. Storage (CAS)
             if not out_path.exists():
@@ -244,12 +312,20 @@ class IntakeSystem:
 
             # 7. Log Success
             self.append_event({
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": timestamp_utc,
+                "timestamp_utc": timestamp_utc,
+                "run_id": run_id,
                 "source_path": rel_path,
                 "source_sha256": current_hash,
                 "size_bytes": size_bytes,
                 "mtime": path.stat().st_mtime,
-                "doc_type": path.suffix.lower()[1:],
+                "doc_type": classification,
+                "classification": classification,
+                "lane_id": lane_id,
+                "lifecycle_state": "classified",
+                "lifecycle_path": lifecycle_path,
+                "module": "app.intake.intake",
+                "operation": "process_file",
                 "status": "success",
                 "extractor": "standard_v1",
                 "text_output_path": f"text/{out_filename}",
@@ -262,6 +338,33 @@ class IntakeSystem:
 
             # Update cache
             self.ledger_cache[rel_path] = current_hash
+
+            transition_context = {
+                "run_id": run_id,
+                "module": "app.intake.intake",
+                "operation": "process_file",
+                "source_path": rel_path,
+                "source_sha256": current_hash,
+                "classification": classification,
+                "lifecycle_path": lifecycle_path,
+                "file_path": rel_path,
+            }
+            _safe_emit_upstream_transition(
+                current_state="captured",
+                next_state="normalized",
+                run_id=run_id,
+                envelope_id=current_hash,
+                lane_id=lane_id,
+                context=transition_context,
+            )
+            _safe_emit_upstream_transition(
+                current_state="normalized",
+                next_state="classified",
+                run_id=run_id,
+                envelope_id=current_hash,
+                lane_id=lane_id,
+                context=transition_context,
+            )
 
         except Exception as e:
             self.stats["errors"] += 1
