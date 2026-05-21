@@ -8,6 +8,9 @@ from pathlib import Path
 from typing import Any
 
 from app.utils.io_contract import append_jsonl_atomic, atomic_write_text
+from app.hq.governance.transition_gate import (
+    emit_transition_event as _gate_emit_event,
+)
 
 DEFAULT_STATE_PATH = Path("data/state/activation_governor.json")
 DEFAULT_EVENT_LOG_PATH = Path("data/state/activation_events.jsonl")
@@ -147,7 +150,20 @@ def compute_fingerprint(watch_roots: list[str]) -> str:
 def append_event(log_path: Path, event: dict) -> None:
     if not isinstance(event, dict):
         raise ValueError("event_must_be_dict")
+    # DEPRECATED: local ledger write retained for backward compatibility.
+    # The canonical gate ledger is the primary write authority.
+    # TODO: remove local write once all consumers migrate to gate ledger.
     append_jsonl_atomic(jsonl_path=log_path, record=event)
+    # Canonical gate ledger (write authority unification).
+    _gate_emit_event(
+        {"allowed": None, "current_state": None, "next_state": None,
+         "lane_id": None, "reason": event.get("reason")},
+        context={
+            "module": "app.governor.activation_governor",
+            "operation": event.get("event", "activation_event"),
+        },
+        event_type=f"activation_{event.get('event', 'unknown').lower()}",
+    )
 
 
 def enforce(

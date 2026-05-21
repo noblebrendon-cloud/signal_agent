@@ -3,8 +3,15 @@ from __future__ import annotations
 import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from unittest.mock import patch
 
+import pytest
 from app.governor.activation_governor import append_event, compute_fingerprint, enforce
+
+
+@pytest.fixture(autouse=True)
+def _gate_root(tmp_path, monkeypatch):
+    monkeypatch.setenv("SIGNAL_AGENT_ROOT", str(tmp_path))
 
 
 def _iso_in(hours: int = 0, minutes: int = 0) -> str:
@@ -121,6 +128,27 @@ def test_event_log_append_only_stable(tmp_path, monkeypatch):
     assert len(lines) == 2
     assert json.loads(lines[0])["event"] == "A"
     assert json.loads(lines[1])["event"] == "B"
+
+
+def test_event_log_bridges_to_transition_gate(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    event_log = Path("data/state/activation_events.jsonl")
+    event = {"event": "DRIFT_DETECTED", "reason": "drift_detected"}
+
+    with patch("app.governor.activation_governor._gate_emit_event") as gate_emit:
+        append_event(event_log, event)
+
+    local_event = json.loads(event_log.read_text(encoding="utf-8").strip())
+    assert local_event == event
+
+    gate_emit.assert_called_once()
+    validation = gate_emit.call_args.args[0]
+    assert validation["reason"] == "drift_detected"
+    assert gate_emit.call_args.kwargs["event_type"] == "activation_drift_detected"
+    assert gate_emit.call_args.kwargs["context"] == {
+        "module": "app.governor.activation_governor",
+        "operation": "DRIFT_DETECTED",
+    }
 
 
 def test_drift_detection_triggers_and_blocks(tmp_path, monkeypatch):
