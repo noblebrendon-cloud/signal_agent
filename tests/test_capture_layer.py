@@ -83,6 +83,36 @@ class TestCaptureCreatesFileAndLogs(unittest.TestCase):
         content = Path(result["path"]).read_text(encoding="utf-8")
         self.assertIn("[empty capture", content)
 
+    def test_capture_state_write_is_gated(self):
+        result = capture_add(
+            text="Gate-backed capture",
+            capture_dir=self.capture_dir,
+        )
+
+        state_root = self.tmpdir / "data" / "state"
+        registry_path = state_root / "artifact_registry.jsonl"
+        event_path = state_root / "transition_gate_events.jsonl"
+
+        registry_rows = [
+            json.loads(line)
+            for line in registry_path.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+        event_rows = [
+            json.loads(line)
+            for line in event_path.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+
+        self.assertEqual(registry_rows[-1]["artifact_id"], result["filename"])
+        self.assertEqual(registry_rows[-1]["state"], "captured")
+        self.assertEqual(registry_rows[-1]["path"], result["path"])
+        self.assertEqual(event_rows[-1]["artifact_id"], result["filename"])
+        self.assertEqual(event_rows[-1]["event_type"], "transition_attempt")
+        self.assertIsNone(event_rows[-1]["current_state"])
+        self.assertEqual(event_rows[-1]["attempted_state"], "captured")
+        self.assertEqual(event_rows[-1]["status"], "allowed")
+
 
 class TestCaptureDoesNotTouchArtifactRegistry(unittest.TestCase):
     """2) Capture layer NEVER modifies artifact_registry.jsonl."""

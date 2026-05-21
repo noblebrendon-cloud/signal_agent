@@ -2,7 +2,7 @@
 Volatile Capture Layer — fast, friction-free fragment intake.
 
 Stores raw notes into data/capture/raw/ with JSONL telemetry.
-NEVER touches artifact_registry.jsonl.
+NEVER touches the legacy root data/artifact_registry.jsonl catalog.
 NO hashing, NO policy checks, NO constraint checks.
 """
 from __future__ import annotations
@@ -13,6 +13,14 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
+
+from app.utils.io_contract import append_jsonl_atomic
+
+
+INTAKE_PIPELINE_BOUNDARY_NOTE = (
+    "capture_add(file_path=...) records a volatile snapshot for capture workflows; "
+    "it is not the governed batch-ingestion path owned by intake_pipeline."
+)
 
 
 def _get_root() -> Path:
@@ -29,6 +37,19 @@ def _get_capture_dir() -> Path:
     if override:
         return Path(override)
     return _get_root() / "data" / "capture"
+
+
+def _canonical_state_paths(capture_dir: Path) -> tuple[Path, Path]:
+    capture_root = capture_dir.resolve()
+    if capture_root.name == "capture" and capture_root.parent.name == "data":
+        repo_root = capture_root.parent.parent
+    else:
+        repo_root = capture_root.parent
+    state_root = repo_root / "data" / "state"
+    return (
+        state_root / "artifact_registry.jsonl",
+        state_root / "transition_gate_events.jsonl",
+    )
 
 
 def _safe_timestamp() -> str:
@@ -61,7 +82,7 @@ def _append_telemetry(
     content_length: int,
     timestamp_utc: str,
 ) -> None:
-    """Append a JSONL telemetry record (best-effort atomic append)."""
+    """Append a JSONL telemetry record through the governed append path."""
     log_path = capture_dir / "capture_log.jsonl"
     record = {
         "timestamp_utc": timestamp_utc,
@@ -70,9 +91,10 @@ def _append_telemetry(
         "source": source,
         "length": content_length,
     }
-    line = json.dumps(record, sort_keys=True) + "\n"
-    with open(log_path, "a", encoding="utf-8", newline="\n") as f:
-        f.write(line)
+    try:
+        append_jsonl_atomic(log_path, record)
+    except Exception as exc:
+        raise RuntimeError(f"Failed to append capture telemetry to {log_path}") from exc
 
 
 def capture_add(
@@ -84,6 +106,10 @@ def capture_add(
 ) -> dict:
     """
     Capture a raw fragment into data/capture/raw/.
+
+    `file_path` capture records a volatile file snapshot only. Supported-input
+    policy, sanitization, and governed batch ingestion remain the responsibility
+    of `intake_pipeline`.
 
     Returns dict with filename and path.
     """
@@ -107,6 +133,7 @@ def capture_add(
     elif file_path is not None:
         input_type = "file"
         source = file_path
+        # This is a volatile snapshot boundary, not the batch-ingestion contract.
         fp = Path(file_path)
         if fp.exists():
             content = fp.read_text(encoding="utf-8", errors="replace")
@@ -139,7 +166,60 @@ def capture_add(
         base, filename, input_type, source, len(content), now_utc
     )
 
+    # Record state in shared state registry via the canonical transition gate.
+    registry_path, transition_ledger_path = _canonical_state_paths(base)
+    from shared.state_registry import record_state
+    from app.hq.governance import emit_transition_event, new_run_id, validate_transition
+
+    validation = validate_transition(
+        current_state=None,
+        next_state="captured",
+        lane_id="volatile_capture",
+        context={
+            "module": "app.hq.capture.capture",
+            "operation": "capture_add",
+            "source_path": str(out_path),
+            "capture_path": str(out_path),
+        },
+    )
+    if not validation.get("allowed"):
+        emit_transition_event(
+            validation,
+            run_id=new_run_id("capture"),
+            artifact_id=filename,
+            ledger_path=transition_ledger_path,
+            context={
+                "module": "app.hq.capture.capture",
+                "operation": "capture_add",
+                "capture_path": str(out_path),
+            },
+            event_type="transition_rejected",
+        )
+        raise RuntimeError(
+            f"Canonical gate rejected capture: "
+            f"missing->captured: {validation.get('reason')}"
+        )
+    emit_transition_event(
+        validation,
+        run_id=new_run_id("capture"),
+        artifact_id=filename,
+        ledger_path=transition_ledger_path,
+        context={
+            "module": "app.hq.capture.capture",
+            "operation": "capture_add",
+            "capture_path": str(out_path),
+        },
+        event_type="transition_attempt",
+    )
+    record_state(
+        artifact_id=filename,
+        state="captured",
+        path=str(out_path),
+        registry_path=registry_path,
+    )
+
     return {"filename": filename, "path": str(out_path)}
+
 
 
 def capture_status(capture_dir: Optional[Path] = None) -> dict:
