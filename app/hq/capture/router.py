@@ -17,7 +17,9 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+from app.utils.io_contract import append_jsonl_atomic
 from shared.contract import ContractResolutionError
+
 
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
 
@@ -36,9 +38,74 @@ def _get_capture_dir() -> Path:
     return _get_root() / "data" / "capture"
 
 
+def _canonical_state_paths(capture_dir: Path) -> tuple[Path, Path]:
+    capture_root = capture_dir.resolve()
+    if capture_root.name == "capture" and capture_root.parent.name == "data":
+        repo_root = capture_root.parent.parent
+    else:
+        repo_root = capture_root.parent
+    state_root = repo_root / "data" / "state"
+    return (
+        state_root / "artifact_registry.jsonl",
+        state_root / "transition_gate_events.jsonl",
+    )
+
+
 def _now_utc() -> str:
     from datetime import datetime, timezone
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _resolve_contract(
+    bundle_path: Path,
+    bundle_text: str,
+    capture_dir: Path,
+) -> Dict[str, Any]:
+    """
+    Narrow wrapper around shared.contract.resolve_bundle_contract.
+
+    On ContractResolutionError, returns a structured failure dict and writes
+    a minimal audit entry to routing_log.jsonl so the failure is traceable.
+
+    Returns:
+        contract dict on success: {lifecycle_state, contract_source, routable, confidence}
+        failure dict on exception: {"_failed": True, "error": str, "contract_source": "unresolvable"}
+    """
+    try:
+        from shared.contract import resolve_bundle_contract
+        return resolve_bundle_contract(bundle_path, bundle_text)
+    except ContractResolutionError as exc:
+        err_str = str(exc)
+        _append_routing_log(capture_dir, {
+            "timestamp_utc": _now_utc(),
+            "bundle_filename": bundle_path.name,
+            "spine": None,
+            "score": None,
+            "rationale": {},
+            "router_ruleset_hash": None,
+            "contract_source": "unresolvable",
+            "confidence": None,
+            "status": "fail",
+            "error": err_str,
+        })
+        return {"_failed": True, "error": err_str, "contract_source": "unresolvable"}
+    except Exception as exc:
+        err_str = f"contract resolver raised unexpected error: {exc}"
+        _append_routing_log(capture_dir, {
+            "timestamp_utc": _now_utc(),
+            "bundle_filename": bundle_path.name,
+            "spine": None,
+            "score": None,
+            "rationale": {},
+            "router_ruleset_hash": None,
+            "contract_source": "unresolvable",
+            "confidence": None,
+            "status": "fail",
+            "error": err_str,
+        })
+        return {"_failed": True, "error": err_str, "contract_source": "unresolvable"}
+
+
 
 
 def _parse_yaml_list(val: str) -> List[str]:
@@ -159,14 +226,73 @@ def route_bundle(
 ) -> Dict[str, Any]:
     """
     Route a single bundle into the appropriate spine.
+
+    Contract resolution is performed before scoring. Bundles that cannot
+    establish a lifecycle contract are returned as structured failures without
+    crashing; the failure is also written to routing_log.jsonl.
     """
-    root = _get_root()
     base = capture_dir or _get_capture_dir()
+    root = base.resolve().parent.parent if base.name == "capture" and base.parent.name == "data" else base.resolve().parent
+    registry_path, transition_ledger_path = _canonical_state_paths(base)
 
     if bundle_text is None:
         if not bundle_path.exists():
-            return {"status": "fail", "error": f"bundle not found: {bundle_path}"}
+            from shared.result_schemas import make_route_result
+            return make_route_result(
+                status="fail",
+                error=f"bundle not found: {bundle_path}",
+                contract_source="unresolvable",
+                confidence=None,
+                details={}
+            )
         bundle_text = bundle_path.read_text(encoding="utf-8", errors="replace")
+
+    # -------------------------------------------------------------------------
+    # Contract resolution (registry-first, with stale-file guard)
+    # -------------------------------------------------------------------------
+    contract = _resolve_contract(bundle_path, bundle_text, base)
+    if contract.get("_failed"):
+        from shared.result_schemas import make_route_result
+        return make_route_result(
+            status="fail",
+            error=contract["error"],
+            contract_source="unresolvable",
+            confidence=None,
+            details={}
+        )
+
+    contract_source = contract.get("contract_source", "unknown")
+    confidence = contract.get("confidence")
+    routable = bool(contract.get("routable", False))
+
+    if not routable:
+        error = (
+            f"bundle '{bundle_path.name}' resolved only via non-authoritative contract source "
+            f"'{contract_source}' and cannot be routed until registry or frontmatter evidence exists"
+        )
+        log_entry = {
+            "timestamp_utc": _now_utc(),
+            "bundle_filename": bundle_path.name,
+            "spine": None,
+            "score": None,
+            "rationale": {},
+            "router_ruleset_hash": None,
+            "contract_source": contract_source,
+            "confidence": confidence,
+            "status": "fail",
+            "error": error,
+        }
+        _append_routing_log(base, log_entry)
+
+        from shared.result_schemas import make_route_result
+        return make_route_result(
+            status="fail",
+            artifact_id=bundle_path.name,
+            error=error,
+            contract_source=contract_source,
+            confidence=confidence,
+            details={"lifecycle_state": contract.get("lifecycle_state")},
+        )
 
     # Extract features
     tokens = _extract_tokens(bundle_text)
@@ -211,16 +337,170 @@ def route_bundle(
 
     status = "dry_run" if dry_run else "ok"
     error = None
-
     if not dry_run:
         dest = incoming / bundle_path.name
+
+        from shared.artifact_identity import normalize_artifact_ref
+        norm_ref = normalize_artifact_ref(bundle_path.name)
+        artifact_id = norm_ref["artifact_id"]
+
+        # --- AUTHORITY RULES LAYER ---
+        from shared.authority import check_preconditions_for_routing
+        preconditions = check_preconditions_for_routing(
+            artifact_id=artifact_id,
+            expected_state="promoted",
+            target_state="routed",
+            registry_path=registry_path,
+        )
+        authority_result = preconditions["authority"]
+        coherence_result = preconditions.get("coherence") or {}
+
+        if not authority_result["allowed"]:
+            status = "fail"
+            if authority_result["authoritative_source"] == "coherence_guard":
+                error = f"coherence check failed: {authority_result['blocking_reason']}"
+            else:
+                error = f"blocked by authority rules: {authority_result['blocking_reason']}"
+
+            if authority_result["authoritative_source"] == "coherence_guard":
+                try:
+                    from shared.events import emit_event
+                    emit_event(
+                        "CoherenceCheckFailed",
+                        artifact_id,
+                        {
+                            "bundle_path": str(bundle_path),
+                            "expected_state": "promoted",
+                            "reason": coherence_result.get("reason"),
+                            "registry_state": coherence_result.get("registry_state"),
+                            "registry_path": coherence_result.get("registry_path"),
+                            "filesystem_exists": coherence_result.get("filesystem_exists"),
+                        },
+                    )
+                except Exception:
+                    pass
+
+            log_entry = {
+                "timestamp_utc": _now_utc(),
+                "bundle_filename": bundle_path.name,
+                "spine": best_name,
+                "score": round(best_score, 4),
+                "rationale": best_rationale,
+                "router_ruleset_hash": config_hash,
+                "contract_source": contract_source,
+                "confidence": confidence,
+                "status": status,
+                "error": error,
+                "coherence_reason": coherence_result.get("reason"),
+                "registry_state": coherence_result.get("registry_state"),
+                "filesystem_exists": coherence_result.get("filesystem_exists"),
+                "authoritative_source": authority_result.get("authoritative_source"),
+            }
+            _append_routing_log(base, log_entry)
+
+            from shared.result_schemas import make_route_result
+            return make_route_result(
+                status=status,
+                artifact_id=artifact_id,
+                error=error,
+                contract_source=contract_source,
+                confidence=confidence,
+                coherence=coherence_result,
+                details={"authority": authority_result}
+            )
+        # -----------------------
+
         try:
+            from shared.state_registry import record_state, get_state
+            from app.hq.governance import validate_transition, emit_transition_event, new_run_id
+
+            prior = get_state(artifact_id, registry_path=registry_path)
+            prior_state = prior.get("state") if prior else None
+            lane_id = best_name  # spine name as lane reference
+            routing_run_id = new_run_id("route")
+            validation = validate_transition(
+                current_state=prior_state,
+                next_state="routed",
+                lane_id=lane_id,
+                context={
+                    "module": "app.hq.capture.router",
+                    "operation": "route_bundle",
+                    "artifact_id": artifact_id,
+                    "bundle_filename": bundle_path.name,
+                    "spine": best_name,
+                    "router_ruleset_hash": config_hash,
+                },
+            )
+            if not validation.get("allowed"):
+                emit_transition_event(
+                    validation,
+                    run_id=routing_run_id,
+                    artifact_id=artifact_id,
+                    ledger_path=transition_ledger_path,
+                    context={
+                        "module": "app.hq.capture.router",
+                        "operation": "route_bundle",
+                        "artifact_id": artifact_id,
+                        "bundle_filename": bundle_path.name,
+                        "spine": best_name,
+                        "router_ruleset_hash": config_hash,
+                    },
+                    event_type="transition_rejected",
+                )
+                current_label = prior_state if prior_state else "missing"
+                raise RuntimeError(
+                    f"Canonical gate rejected routing: "
+                    f"{current_label}->routed: {validation.get('reason')}"
+                )
+
+            emit_transition_event(
+                validation,
+                run_id=routing_run_id,
+                artifact_id=artifact_id,
+                ledger_path=transition_ledger_path,
+                context={
+                    "module": "app.hq.capture.router",
+                    "operation": "route_bundle",
+                    "bundle_filename": bundle_path.name,
+                    "spine": best_name,
+                    "router_ruleset_hash": config_hash,
+                },
+                event_type="transition_attempt",
+            )
             shutil.copy2(str(bundle_path), str(dest))
-        except OSError as e:
+            record_state(
+                artifact_id=artifact_id,
+                state="routed",
+                path=str(dest),
+                registry_path=registry_path,
+            )
+
+            # emit RoutingSucceeded only after copy + record_state attempted
+            try:
+                from shared.events import emit_event
+                emit_event(
+                    "RoutingSucceeded",
+                    artifact_id,
+                    {
+                        "bundle_path": str(dest),
+                        "spine": best_name,
+                        "score": round(best_score, 4),
+                    },
+                )
+            except Exception:
+                pass
+
+        except Exception as e:
             status = "fail"
             error = str(e)
+            if "dest" in locals():
+                try:
+                    if dest.exists():
+                        dest.unlink()
+                except OSError:
+                    pass
 
-    # Log
+    # Log (includes contract_source and confidence for auditability)
     log_entry = {
         "timestamp_utc": _now_utc(),
         "bundle_filename": bundle_path.name,
@@ -228,20 +508,29 @@ def route_bundle(
         "score": round(best_score, 4),
         "rationale": best_rationale,
         "router_ruleset_hash": config_hash,
+        "contract_source": contract_source,
+        "confidence": confidence,
         "status": status,
         "error": error,
     }
     _append_routing_log(base, log_entry)
 
-    return {
-        "bundle": bundle_path.name,
-        "spine": best_name,
-        "score": round(best_score, 4),
-        "rationale": best_rationale,
-        "router_ruleset_hash": config_hash,
-        "status": status,
-        "error": error,
-    }
+    from shared.result_schemas import make_route_result
+    return make_route_result(
+        status=status,
+        artifact_id=bundle_path.name,
+        error=error,
+        contract_source=contract_source,
+        confidence=confidence,
+        coherence=None,
+        details={
+            "bundle": bundle_path.name,
+            "spine": best_name,
+            "score": round(best_score, 4),
+            "rationale": best_rationale,
+            "router_ruleset_hash": config_hash,
+        }
+    )
 
 
 def _append_routing_log(
@@ -250,11 +539,9 @@ def _append_routing_log(
 ) -> None:
     log_path = capture_dir / "routing_log.jsonl"
     try:
-        line = json.dumps(entry, sort_keys=True) + "\n"
-        with open(log_path, "a", encoding="utf-8", newline="\n") as f:
-            f.write(line)
-    except OSError:
-        pass
+        append_jsonl_atomic(log_path, dict(sorted(entry.items())))
+    except Exception as exc:
+        raise RuntimeError(f"Failed to append routing log to {log_path}") from exc
 
 
 def main(argv: Optional[list] = None) -> int:

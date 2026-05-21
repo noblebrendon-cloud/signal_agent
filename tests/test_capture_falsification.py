@@ -26,7 +26,43 @@ class TestCaptureFalsification(unittest.TestCase):
         self.capture_dir = self.test_dir / "data" / "capture"
         self.capture_dir.mkdir(parents=True)
         (self.capture_dir / "raw").mkdir()
-        
+        config_dir = self.test_dir / "config"
+        config_dir.mkdir(parents=True)
+        (config_dir / "state_machine.yaml").write_text(
+            "\n".join(
+                [
+                    "states:",
+                    "  promoted:",
+                    "    blocked: false",
+                    "  routed:",
+                    "    blocked: false",
+                    "transitions:",
+                    "  - from_missing: true",
+                    "    to: promoted",
+                    "    gate: promotion_policy",
+                    "  - from: promoted",
+                    "    to: routed",
+                    "    gate: governance_gate",
+                    "    policy_id: routing_policy",
+                ]
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        (config_dir / "lanes.yaml").write_text(
+            "\n".join(
+                [
+                    "lanes:",
+                    "  - lane_id: volatile_capture",
+                    "    status: active",
+                    "  - lane_id: test_spine",
+                    "    status: active",
+                ]
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
         # Point env vars to test dir
         os.environ["CAPTURE_DIR"] = str(self.capture_dir)
         os.environ["SIGNAL_AGENT_ROOT"] = str(self.test_dir)
@@ -112,9 +148,15 @@ class TestCaptureFalsification(unittest.TestCase):
         # Pure text content to test fallback parser
         cfg_path.write_text("spines:\n  - name: test_spine\n    keywords: [foo, bar]\n    domains: [example.com]", encoding="utf-8")
         
-        # Mock bundle
         bundle = self.capture_dir / "bundle_test.md"
-        bundle.write_text("foo bar example.com", encoding="utf-8")
+        bundle.write_text(
+            "---\nlifecycle_state: promoted\n---\n\nfoo bar example.com",
+            encoding="utf-8",
+        )
+
+        from shared.state_registry import record_state
+        record_state("bundle_test.md", "promoted", str(bundle))
+
         
         res = router.route_bundle(
             bundle_path=bundle,

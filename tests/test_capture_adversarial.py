@@ -35,7 +35,7 @@ class TestCaptureAdversarial(unittest.TestCase):
 
         # Clean start
         if self.tmp_root.exists():
-            shutil.rmtree(self.tmp_root)
+            shutil.rmtree(self.tmp_root, ignore_errors=True)
         self.tmp_root.mkdir(parents=True)
         (self.capture_dir / "raw").mkdir(parents=True)
         self.config_dir.mkdir(parents=True)
@@ -47,6 +47,40 @@ class TestCaptureAdversarial(unittest.TestCase):
             "CAPTURE_DIR": str(self.capture_dir)
         })
         self.env_patcher.start()
+        (self.config_dir / "state_machine.yaml").write_text(
+            "\n".join(
+                [
+                    "states:",
+                    "  promoted:",
+                    "    blocked: false",
+                    "  routed:",
+                    "    blocked: false",
+                    "transitions:",
+                    "  - from_missing: true",
+                    "    to: promoted",
+                    "    gate: promotion_policy",
+                    "  - from: promoted",
+                    "    to: routed",
+                    "    gate: governance_gate",
+                    "    policy_id: routing_policy",
+                ]
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        (self.config_dir / "lanes.yaml").write_text(
+            "\n".join(
+                [
+                    "lanes:",
+                    "  - lane_id: volatile_capture",
+                    "    status: active",
+                    "  - lane_id: test_spine",
+                    "    status: active",
+                ]
+            )
+            + "\n",
+            encoding="utf-8",
+        )
 
     def tearDown(self):
         self.env_patcher.stop()
@@ -95,7 +129,14 @@ class TestCaptureAdversarial(unittest.TestCase):
 
         # Create a bundle file (mocking what promote creates)
         bundle_path = self.capture_dir / "test_bundle.md"
-        bundle_path.write_text("alpha beta gamma https://example.com/foo", encoding="utf-8")
+        bundle_path.write_text(
+            "---\nlifecycle_state: promoted\n---\n\nalpha beta gamma https://example.com/foo",
+            encoding="utf-8",
+        )
+
+        from shared.state_registry import record_state
+        record_state("test_bundle.md", "promoted", str(bundle_path))
+
 
         # Route
         spines_dir = self.constraints_dir / "spines"
