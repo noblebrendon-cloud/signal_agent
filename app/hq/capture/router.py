@@ -17,6 +17,7 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+from shared.contract import ContractResolutionError
 
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
 
