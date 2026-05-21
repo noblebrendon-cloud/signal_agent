@@ -1,0 +1,137 @@
+version: 1
+status: example_only
+authority: none
+purpose: >
+  Example public-surface domain profiles for review before any live registry,
+  transition gate, lane, or emission integration is authorized.
+
+approval_classes:
+  - local_review
+  - human_public_review
+  - human_high_trust_review
+  - quarantined
+
+domain_profiles:
+  - domain_id: letters_of_light
+    status: candidate
+    purpose: Weekly peace-centered spiritual reflection surface.
+    audience_boundary:
+      - general readers may receive reviewed weekly letters
+      - in-person and facility use requires manual approval and permission checks
+    tone_constraints:
+      required:
+        - peaceful
+        - truthful
+        - restorative
+      disallowed:
+        - coercive spiritual authority
+        - outrage bait
+        - certainty beyond reviewed source material
+    allowed_output_classes:
+      - weekly_letter
+      - email_preview
+      - print_packet
+      - discussion_packet
+      - social_premiere_draft
+    forbidden_output_classes:
+      - auto_sent_email
+      - auto_published_post
+    required_approval_class: human_high_trust_review
+    provenance_requirements:
+      primitive_refs_required: true
+      source_refs_required: true
+      governance_decision_refs_required_before_emission: true
+    moderation_profile_ref: missing_letters_of_light_moderation_doctrine
+    platform_surface_refs:
+      - docs/letters_of_light/
+      - app/letters_of_light/
+
+  - domain_id: wtpu
+    status: candidate
+    purpose: Isolated grounded civic observation and script lane.
+    audience_boundary:
+      - public civic commentary audience
+      - persona isolation must remain explicit
+    tone_constraints:
+      required:
+        - calm
+        - grounded
+        - observational
+      disallowed:
+        - hype
+        - emotional manipulation
+        - primary channel contamination
+    allowed_output_classes:
+      - core_message
+      - hook
+      - video_script
+      - youtube_title
+      - thumbnail_text
+      - facebook_post_draft
+    forbidden_output_classes:
+      - unreviewed_manifesto
+      - auto_published_post
+    required_approval_class: human_public_review
+    provenance_requirements:
+      primitive_refs_required: true
+      source_refs_required: true
+      governance_decision_refs_required_before_emission: true
+    constraint_pack_refs:
+      - constraints/packs/domain/wtpu_pack.yaml
+    moderation_profile_ref: missing_wtpu_moderation_doctrine
+    platform_surface_refs:
+      - signal_agent/content/wtpu_channel.py
+      - signals/wtpu/
+
+  - domain_id: signal
+    status: candidate
+    purpose: Reflective direct-signal umbrella surface and audience capture entrypoint.
+    audience_boundary:
+      - direct readers and followers
+      - must not silently merge spiritual, civic, and technical authority
+    tone_constraints:
+      required:
+        - reflective
+        - pressure_aware
+        - non_performative
+      disallowed:
+        - algorithmic outrage farming
+        - domain blending without review
+    allowed_output_classes:
+      - field_note
+      - reflective_post
+      - direct_signal_note
+      - website_copy_candidate
+    forbidden_output_classes:
+      - domainless_cross_post
+      - auto_sent_subscriber_message
+    required_approval_class: human_public_review
+    provenance_requirements:
+      primitive_refs_required: true
+      source_refs_required: true
+      governance_decision_refs_required_before_emission: true
+    moderation_profile_ref: missing_signal_moderation_doctrine
+    platform_surface_refs:
+      - sites/brendonrcoleman/signal/
+
+  - domain_id: mars_hill
+    status: quarantined
+    purpose: Unmapped declared ecosystem domain.
+    quarantine_reason: >
+      Reviewed repo material does not yet provide a domain contract, source
+      inventory, tone boundary, or moderation boundary for this surface.
+    audience_boundary:
+      - unknown_until_profiled
+    tone_constraints:
+      required: []
+      disallowed:
+        - inferred_identity_without_source_inventory
+    allowed_output_classes: []
+    forbidden_output_classes:
+      - any_unmapped_public_derivative
+    required_approval_class: quarantined
+    provenance_requirements:
+      primitive_refs_required: true
+      source_refs_required: true
+      governance_decision_refs_required_before_emission: true
+    moderation_profile_ref: missing_mars_hill_moderation_doctrine
