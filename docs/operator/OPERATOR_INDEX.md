@@ -273,6 +273,10 @@ Start here:
 - `ARCHITECTURE.md`
 - `GOVERNANCE_KERNEL.md`
 
+Closeout authority:
+- `docs/operator/MASTER_ENDPOINT_REGISTER.md`
+- `docs/operator/RELEASE_ARCHIVE_PLAN.md`
+
 Canonicalization and witness-node planning:
 - `docs/operator/canonicalization_witness_node_consolidation_plan.md`
 - `docs/operator/daily_witness_runtime_v1.md`
