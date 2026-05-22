@@ -125,17 +125,17 @@ These paths and classes require a separate human decision or an exact subsystem 
 
 `data/state/module_artifacts.jsonl` is not automatically forbidden, but a slice may include it only when the diff contains the intended reviewed metadata rows and the commit plan names that exception.
 
-## Seed Endpoint Register
+## Endpoint Register
 
-This is the starting register before Phase 0 triage closes. Status values are conservative until the dirty tree and ahead commits are classified from current git evidence.
+This register begins from the Phase 0 triage queue and records closeout evidence as endpoints move through commit, release, and archive levels. A closed commit-level endpoint does not imply GitHub release or Zenodo archive admission.
 
 | endpoint_id | title | subsystem | status | affected_files | reason_open | safest_next_action | closure_condition |
 |---|---|---|---|---|---|---|---|
-| `CLOSE-000` | Classify dirty worktree | Phase 0 triage | `ready` | tracked and untracked git status | Dirty paths do not yet have one authoritative classification. | Produce tracked and untracked classification tables without mutation. | Every dirty path has a path class and subsystem owner or an explicit human-decision blocker. |
-| `CLOSE-001` | Review commits ahead of `origin/main` | Phase 0 triage | `ready` | `origin/main..HEAD` | Ahead commits need release and push disposition. | Classify each ahead commit by release and push risk. | Every ahead commit is marked released, clean local feature, questionable/mixed, needs push review, or unknown. |
+| `CLOSE-000` | Classify dirty worktree | Phase 0 triage | `partial` | tracked and untracked git status | Phase 0 classified the dirty tree by path class and subsystem buckets, but the remaining dirty paths still need endpoint ownership or explicit blockers before this endpoint can close. | Keep new commit slices bounded by the Phase 0 classifications and record unresolved buckets as endpoint work. | Every dirty path has a path class and subsystem owner or an explicit human-decision blocker. |
+| `CLOSE-001` | Review commits ahead of `origin/main` | Phase 0 triage | `closed` | `origin/main..HEAD` at Phase 0 triage | Phase 0 classified the ahead chain before Slice 001: coherent local feature commits, public-surface push-review commits, and one mixed Letters of Light commit requiring caution. | Use the recorded classification when deciding later push and release grouping. | Every ahead commit is marked released, clean local feature, questionable/mixed, needs push review, or unknown. |
 | `CLOSE-002` | Decide private Reddit export disposition | Reflective Pressure data boundary | `blocked` | `data/reddit/**`; `E:\datasets\reddit\derived/**` | Raw archive material must not be committed or archived by sweep. | Record the exclusion boundary in triage and ask for a human decision only if a derivative must ship. | Source commits and milestone archives exclude raw/private Reddit data. |
 | `CLOSE-003` | Bound generated and runtime state | Phase 0 hygiene | `unverified` | locks, ledgers, generated outputs, scratch outputs | Ignore and artifact hygiene has not been checked against the current dirty tree. | Classify generated/runtime paths and identify ignore or attributes changes needed later. | Generated/private/runtime files are excluded or explicitly admitted by exact plan. |
-| `CLOSE-010` | Commit Reflective Pressure review gate slice | Reflective Pressure | `unverified` | `app/reflective_pressure/`; reflective pressure tests; review tooling; operator docs | Prior closeout says it is near-ready, but the current diff is not isolated yet. | Review allowed-file diffs and verify no raw corpus or state files enter staging. | Focused tests pass and a narrow source/docs/tests/tooling commit exists. |
+| `CLOSE-010` | Commit Reflective Pressure review gate slice | Reflective Pressure | `closed` | `app/reflective_pressure/*.py`; focused Reflective Pressure tests; Reddit seed and review tooling; four operator docs; reviewed `data/state/module_artifacts.jsonl` append | Slice 001 closed at commit level with source/docs/tests/tooling only. Raw/private/generated/runtime paths stayed excluded. | Hold for future milestone grouping in the release plan; do not treat closure as release/archive admission. | Focused tests pass and a narrow source/docs/tests/tooling commit exists. |
 | `CLOSE-020` | Commit HQ closure evidence | HQ governance | `partial` | HQ closure tests and evidence files from current diff | The slice needs final diff review. | Inspect `tests/test_casts_closure.py` neighbors and exact evidence paths. | HQ evidence commit is bounded and targeted closure verification passes. |
 | `CLOSE-030` | Commit lifecycle and reconcile prerequisites | Shared governance | `partial` | `shared/lifecycle.py`; `shared/reconcile.py`; dependent tests | Governance evidence depends on shared prerequisites landing first. | Bound shared primitive diff and its direct tests. | Shared lifecycle/reconcile commit lands before dependent governance evidence. |
 | `CLOSE-040` | Commit antiglue governance evidence | Governance evidence | `deferred` | antiglue and governance evidence tests/files | Must follow shared lifecycle/reconcile prerequisite. | Re-evaluate after `CLOSE-030` closes. | Dependent evidence commit passes targeted verification without prerequisite mixing. |
@@ -146,6 +146,24 @@ This is the starting register before Phase 0 triage closes. Status values are co
 | `CLOSE-090` | Bound bookgen slice | Bookgen | `partial` | `app/bookgen/`; tests; templates | CLI, render, template, and generated-book paths may mix. | Isolate code/template/test diffs from generated books. | Bookgen commit plan is narrow and verification command is named. |
 | `CLOSE-100` | Verify clock, runtime audit, and task contract grouping | Governance runtime | `partial` | clock, runtime audit, task contract, contract evaluator tests | These changes may share governance behavior and require grouped verification. | Map direct dependency links before splitting or grouping. | Commit sequence preserves behavior and each slice has targeted verification. |
 | `CLOSE-110` | Review public-surface readiness for release grouping | Public surfaces | `unverified` | public-surface ahead commits and any remaining registry/docs diff | Committed work exists ahead of origin, but release grouping is not reviewed here. | Classify ahead public-surface commits in Phase 0. | Push and release disposition is recorded in the release plan. |
+
+## Commit Closure Evidence
+
+| endpoint_id | Commit | Verification | Boundary evidence | Release/archive state |
+|---|---|---|---|---|
+| `CLOSE-010` | `40d6af5` `Add reflective pressure corpus review gate and reddit seed tooling` | Focused Slice 001 test command: `52 passed in 25.26s`. | Forbidden-path staged gate passed with `0` forbidden paths. `data/reddit/**`, generated outputs, locks, runtime-state paths, probe workspace state, artifacts, env paths, and temp paths were excluded. | Commit-level endpoint closure only. No push, GitHub release, or Zenodo archive was performed. |
+
+## Phase 0 Ahead Commit Classification
+
+`CLOSE-001` is closed at the triage level by this summary. It records classification for the ahead chain reviewed before Slice 001; later commits must be reviewed when push or release grouping reaches them.
+
+| Classification | Ahead commits from Phase 0 |
+|---|---|
+| `already released/published` | None from local git evidence. |
+| `needs push review` | Public-surface bridge assessment, config validator, report, and CLI commits. |
+| `questionable/mixed` | Letters of Light weekly layer commit because code/tests/docs were committed with `data/outputs/**` and `data/state/**`. |
+| `clean local feature` | Closeout authority, HQ capture/governance/shared foundation, OIL/io-contract, reflective corpus, and Laviathon evaluator feature commits reviewed as coherent local feature boundaries. |
+| `unknown` | None. |
 
 ## Closed Milestone Evidence
 

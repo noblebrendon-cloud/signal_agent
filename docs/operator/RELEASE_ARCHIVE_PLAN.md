@@ -159,6 +159,14 @@ First safe execution step after triage:
 Review the exact allowed-file diff for Slice 001 and confirm the staged set excludes all forbidden paths.
 ```
 
+Slice 001 commit-level closure:
+
+| Commit | Verification | Milestone role | Current release/archive state |
+|---|---|---|---|
+| `40d6af5` `Add reflective pressure corpus review gate and reddit seed tooling` | Focused Slice 001 command passed with `52 passed in 25.26s`; staged forbidden-path gate found `0` forbidden paths. | Candidate component for a future Reflective Pressure milestone release. | Not pushed, not tagged, not GitHub-released, and not Zenodo-archived. |
+
+Future release or archive admission still requires milestone grouping, push, tag, bounded release notes, leakage review, and the rest of the GitHub and Zenodo gates above.
+
 ### Phase 2: Larger Subsystem Slices
 
 | Slice | Current status | Release action |
