@@ -147,7 +147,9 @@ This register begins from the Phase 0 triage queue and records closeout evidence
 | `CLOSE-080` | Split Letters of Light logic from outputs | Letters of Light | `partial` | `app/letters_of_light/`; tests; render outputs | Logic/tests and content outputs need separate treatment. | Review render code/tests separately from produced content. | Code/test slice has a clean commit boundary and output policy. |
 | `CLOSE-090` | Bound bookgen slice | Bookgen | `partial` | `app/bookgen/`; tests; templates | CLI, render, template, and generated-book paths may mix. | Isolate code/template/test diffs from generated books. | Bookgen commit plan is narrow and verification command is named. |
 | `CLOSE-100` | Verify clock, runtime audit, and task contract grouping | Governance runtime | `partial` | clock, runtime audit, task contract, contract evaluator tests | These changes may share governance behavior and require grouped verification. | Map direct dependency links before splitting or grouping. | Commit sequence preserves behavior and each slice has targeted verification. |
-| `CLOSE-110` | Review public-surface readiness for release grouping | Public surfaces | `unverified` | public-surface ahead commits and any remaining registry/docs diff | Committed work exists ahead of origin, but release grouping is not reviewed here. | Classify ahead public-surface commits in Phase 0. | Push and release disposition is recorded in the release plan. |
+| `CLOSE-110` | Review public-surface readiness for release grouping | Public surfaces | `ready` | `c362c10`; `b8bb70e`; `2a45585`; `610fdc4`; any remaining registry/docs diff | Push/release readiness audit identified the public-surface commits as needing push review before release grouping. | Inspect public-surface commits after the blocking mixed commit review. | Push and release disposition is recorded in the release plan. |
+| `CLOSE-120` | Record push and release readiness audit | Release control | `closed` | `origin/main..HEAD`; git status counts; release candidate gates | Audit completed with no staging, no push, no tag, no GitHub release, and no Zenodo archive. Main must not be pushed blindly because the ahead chain contains at least one questionable/mixed commit. | Use the audit result to review blocking commits before deciding a safe push path. | Push/release audit result is recorded and next review targets are explicit. |
+| `CLOSE-121` | Review questionable ahead commit `a094d66` | Letters of Light / release control | `ready` | `a094d66`; `data/outputs/letters_of_light/**`; `data/state/letters_of_light_*.jsonl`; Letters of Light source/docs/tests | `a094d66` committed source/docs/tests together with generated output and runtime-state-like JSONL paths. This may be valid work, but it blocks blind publication of `main` until reviewed. | Perform a read-only commit review and decide whether it is push-safe as-is, needs a register exception, should be split, or should be excluded from a release branch. | A push disposition for `a094d66` is recorded before pushing `main` or forming a release branch. |
 
 ## Commit Closure Evidence
 
@@ -200,6 +202,54 @@ Recommended future split:
 | `questionable/mixed` | Letters of Light weekly layer commit because code/tests/docs were committed with `data/outputs/**` and `data/state/**`. |
 | `clean local feature` | Closeout authority, HQ capture/governance/shared foundation, OIL/io-contract, reflective corpus, and Laviathon evaluator feature commits reviewed as coherent local feature boundaries. |
 | `unknown` | None. |
+
+## Push / Release Readiness Audit
+
+The push/release-readiness audit recorded after `CLOSE-040B` kept the repository read-only and did not push, tag, release, archive, stage, or commit runtime/code/data files.
+
+| Field | Result |
+|---|---|
+| Branch | `main` |
+| Upstream | `origin/main` |
+| Ahead / behind | ahead `40`, behind `0` |
+| Staged paths | `0` |
+| Modified tracked paths | `34` |
+| Untracked paths | `1538` |
+| Repo clean | `false` |
+| Push `main` recommended | `false` |
+
+Blocking commit for blind push:
+
+- `a094d66` `Add Letters of Light weekly layer`: committed source/docs/tests together with generated output under `data/outputs/letters_of_light/**` and runtime-state-like JSONL paths under `data/state/letters_of_light_*.jsonl`. This requires explicit review before publishing `main`.
+
+Push-review commits:
+
+- `c362c10` `Assess public surface governance bridge`
+- `b8bb70e` `Add public surface config validator`
+- `2a45585` `Add public surface governance report`
+- `610fdc4` `Add public surface governance CLI`
+
+Safe closure-chain commits identified by the audit:
+
+- `d36672a` `Add repo closeout authority`
+- `40d6af5` `Add reflective pressure corpus review gate and reddit seed tooling`
+- `3d1a3b4` `Record Reflective Pressure slice closure`
+- `b75b0c9` `Add HQ governance closure evidence`
+- `d8777d2` `Record HQ closure evidence`
+- `86ad731` `Add shared lifecycle and reconcile primitives`
+- `b22fa11` `Record lifecycle reconcile closure`
+- `993a459` `Add antiglue governance evidence`
+- `38df102` `Record antiglue evidence closure`
+- `94ed6a1` `Record governance unification deferral`
+
+Release readiness result:
+
+- Reflective Pressure Spine `v0.2` is not ready.
+- Governance Evidence `v0.3` is not ready.
+- Combined Closeout Authority + Governance Evidence checkpoint is not ready.
+- There are no Zenodo candidates yet.
+
+The safe next action is to inspect `a094d66` before deciding whether to push `main`, create a release branch, or continue local cleanup.
 
 ## Closed Milestone Evidence
 

@@ -214,6 +214,23 @@ Future release or archive admission still requires milestone grouping, push, tag
 
 These are candidate release groupings. Final tags must be chosen from the committed, pushed diff and bounded release notes.
 
+### Current Push / Release Readiness
+
+The push/release-readiness audit after the clean closure chain found that no milestone is currently GitHub-release-ready or Zenodo-ready.
+
+Release readiness is blocked by:
+
+- questionable ahead commit review for `a094d66` `Add Letters of Light weekly layer`
+- safe push path decision for `main` or a release branch
+- public-surface push review for `c362c10`, `b8bb70e`, `2a45585`, and `610fdc4`
+- tag target selection
+- bounded release notes
+- leakage review
+- milestone packaging
+- Zenodo metadata and archive package, if a milestone later qualifies
+
+The clean closure chain is internally coherent, but it does not by itself justify pushing `main` because earlier ahead commits still need review. Closed commit-level endpoints remain candidate release components only; they are not pushed, tagged, GitHub-released, or Zenodo-archived.
+
 | Candidate tag | Intended contents | GitHub release | Zenodo candidate |
 |---|---|---|---|
 | `v0.2.0-reflective-pressure-spine` | Reflective Pressure module, Reddit seed tooling, review gate docs/tests | Yes | Yes, after stable corpus/privacy boundary review |
