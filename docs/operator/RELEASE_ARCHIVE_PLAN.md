@@ -167,6 +167,16 @@ Slice 001 commit-level closure:
 
 Future release or archive admission still requires milestone grouping, push, tag, bounded release notes, leakage review, and the rest of the GitHub and Zenodo gates above.
 
+#### Slice 002: HQ Closure Evidence
+
+Slice 002 commit-level closure:
+
+| Commit | Verification | Milestone role | Current release/archive state |
+|---|---|---|---|
+| `b75b0c9` `Add HQ governance closure evidence` | `.\.venv\Scripts\python.exe -m pytest tests\test_casts_closure.py -q` passed with `10 passed in 4.56s`; dependency gate passed against tracked clean implementation files; staged gate contained exactly `tests/test_casts_closure.py` and `git diff --cached --check` was clean. | Candidate component for a future governance closure evidence milestone release. | Not pushed, not tagged, not GitHub-released, and not Zenodo-archived. |
+
+Future release or archive admission still requires milestone grouping, push, tag, bounded release notes, leakage review, and the rest of the GitHub and Zenodo gates above.
+
 ### Phase 2: Larger Subsystem Slices
 
 | Slice | Current status | Release action |
