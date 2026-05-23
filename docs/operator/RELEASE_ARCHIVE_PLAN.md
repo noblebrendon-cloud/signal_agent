@@ -187,6 +187,18 @@ Slice 003 commit-level closure:
 
 Future release or archive admission still requires milestone grouping, push, tag, bounded release notes, leakage review, and the rest of the GitHub and Zenodo gates above.
 
+#### Slice 004A: Antiglue Governance Evidence
+
+Slice 004A commit-level closure:
+
+| Commit | Verification | Milestone role | Current release/archive state |
+|---|---|---|---|
+| `993a459` `Add antiglue governance evidence` | `.\.venv\Scripts\python.exe -B -m pytest tests\test_antiglue_phase_next.py -q -p no:cacheprovider` passed with `6 passed in 1.09s`; narrow governance selector passed with `3 passed in 0.32s`; staged gate contained exactly `tests/test_antiglue_phase_next.py`; forbidden staged path count was `0`. | Candidate component for a future governance closure evidence milestone release. | Not pushed, not tagged, not GitHub-released, and not Zenodo-archived. |
+
+The broader governance-unification/support remainder is not release-admitted yet. `tests/test_governance_unification.py`, `shared/health.py`, `shared/event_reader.py`, `shared/artifact_envelope.py`, and `shared/reactions.py` require separate exact diff review before release grouping.
+
+Future release or archive admission still requires milestone grouping, push, tag, bounded release notes, leakage review, and the rest of the GitHub and Zenodo gates above.
+
 ### Phase 2: Larger Subsystem Slices
 
 | Slice | Current status | Release action |
