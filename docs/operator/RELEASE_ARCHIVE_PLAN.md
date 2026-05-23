@@ -177,6 +177,16 @@ Slice 002 commit-level closure:
 
 Future release or archive admission still requires milestone grouping, push, tag, bounded release notes, leakage review, and the rest of the GitHub and Zenodo gates above.
 
+#### Slice 003: Lifecycle/Reconcile Prerequisite
+
+Slice 003 commit-level closure:
+
+| Commit | Verification | Milestone role | Current release/archive state |
+|---|---|---|---|
+| `86ad731` `Add shared lifecycle and reconcile primitives` | `.\.venv\Scripts\python.exe -B -m py_compile shared\lifecycle.py shared\reconcile.py` passed; focused pytest command passed with `5 passed in 1.22s`; staged gate contained exactly `shared/lifecycle.py` and `shared/reconcile.py`; forbidden staged path count was `0`. | Candidate component for a future governance closure evidence milestone release. | Not pushed, not tagged, not GitHub-released, and not Zenodo-archived. |
+
+Future release or archive admission still requires milestone grouping, push, tag, bounded release notes, leakage review, and the rest of the GitHub and Zenodo gates above.
+
 ### Phase 2: Larger Subsystem Slices
 
 | Slice | Current status | Release action |
