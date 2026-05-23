@@ -146,10 +146,11 @@ This register begins from the Phase 0 triage queue and records closeout evidence
 | `CLOSE-070` | Split Laviathon site work from generated output | Laviathon/site | `partial` | `laviathon/`; `site_laviathon/`; app and site surfaces | Public site/demo work is mixed with legacy and generated surfaces. | Classify source/demo docs separately from outputs. | Public-facing commit plan excludes generated outputs and legacy ambiguity. |
 | `CLOSE-080` | Split Letters of Light logic from outputs | Letters of Light | `partial` | `app/letters_of_light/`; tests; render outputs | Logic/tests and content outputs need separate treatment. | Review render code/tests separately from produced content. | Code/test slice has a clean commit boundary and output policy. |
 | `CLOSE-090` | Bound bookgen slice | Bookgen | `partial` | `app/bookgen/`; tests; templates | CLI, render, template, and generated-book paths may mix. | Isolate code/template/test diffs from generated books. | Bookgen commit plan is narrow and verification command is named. |
+| `CLOSE-092` | Split or except Letters of Light mixed commit | Letters of Light / release control | `blocked` | `a094d66`; `app/letters_of_light/*.py`; `docs/letters_of_light/**`; `tests/test_letters_of_light_*.py`; `data/outputs/letters_of_light/**`; `data/state/letters_of_light_*.jsonl` | `a094d66` is not push-safe as-is because it mixes coherent source/docs/tests with generated outputs and runtime-state JSONL. History rewrite is high-risk while the worktree is dirty, so a human decision is needed before repair. | Choose a safe path: release branch/cherry-pick clean chain, rebuild Letters of Light later as smaller slices, or perform controlled history repair only after the dirty tree is clean or safely parked. | `a094d66` is either split/rebuilt, explicitly excepted by human decision, or excluded from a release branch before `main` is pushed. |
 | `CLOSE-100` | Verify clock, runtime audit, and task contract grouping | Governance runtime | `partial` | clock, runtime audit, task contract, contract evaluator tests | These changes may share governance behavior and require grouped verification. | Map direct dependency links before splitting or grouping. | Commit sequence preserves behavior and each slice has targeted verification. |
 | `CLOSE-110` | Review public-surface readiness for release grouping | Public surfaces | `ready` | `c362c10`; `b8bb70e`; `2a45585`; `610fdc4`; any remaining registry/docs diff | Push/release readiness audit identified the public-surface commits as needing push review before release grouping. | Inspect public-surface commits after the blocking mixed commit review. | Push and release disposition is recorded in the release plan. |
 | `CLOSE-120` | Record push and release readiness audit | Release control | `closed` | `origin/main..HEAD`; git status counts; release candidate gates | Audit completed with no staging, no push, no tag, no GitHub release, and no Zenodo archive. Main must not be pushed blindly because the ahead chain contains at least one questionable/mixed commit. | Use the audit result to review blocking commits before deciding a safe push path. | Push/release audit result is recorded and next review targets are explicit. |
-| `CLOSE-121` | Review questionable ahead commit `a094d66` | Letters of Light / release control | `ready` | `a094d66`; `data/outputs/letters_of_light/**`; `data/state/letters_of_light_*.jsonl`; Letters of Light source/docs/tests | `a094d66` committed source/docs/tests together with generated output and runtime-state-like JSONL paths. This may be valid work, but it blocks blind publication of `main` until reviewed. | Perform a read-only commit review and decide whether it is push-safe as-is, needs a register exception, should be split, or should be excluded from a release branch. | A push disposition for `a094d66` is recorded before pushing `main` or forming a release branch. |
+| `CLOSE-121` | Review questionable ahead commit `a094d66` | Letters of Light / release control | `closed` | `a094d66`; `data/outputs/letters_of_light/**`; `data/state/letters_of_light_*.jsonl`; Letters of Light source/docs/tests | Read-only review found the commit is not push-safe as-is. Source/docs/tests are coherent, but the commit mixes them with generated outputs and runtime-state JSONL. | Keep `main` push blocked and resolve `CLOSE-092` before publishing `main`, unless an explicit human exception is recorded. | A push disposition for `a094d66` is recorded before pushing `main` or forming a release branch. |
 
 ## Commit Closure Evidence
 
@@ -250,6 +251,39 @@ Release readiness result:
 - There are no Zenodo candidates yet.
 
 The safe next action is to inspect `a094d66` before deciding whether to push `main`, create a release branch, or continue local cleanup.
+
+## Letters of Light Mixed Commit Review
+
+Read-only inspection of `a094d66` `Add Letters of Light weekly layer` is complete. The verdict is:
+
+- `push_safe`: `false`
+- `requires_human_approval`: `true`
+- recommended action: revert/split `a094d66` before pushing `main`
+- `main` must still not be pushed blindly
+
+Reason: the code/docs/tests are coherent, but the commit mixes source/docs/tests with generated outputs and runtime-state JSONL.
+
+Path classification:
+
+| Class | Paths |
+|---|---|
+| Source code | `app/letters_of_light/weekly_cli.py`; `app/letters_of_light/weekly_models.py`; `app/letters_of_light/weekly_render.py`; `app/letters_of_light/weekly_store.py` |
+| Tests | `tests/test_letters_of_light_weekly_content.py`; `tests/test_letters_of_light_weekly_render.py`; `tests/test_letters_of_light_weekly_state.py` |
+| Docs/template source | `docs/letters_of_light/README.md`; `docs/letters_of_light/sunday_runbook.md`; `docs/letters_of_light/templates/email_preview.md.j2`; `docs/letters_of_light/templates/jail_packet.md.j2`; `docs/letters_of_light/templates/print_packet.md.j2`; `docs/letters_of_light/templates/weekly_letter.md` |
+| Acceptable only with explicit admission | `docs/letters_of_light/letters/2026-05-17.md` |
+| Generated output | `data/outputs/letters_of_light/2026-05-17/email_preview.md`; `data/outputs/letters_of_light/2026-05-17/human_approval_checklist.md`; `data/outputs/letters_of_light/2026-05-17/jail_packet.md`; `data/outputs/letters_of_light/2026-05-17/print_packet.md` |
+| Runtime state | `data/state/letters_of_light_letters.jsonl`; `data/state/letters_of_light_transitions.jsonl` |
+
+Blocking paths:
+
+- `data/outputs/letters_of_light/**`
+- `data/state/letters_of_light_*.jsonl`
+
+Do not rewrite or rebase while the dirty worktree remains unresolved. Safe options remain:
+
+- release branch or cherry-pick clean chain
+- rebuild Letters of Light later as smaller slices
+- interactive rebase only after the dirty tree is clean or safely parked
 
 ## Closed Milestone Evidence
 

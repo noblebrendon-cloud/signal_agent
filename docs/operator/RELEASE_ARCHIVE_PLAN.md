@@ -206,7 +206,7 @@ Future release or archive admission still requires milestone grouping, push, tag
 | Operator/security | Deferred | Isolate operator files, operator config, and security tests before staging. |
 | Retention/appointments | Partial | Audit appointment lifecycle work as its own retention subsystem. |
 | Laviathon/site | Dirty | Split public website/demo changes from generated output and legacy mirrors. |
-| Letters of Light | Dirty | Split render logic and tests from produced content artifacts. |
+| Letters of Light | Blocked | `a094d66` is not release-admitted as currently committed; split render logic/tests/docs from produced content artifacts, generated outputs, and runtime-state JSONL. |
 | Bookgen | Dirty | Isolate CLI, render, templates, and tests from generated book outputs. |
 | Clock/runtime audit/task contract | Dirty | Verify dependency coupling before splitting governance behavior. |
 
@@ -230,6 +230,24 @@ Release readiness is blocked by:
 - Zenodo metadata and archive package, if a milestone later qualifies
 
 The clean closure chain is internally coherent, but it does not by itself justify pushing `main` because earlier ahead commits still need review. Closed commit-level endpoints remain candidate release components only; they are not pushed, tagged, GitHub-released, or Zenodo-archived.
+
+### Letters of Light Release Admission
+
+`a094d66` `Add Letters of Light weekly layer` is not release-admitted as currently committed.
+
+The source/docs/tests portion appears coherent, but the commit also contains generated outputs and runtime-state JSONL. These paths are not admitted to release or archive without an explicit register exception:
+
+- `data/outputs/letters_of_light/**`
+- `data/state/letters_of_light_*.jsonl`
+
+Likely future split:
+
+- Letters of Light source/docs/tests slice
+- optional admitted content artifact slice for `docs/letters_of_light/letters/2026-05-17.md`
+- generated output excluded from source commits or admitted only as bounded release artifacts
+- runtime state excluded or converted to fixtures/seeds with an explicit register exception
+
+Until that split or exception exists, all milestone releases remain not ready.
 
 | Candidate tag | Intended contents | GitHub release | Zenodo candidate |
 |---|---|---|---|
