@@ -140,7 +140,7 @@ This register begins from the Phase 0 triage queue and records closeout evidence
 | `CLOSE-030` | Commit lifecycle and reconcile prerequisites | Shared governance | `closed` | `shared/lifecycle.py`; `shared/reconcile.py` | Slice 003 closed at commit level with prerequisite-only shared primitives. Broader health/reaction/evidence files were intentionally deferred. | Hold for future governance evidence milestone grouping in the release plan; do not treat closure as release/archive admission. | Shared lifecycle/reconcile commit lands before dependent governance evidence. |
 | `CLOSE-040` | Commit antiglue governance evidence | Governance evidence | `partial` | antiglue and governance evidence tests/files; deferred shared health/reaction files | The bounded antiglue evidence sub-slice closed, but governance unification/support files remain deferred for separate exact diff review. | Keep parent endpoint open until `CLOSE-040B` is resolved or split further. | Dependent evidence commit passes targeted verification without prerequisite mixing. |
 | `CLOSE-040A` | Commit antiglue governance evidence sub-slice | Governance evidence | `closed` | `tests/test_antiglue_phase_next.py` | Slice 004A closed at commit level with one bounded antiglue evidence test file. | Hold for future governance evidence milestone grouping in the release plan; do not treat closure as release/archive admission. | Antiglue evidence test passes and staged set excludes forbidden paths. |
-| `CLOSE-040B` | Review governance unification and support primitives | Governance evidence/support | `ready` | `tests/test_governance_unification.py`; `shared/health.py`; `shared/event_reader.py`; `shared/artifact_envelope.py`; `shared/reactions.py` | These files were deferred from 004A because governance unification includes broader scanning and support files reach health/reaction/runtime surfaces. | Classify each file one by one before staging; start with narrow selectors and fail closed on broad traversal or support-surface expansion. | Remainder is either committed as a bounded verified slice, split into smaller endpoints, or explicitly deferred/blocked. |
+| `CLOSE-040B` | Review governance unification and support primitives | Governance evidence/support | `deferred` | `tests/test_governance_unification.py`; `shared/health.py`; `shared/event_reader.py`; `shared/artifact_envelope.py`; `shared/reactions.py` | Review failed closed with no staging and no commit. The files are useful but too broad for the bounded evidence slice: governance unification scans the repo, health/event-reader touch runtime state, reactions reaches routing/checkpoint mutation, and health has whitespace issues. | Split into narrower endpoints before any staging. | Remainder is either committed as bounded verified slices, redesigned for isolation, or explicitly blocked. |
 | `CLOSE-050` | Isolate operator and security boundary | Operator/security | `deferred` | operator code, security tests, operator config | Larger dirty slice needs audit after near-ready work. | Group operator/security files without staging. | A separate commit plan names exact files, checks, and boundary claims. |
 | `CLOSE-060` | Isolate retention appointments spine | Retention/appointments | `partial` | `app/retention/`; appointment tests; retention docs | Appointment and retention work spans multiple new files. | Audit retention paths as one subsystem before staging. | Retention commit slice and release relevance are explicit and verified. |
 | `CLOSE-070` | Split Laviathon site work from generated output | Laviathon/site | `partial` | `laviathon/`; `site_laviathon/`; app and site surfaces | Public site/demo work is mixed with legacy and generated surfaces. | Classify source/demo docs separately from outputs. | Public-facing commit plan excludes generated outputs and legacy ambiguity. |
@@ -167,6 +167,27 @@ These files remain deferred under `CLOSE-040B` and must be classified one by one
 - `shared/artifact_envelope.py`
 - `shared/reactions.py`
 - `tests/test_governance_unification.py`
+
+Review evidence:
+
+- No files were staged or committed; the index remained empty.
+- `.\.venv\Scripts\python.exe -B -m py_compile shared\health.py shared\event_reader.py shared\artifact_envelope.py shared\reactions.py` passed.
+- `.\.venv\Scripts\python.exe -B -m pytest tests\test_governance_unification.py::TestSharedLifecycleDeprecation -q -p no:cacheprovider` passed with `3 passed in 0.28s`.
+
+Deferral reasons:
+
+- `tests/test_governance_unification.py` includes repo-wide `root.rglob("*.py")` scanning, too broad for the current dirty tree.
+- `shared/health.py` reaches runtime-state paths such as `data/state/*` and `data/capture/routing_log.jsonl`.
+- `shared/event_reader.py` reads and writes checkpoint/event-log state when used.
+- `shared/reactions.py` reaches routing behavior and checkpoint mutation.
+- `shared/health.py` fails `git diff --no-index --check` due whitespace issues.
+
+Recommended future split:
+
+- health/event-reader runtime-state support slice
+- artifact-envelope primitive slice
+- reactions/routing checkpoint slice
+- governance-unification repo-wide scan redesign or isolation slice
 
 ## Phase 0 Ahead Commit Classification
 
