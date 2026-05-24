@@ -1,0 +1,104 @@
+slug: communication_architecture
+title: The Architecture of Influence
+subtitle: Communication, Legitimacy, and Coherence Under Pressure
+author: mrcol
+year: '2026'
+copyright_holder: mrcol
+description: >-
+  A short-to-medium analytical book about communication architecture,
+  influence, discourse legitimacy, governance, and coherence under pressure.
+purpose: >-
+  Establish a canonical authorship artifact supporting governed AI,
+  deterministic orchestration, discourse legitimacy, coherence, and human
+  agency under acceleration.
+front_matter:
+  cover_blurb: |-
+    DRAFT COVER BLURB PLACEHOLDER.
+
+    An analytical book project about communication architecture, influence,
+    discourse legitimacy, governance, and coherence under pressure.
+  copyright: |-
+    The Architecture of Influence
+    Communication, Legitimacy, and Coherence Under Pressure
+
+    Copyright (c) 2026 mrcol.
+    Draft project render. Not final publication copy.
+  preface: |-
+    DRAFT PREFACE PLACEHOLDER.
+
+    This render spec is compiled from the communication_architecture project
+    manifest and chapter markdown files. Replace draft placeholders with
+    authored manuscript prose before treating this as publication copy.
+chapters:
+- number: 1
+  title: Communication Is Not Just Information
+  part: I - The Hidden Architecture of Communication
+  source: chapters/01_communication_is_not_just_information.md
+- number: 2
+  title: The Invisible Structure Behind Persuasion
+  part: I - The Hidden Architecture of Communication
+  source: chapters/02_the_invisible_structure_behind_persuasion.md
+- number: 3
+  title: Language as Psychological Terrain
+  part: I - The Hidden Architecture of Communication
+  source: chapters/03_language_as_psychological_terrain.md
+- number: 4
+  title: The Architecture of Attention
+  part: I - The Hidden Architecture of Communication
+  source: chapters/04_the_architecture_of_attention.md
+- number: 5
+  title: The Four Modes of Influence
+  part: II - Influence Systems
+  source: chapters/05_the_four_modes_of_influence.md
+- number: 6
+  title: Resistance and Cognitive Friction
+  part: II - Influence Systems
+  source: chapters/06_resistance_and_cognitive_friction.md
+- number: 7
+  title: Narrative Gravity
+  part: II - Influence Systems
+  source: chapters/07_narrative_gravity.md
+- number: 8
+  title: The Ethics of Influence
+  part: II - Influence Systems
+  source: chapters/08_the_ethics_of_influence.md
+- number: 9
+  title: Emotional Velocity
+  part: III - The Collapse of Modern Discourse
+  source: chapters/09_emotional_velocity.md
+- number: 10
+  title: Procedural Trust Is Dying
+  part: III - The Collapse of Modern Discourse
+  source: chapters/10_procedural_trust_is_dying.md
+- number: 11
+  title: The Weaponization of Identity
+  part: III - The Collapse of Modern Discourse
+  source: chapters/11_the_weaponization_of_identity.md
+- number: 12
+  title: AI and the Industrialization of Persuasion
+  part: III - The Collapse of Modern Discourse
+  source: chapters/12_ai_and_the_industrialization_of_persuasion.md
+- number: 13
+  title: Why Governance Matters More Than Content
+  part: IV - Governance, Coherence, and the Future
+  source: chapters/13_why_governance_matters_more_than_content.md
+- number: 14
+  title: Coherence Under Pressure
+  part: IV - Governance, Coherence, and the Future
+  source: chapters/14_coherence_under_pressure.md
+- number: 15
+  title: Governed Communication
+  part: IV - Governance, Coherence, and the Future
+  source: chapters/15_governed_communication.md
+- number: 16
+  title: Toward Legitimate Systems
+  part: IV - Governance, Coherence, and the Future
+  source: chapters/16_toward_legitimate_systems.md
+end_matter:
+  endnote: |-
+    DRAFT ENDNOTE PLACEHOLDER.
+
+    This project render confirms the markdown-to-spec authoring path without
+    claiming a finished manuscript.
+letter:
+  one_sentence: This draft render establishes the analytical book project without presenting it as final manuscript copy.
