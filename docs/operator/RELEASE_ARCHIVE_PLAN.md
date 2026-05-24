@@ -222,7 +222,6 @@ Release readiness is blocked by:
 
 - questionable ahead commit review for `a094d66` `Add Letters of Light weekly layer`
 - safe push path decision for `main` or a release branch
-- public-surface push review for `c362c10`, `b8bb70e`, `2a45585`, and `610fdc4`
 - tag target selection
 - bounded release notes
 - leakage review
@@ -248,6 +247,27 @@ Likely future split:
 - runtime state excluded or converted to fixtures/seeds with an explicit register exception
 
 Until that split or exception exists, all milestone releases remain not ready.
+
+### Public-Surface Readiness Admission
+
+The public-surface push-review audit approved these commits for push once the `a094d66` blocker is resolved or bypassed:
+
+- `c362c10` `Assess public surface governance bridge`
+- `b8bb70e` `Add public surface config validator`
+- `2a45585` `Add public surface governance report`
+- `610fdc4` `Add public surface governance CLI`
+
+The audit found no forbidden paths, no runtime/generated/private paths, and a preserved read-only boundary: example config/JSONL loading, validation, report construction, and JSON/text rendering only. Focused verification passed with `24 passed in 2.95s`.
+
+These commits are candidate components for a future public-surface readiness milestone. They are not pushed, not tagged, not GitHub-released, not Zenodo-archived, and not Zenodo-ready by themselves.
+
+Public-surface release admission still requires:
+
+- push-safe branch state
+- tag target selection
+- bounded release notes
+- leakage review
+- milestone packaging
 
 | Candidate tag | Intended contents | GitHub release | Zenodo candidate |
 |---|---|---|---|

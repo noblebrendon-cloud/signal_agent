@@ -148,7 +148,7 @@ This register begins from the Phase 0 triage queue and records closeout evidence
 | `CLOSE-090` | Bound bookgen slice | Bookgen | `partial` | `app/bookgen/`; tests; templates | CLI, render, template, and generated-book paths may mix. | Isolate code/template/test diffs from generated books. | Bookgen commit plan is narrow and verification command is named. |
 | `CLOSE-092` | Split or except Letters of Light mixed commit | Letters of Light / release control | `blocked` | `a094d66`; `app/letters_of_light/*.py`; `docs/letters_of_light/**`; `tests/test_letters_of_light_*.py`; `data/outputs/letters_of_light/**`; `data/state/letters_of_light_*.jsonl` | `a094d66` is not push-safe as-is because it mixes coherent source/docs/tests with generated outputs and runtime-state JSONL. History rewrite is high-risk while the worktree is dirty, so a human decision is needed before repair. | Choose a safe path: release branch/cherry-pick clean chain, rebuild Letters of Light later as smaller slices, or perform controlled history repair only after the dirty tree is clean or safely parked. | `a094d66` is either split/rebuilt, explicitly excepted by human decision, or excluded from a release branch before `main` is pushed. |
 | `CLOSE-100` | Verify clock, runtime audit, and task contract grouping | Governance runtime | `partial` | clock, runtime audit, task contract, contract evaluator tests | These changes may share governance behavior and require grouped verification. | Map direct dependency links before splitting or grouping. | Commit sequence preserves behavior and each slice has targeted verification. |
-| `CLOSE-110` | Review public-surface readiness for release grouping | Public surfaces | `ready` | `c362c10`; `b8bb70e`; `2a45585`; `610fdc4`; any remaining registry/docs diff | Push/release readiness audit identified the public-surface commits as needing push review before release grouping. | Inspect public-surface commits after the blocking mixed commit review. | Push and release disposition is recorded in the release plan. |
+| `CLOSE-110` | Review public-surface readiness for release grouping | Public surfaces | `closed` | `c362c10`; `b8bb70e`; `2a45585`; `610fdc4`; public-surface config examples, docs, source, and tests | Push-review audit approved the public-surface commits for push once the `a094d66` blocker is resolved or bypassed. Main remains blocked by `a094d66`. | Hold for future public-surface readiness milestone grouping; do not treat review approval as push, tag, release, or archive admission. | Push-review audit passed, forbidden-path check passed, read-only boundary is preserved, and focused verification passed. |
 | `CLOSE-120` | Record push and release readiness audit | Release control | `closed` | `origin/main..HEAD`; git status counts; release candidate gates | Audit completed with no staging, no push, no tag, no GitHub release, and no Zenodo archive. Main must not be pushed blindly because the ahead chain contains at least one questionable/mixed commit. | Use the audit result to review blocking commits before deciding a safe push path. | Push/release audit result is recorded and next review targets are explicit. |
 | `CLOSE-121` | Review questionable ahead commit `a094d66` | Letters of Light / release control | `closed` | `a094d66`; `data/outputs/letters_of_light/**`; `data/state/letters_of_light_*.jsonl`; Letters of Light source/docs/tests | Read-only review found the commit is not push-safe as-is. Source/docs/tests are coherent, but the commit mixes them with generated outputs and runtime-state JSONL. | Keep `main` push blocked and resolve `CLOSE-092` before publishing `main`, unless an explicit human exception is recorded. | A push disposition for `a094d66` is recorded before pushing `main` or forming a release branch. |
 
@@ -284,6 +284,44 @@ Do not rewrite or rebase while the dirty worktree remains unresolved. Safe optio
 - release branch or cherry-pick clean chain
 - rebuild Letters of Light later as smaller slices
 - interactive rebase only after the dirty tree is clean or safely parked
+
+## Public-Surface Push Review
+
+Read-only push-review audit of the public-surface commits is complete. The verdict is:
+
+- public-surface commits are approved for push once the `a094d66` blocker is resolved or bypassed
+- `main` remains blocked by `a094d66`
+- public-surface commits are release-relevant for a future public-surface readiness milestone
+- public-surface commits are not Zenodo-ready by themselves
+
+Reviewed commits and path classes:
+
+| Commit | Paths | Classification |
+|---|---|---|
+| `c362c10` `Assess public surface governance bridge` | `config/public_surfaces/*.example.*`; `docs/operator/public_surface_*` | config/example; docs |
+| `b8bb70e` `Add public surface config validator` | `shared/public_surfaces.py`; `tests/test_public_surfaces.py` | source; test |
+| `2a45585` `Add public surface governance report` | `app/public_surfaces/report.py`; `tests/test_public_surface_report.py` | source; test |
+| `610fdc4` `Add public surface governance CLI` | `app/public_surfaces/cli.py`; `tests/test_public_surface_cli.py` | source; test |
+
+Forbidden path check passed:
+
+- no `data/reddit/**`
+- no `data/state/**`
+- no `data/outputs/**`
+- no `artifacts/**`
+- no locks
+- no env/temp/probe paths
+- no runtime, generated, or private paths
+
+Boundary verdict: read-only boundary preserved. The implementation reads example config/JSONL, validates, builds reports, and renders JSON/text. It does not perform routing execution, publishing execution, platform adapter work, approval execution, live ledger writes, external network calls, or public-content mutation. Test-only writes are confined to `tmp_path`.
+
+Verification:
+
+```powershell
+.\.venv\Scripts\python.exe -B -m pytest tests\test_public_surfaces.py tests\test_public_surface_report.py tests\test_public_surface_cli.py tests\test_shared_contract.py -q -p no:cacheprovider
+```
+
+Result: `24 passed in 2.95s`.
 
 ## Closed Milestone Evidence
 
