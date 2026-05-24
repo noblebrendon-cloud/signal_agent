@@ -147,6 +147,8 @@ This register begins from the Phase 0 triage queue and records closeout evidence
 | `CLOSE-080` | Split Letters of Light logic from outputs | Letters of Light | `partial` | `app/letters_of_light/`; tests; render outputs | Logic/tests and content outputs need separate treatment. | Review render code/tests separately from produced content. | Code/test slice has a clean commit boundary and output policy. |
 | `CLOSE-090` | Bound bookgen slice | Bookgen | `partial` | `app/bookgen/`; tests; templates | CLI, render, template, and generated-book paths may mix. | Isolate code/template/test diffs from generated books. | Bookgen commit plan is narrow and verification command is named. |
 | `CLOSE-092` | Split or except Letters of Light mixed commit | Letters of Light / release control | `blocked` | `a094d66`; `app/letters_of_light/*.py`; `docs/letters_of_light/**`; `tests/test_letters_of_light_*.py`; `data/outputs/letters_of_light/**`; `data/state/letters_of_light_*.jsonl` | `a094d66` is not push-safe as-is because it mixes coherent source/docs/tests with generated outputs and runtime-state JSONL. History rewrite is high-risk while the worktree is dirty, so a human decision is needed before repair. | Choose a safe path: release branch/cherry-pick clean chain, rebuild Letters of Light later as smaller slices, or perform controlled history repair only after the dirty tree is clean or safely parked. | `a094d66` is either split/rebuilt, explicitly excepted by human decision, or excluded from a release branch before `main` is pushed. |
+| `CLOSE-093` | Review release branch cherry-pick strategy | Release control | `closed` | `origin/main`; `codex/release-closeout-governance-chain`; approved safe ahead commits; excluded `a094d66` | Read-only strategy review found that `a094d66` is the first ahead commit, so a branch from current `main` plus revert would still publish the bad commit in history. | Execute only from a clean worktree rooted at `origin/main`, cherry-picking the approved commit list from the release plan. | Strategy is recorded, include/exclude boundaries are explicit, and branch execution is separated from dirty `main`. |
+| `CLOSE-094` | Execute release branch worktree cherry-pick | Release control | `ready` | `..\signal_agent_release_closeout`; branch `codex/release-closeout-governance-chain`; approved commit list in release plan | Execution has not run yet. Cherry-pick conflicts, branch-specific authority notes, leakage checks, and focused tests remain unverified. | Create a separate worktree from `origin/main`, cherry-pick safe commits in order, stop on conflict, then run leakage and focused verification. | Clean branch exists without `a094d66`, leakage check passes, focused tests pass, and branch-specific release notes are recorded before any push. |
 | `CLOSE-100` | Verify clock, runtime audit, and task contract grouping | Governance runtime | `partial` | clock, runtime audit, task contract, contract evaluator tests | These changes may share governance behavior and require grouped verification. | Map direct dependency links before splitting or grouping. | Commit sequence preserves behavior and each slice has targeted verification. |
 | `CLOSE-110` | Review public-surface readiness for release grouping | Public surfaces | `closed` | `c362c10`; `b8bb70e`; `2a45585`; `610fdc4`; public-surface config examples, docs, source, and tests | Push-review audit approved the public-surface commits for push once the `a094d66` blocker is resolved or bypassed. Main remains blocked by `a094d66`. | Hold for future public-surface readiness milestone grouping; do not treat review approval as push, tag, release, or archive admission. | Push-review audit passed, forbidden-path check passed, read-only boundary is preserved, and focused verification passed. |
 | `CLOSE-120` | Record push and release readiness audit | Release control | `closed` | `origin/main..HEAD`; git status counts; release candidate gates | Audit completed with no staging, no push, no tag, no GitHub release, and no Zenodo archive. Main must not be pushed blindly because the ahead chain contains at least one questionable/mixed commit. | Use the audit result to review blocking commits before deciding a safe push path. | Push/release audit result is recorded and next review targets are explicit. |
@@ -322,6 +324,34 @@ Verification:
 ```
 
 Result: `24 passed in 2.95s`.
+
+## Release Branch Cherry-Pick Strategy
+
+Read-only release-branch planning is complete. The preferred strategy is to create branch `codex/release-closeout-governance-chain` from `origin/main` in a separate worktree at `..\signal_agent_release_closeout`, then cherry-pick the approved safe commits in order.
+
+Reason:
+
+- `a094d66` is the first ahead commit.
+- A branch from current `main` plus revert would still publish `a094d66` in branch history.
+- Cherry-picking from `origin/main` is the clean path that excludes `a094d66` from remote history.
+- Dirty `main` must not contaminate the release path.
+
+Exclude:
+
+- `a094d66` `Add Letters of Light weekly layer`
+- `data/outputs/letters_of_light/**`
+- `data/state/letters_of_light_*.jsonl`
+- raw/private/generated/runtime paths unless separately admitted
+
+Known risks:
+
+- Public-surface examples reference Letters of Light paths introduced by excluded `a094d66`; this is semantic, not runtime, and needs a branch-specific note or later patch.
+- Authority docs `d27f5a9`, `9a8c4dc`, and `6703090` mention the local `a094d66` blocker; acceptable for internal control, but release notes should clarify that the release branch excludes that commit.
+- Cherry-pick conflicts are unproven until execution.
+- `data/state/module_artifacts.jsonl` requires the already-reviewed Reflective Pressure exception.
+- Dirty `main` must be avoided by using a separate worktree.
+
+The full include list and future command skeleton are owned by the release/archive plan.
 
 ## Closed Milestone Evidence
 

@@ -269,6 +269,62 @@ Public-surface release admission still requires:
 - leakage review
 - milestone packaging
 
+### Release Branch Cherry-Pick Strategy
+
+Preferred strategy: create a clean release branch from `origin/main` in a separate worktree, then cherry-pick approved safe commits in order while excluding `a094d66`.
+
+Branch and worktree:
+
+- branch: `codex/release-closeout-governance-chain`
+- worktree: `..\signal_agent_release_closeout`
+
+Reason:
+
+- `a094d66` is the first ahead commit.
+- A branch from current `main` plus revert would still publish `a094d66` in branch history.
+- Cherry-picking from `origin/main` is the clean way to exclude `a094d66` from remote history.
+- Dirty `main` must not contaminate the release path.
+
+Excluded from the branch plan:
+
+- `a094d66` `Add Letters of Light weekly layer`
+- `data/outputs/letters_of_light/**`
+- `data/state/letters_of_light_*.jsonl`
+- raw/private/generated/runtime paths unless separately admitted
+
+Approved include commits, in order:
+
+```text
+6d711f0 1958f33 b9699fa 35bb675 3184e3a 555449b 29c488e
+d7c46cb c8b1e97 2102efc 83a46f4 51eef37 7ed46fc 53a6bd3
+fc139d3 f7325c2 c86d715 95c950f ba76e3d 86b1005 9a9d24b
+c362c10 ab955fc 71c76b8 b8bb70e 2e11882 5b7ebe8 2a45585
+610fdc4 d36672a 40d6af5 3d1a3b4 b75b0c9 d8777d2 86ad731
+b22fa11 993a459 38df102 94ed6a1 d27f5a9 9a8c4dc 6703090
+```
+
+Known risks:
+
+- public-surface examples reference Letters of Light paths introduced by excluded `a094d66`; this is semantic, not runtime, and needs a branch-specific note or later patch
+- authority docs `d27f5a9`, `9a8c4dc`, and `6703090` mention the local `a094d66` blocker; release notes should clarify that the branch excludes that commit
+- cherry-pick conflicts are unproven until execution
+- `data/state/module_artifacts.jsonl` requires the already-reviewed Reflective Pressure exception
+- dirty `main` must be avoided by using the separate worktree
+
+Future command skeleton, not yet run:
+
+```powershell
+git fetch origin
+git worktree add -b codex/release-closeout-governance-chain ..\signal_agent_release_closeout origin/main
+cd ..\signal_agent_release_closeout
+git cherry-pick 6d711f0 1958f33 b9699fa 35bb675 3184e3a 555449b 29c488e d7c46cb c8b1e97 2102efc 83a46f4 51eef37 7ed46fc 53a6bd3 fc139d3 f7325c2 c86d715 95c950f ba76e3d 86b1005 9a9d24b c362c10 ab955fc 71c76b8 b8bb70e 2e11882 5b7ebe8 2a45585 610fdc4 d36672a 40d6af5 3d1a3b4 b75b0c9 d8777d2 86ad731 b22fa11 993a459 38df102 94ed6a1 d27f5a9 9a8c4dc 6703090
+git diff --name-only origin/main..HEAD | rg "^(data/reddit/|data/outputs/letters_of_light/|data/state/letters_of_light_|artifacts/|tests/\.probe_workspace/|\.env|tmp_|out.*\.json)"
+.\.venv\Scripts\python.exe -B -m pytest tests\test_public_surfaces.py tests\test_public_surface_report.py tests\test_public_surface_cli.py tests\test_shared_contract.py -q -p no:cacheprovider
+.\.venv\Scripts\python.exe -B -m pytest tests\test_reflective_pressure_review_batch.py tests\test_reddit_archive_to_pressure_seeds.py tests\test_reflective_pressure_models_store.py tests\test_reflective_pressure_flow.py tests\test_reflective_pressure_cli.py tests\test_reflective_pressure_corpus.py tests\test_casts_closure.py tests\test_antiglue_phase_next.py -q -p no:cacheprovider
+```
+
+After successful cherry-pick, leakage check, focused tests, and a branch-specific authority/release note, the branch can become a push-only candidate. It is not GitHub-release-ready yet and not Zenodo-ready.
+
 | Candidate tag | Intended contents | GitHub release | Zenodo candidate |
 |---|---|---|---|
 | `v0.2.0-reflective-pressure-spine` | Reflective Pressure module, Reddit seed tooling, review gate docs/tests | Yes | Yes, after stable corpus/privacy boundary review |
