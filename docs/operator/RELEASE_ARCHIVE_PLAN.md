@@ -316,7 +316,7 @@ The social orchestration/source-memory lane is not part of the current release b
 The read-only dependency map replaced the broad `CLOSE-131` source-memory base candidate with granular prerequisite endpoints. The safe order is:
 
 ```text
-CLOSE-131A transport schemas/models
+CLOSE-131A transport schemas/models [closed locally]
 -> CLOSE-131B transport ledger primitives
 -> CLOSE-131C social models and social ledger shell
 -> CLOSE-131D source ingestion and source review base
@@ -329,18 +329,26 @@ Later and separate:
 - `CLOSE-131F` transport orchestration/provider boundary
 - campaign creation, approval, dry-run, packet lifecycle, renderers, reconcile, lineage, CLI, and operator console release packaging
 
-First admitted candidate for local commit review only:
+CLOSE-131A local commit scope:
 
 - `signal_agent/transport/schemas/models.py`
 - `signal_agent/transport/schemas/__init__.py`
 
-First-slice exclusions:
+CLOSE-131A verification:
+
+- `py_compile` passed for both schema files.
+- Scoped whitespace gate passed.
+- No orchestrator, provider, adapter, network, credential, ledger, social orchestration, generated-state, or runtime-state dependency was admitted.
+
+CLOSE-131A exclusions:
 
 - `signal_agent/transport/__init__.py`
 - `signal_agent/transport/ledgers/**`
 - `signal_agent/social_orchestration/**`
 - `tests/test_transport_orchestration.py`
 - `tests/.probe_workspace/**`
+
+Next local prerequisite slice: `CLOSE-131B` transport ledger primitives.
 
 The social orchestration milestone remains future/not ready. Release admission requires committed prerequisite slices, leakage review, focused verification, push-safe branch decision, release notes, tag decision, milestone packaging, and archive metadata.
 
