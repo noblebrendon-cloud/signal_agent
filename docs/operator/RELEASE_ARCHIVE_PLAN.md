@@ -309,6 +309,41 @@ Non-admitted behavior:
 - browser automation
 - network activity
 
+### Social Orchestration Dependency Order
+
+The social orchestration/source-memory lane is not part of the current release branch `codex/release-closeout-governance-chain`. No social orchestration slice is currently release-admitted, GitHub-release-ready, or Zenodo-ready.
+
+The read-only dependency map replaced the broad `CLOSE-131` source-memory base candidate with granular prerequisite endpoints. The safe order is:
+
+```text
+CLOSE-131A transport schemas/models
+-> CLOSE-131B transport ledger primitives
+-> CLOSE-131C social models and social ledger shell
+-> CLOSE-131D source ingestion and source review base
+-> CLOSE-130 source worklist bridge retry
+```
+
+Later and separate:
+
+- `CLOSE-131E` review queue / human-gated lifecycle
+- `CLOSE-131F` transport orchestration/provider boundary
+- campaign creation, approval, dry-run, packet lifecycle, renderers, reconcile, lineage, CLI, and operator console release packaging
+
+First admitted candidate for local commit review only:
+
+- `signal_agent/transport/schemas/models.py`
+- `signal_agent/transport/schemas/__init__.py`
+
+First-slice exclusions:
+
+- `signal_agent/transport/__init__.py`
+- `signal_agent/transport/ledgers/**`
+- `signal_agent/social_orchestration/**`
+- `tests/test_transport_orchestration.py`
+- `tests/.probe_workspace/**`
+
+The social orchestration milestone remains future/not ready. Release admission requires committed prerequisite slices, leakage review, focused verification, push-safe branch decision, release notes, tag decision, milestone packaging, and archive metadata.
+
 ### Release Branch Cherry-Pick Strategy
 
 Preferred strategy: create a clean release branch from `origin/main` in a separate worktree, then cherry-pick approved safe commits in order while excluding `a094d66`.

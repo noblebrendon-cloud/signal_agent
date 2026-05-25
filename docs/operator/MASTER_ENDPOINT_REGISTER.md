@@ -154,6 +154,13 @@ This register begins from the Phase 0 triage queue and records closeout evidence
 | `CLOSE-120` | Record push and release readiness audit | Release control | `closed` | `origin/main..HEAD`; git status counts; release candidate gates | Audit completed with no staging, no push, no tag, no GitHub release, and no Zenodo archive. Main must not be pushed blindly because the ahead chain contains at least one questionable/mixed commit. | Use the audit result to review blocking commits before deciding a safe push path. | Push/release audit result is recorded and next review targets are explicit. |
 | `CLOSE-121` | Review questionable ahead commit `a094d66` | Letters of Light / release control | `closed` | `a094d66`; `data/outputs/letters_of_light/**`; `data/state/letters_of_light_*.jsonl`; Letters of Light source/docs/tests | Read-only review found the commit is not push-safe as-is. Source/docs/tests are coherent, but the commit mixes them with generated outputs and runtime-state JSONL. | Keep `main` push blocked and resolve `CLOSE-092` before publishing `main`, unless an explicit human exception is recorded. | A push disposition for `a094d66` is recorded before pushing `main` or forming a release branch. |
 | `CLOSE-130` | Commit social source-to-campaign worklist bridge | Social orchestration | `partial` | `docs/architecture/SOCIAL_ORCHESTRATION_SOURCE_MEMORY_EVALUATION.md`; `docs/architecture/SOCIAL_ORCHESTRATION_SOURCE_CAMPAIGN_WORKLIST.md`; `signal_agent/social_orchestration/source_worklist.py`; `signal_agent/social_orchestration/cli.py`; `signal_agent/social_orchestration/operator_console.py`; `tests/test_social_orchestration_source_worklist.py`; `tests/test_social_orchestration_source_worklist_cli.py`; untracked social orchestration base modules | Worklist bridge implementation and tests pass in the dirty workspace, but the exact allowed staged set depends on untracked social orchestration base modules that were not included in the reviewed file list. Committing only the worklist files would create a commit that is not self-contained. | Commit or review the source-memory base package first, or expand the reviewed social orchestration slice to include the required base modules and tests. | Worklist bridge is committed from a self-contained staged set with no campaign creation, no approval, no dry-run, no adapter, no network, no browser automation, and no generated/runtime/private paths staged. |
+| `CLOSE-131` | Review social source-memory base package | Social orchestration | `superseded` | `signal_agent/social_orchestration/ledgers.py`; `models.py`; `service.py`; `source_ingestion.py`; `source_review.py`; related transport package | Dependency mapping found the five-file base candidate is too broad. `service.py` pulls campaign creation, approval, dry-run preparation, review queue, transport router, and orchestrator behavior. | Replace with granular endpoints `CLOSE-131A` through `CLOSE-131F`, then retry `CLOSE-130` after prerequisites land. | Broad base-package endpoint is not used for staging; every dependency layer has its own commit boundary. |
+| `CLOSE-131A` | Commit transport schemas and models | Transport / social prerequisite | `ready` | `signal_agent/transport/schemas/models.py`; `signal_agent/transport/schemas/__init__.py` | First safe dependency layer is untracked and not yet committed. | Review and commit only the transport schema/model files; exclude top-level `signal_agent/transport/__init__.py`, ledgers, social orchestration, broad transport tests, and probe state. | Schema/model files compile and land without orchestrator, provider, adapter, network, credential, ledger, social orchestration, or generated/runtime paths. |
+| `CLOSE-131B` | Commit transport ledger primitives | Transport / social prerequisite | `pending` | `signal_agent/transport/ledgers/jsonl.py`; `signal_agent/transport/ledgers/store.py`; `signal_agent/transport/ledgers/__init__.py` | Depends on `CLOSE-131A`. Append-only local ledger primitives must be reviewed without provider/orchestrator surfaces. | After schemas land, review ledger primitives and focused ledger tests. | Append-only local ledger primitives are committed with no adapter, provider, network, credential, or generated/runtime payloads. |
+| `CLOSE-131C` | Commit social models and ledger shell | Social orchestration prerequisite | `pending` | `signal_agent/social_orchestration/models.py`; `signal_agent/social_orchestration/ledgers.py` | Depends on transport schemas and ledger primitives. | Review social data models and ledger wrappers without ingestion, review, worklist, service, CLI, or operator console wiring. | Social models and ledger shell land as a self-contained prerequisite. |
+| `CLOSE-131D` | Commit source ingestion and source review base | Social orchestration source memory | `pending` | `signal_agent/social_orchestration/source_ingestion.py`; `signal_agent/social_orchestration/source_review.py`; focused source tests | Depends on social models and ledgers. Ingestion mutates local source artifacts and source ledgers, while review is read-only. | Split or commit only if focused tests prove local-only source memory without campaign creation, approval, dry-run, adapters, or network. | Source ingestion/review base lands with local-only boundaries and no broader service coupling. |
+| `CLOSE-131E` | Commit review queue and human-gated lifecycle | Social orchestration lifecycle | `pending` | `signal_agent/social_orchestration/review_queue.py`; focused lifecycle tests | Campaign review transitions are useful but mutate lifecycle ledgers and must not mix with worklist retry. | Review separately after source-memory base. | Human-gated review queue lands with explicit transition and ledger boundaries. |
+| `CLOSE-131F` | Review transport orchestration and provider boundary | Transport orchestration | `pending` | `signal_agent/transport/interface/**`; `policies/**`; `retries/**`; `transformations/**`; `queues/**`; `providers/**`; `adapters/**`; `orchestrator.py`; related tests | Transport orchestration includes provider/router/adapter and execution boundaries. It is too broad for source-memory prerequisites. | Split into local primitives, queue/policy, provider/router, adapter, and orchestrator slices before staging. | Transport execution boundary is committed only through reviewed, no-credential, no-unapproved-network slices. |
 
 ## Commit Closure Evidence
 
@@ -383,6 +390,73 @@ Fail-closed staging evidence:
 - Forbidden staged path count was `0`.
 - No push, tag, GitHub release, Zenodo archive, release branch mutation, or commit was performed.
 - Required prerequisite: commit or review the source-memory base package, or expand this slice to include the base social orchestration modules and their tests.
+
+## Social Orchestration Dependency Map
+
+Read-only dependency mapping completed for the source-memory and source-worklist lane. No files were edited, staged, committed, pushed, tagged, released, archived, or modified in the release worktree during the map; the staged index remained empty.
+
+`CLOSE-130` remains `partial`. The worklist bridge is read-only, but it depends on base modules that are still untracked and must land first.
+
+`CLOSE-131` is superseded. The five-file source-memory base candidate is too broad because `signal_agent/social_orchestration/service.py` pulls campaign creation, approval, dry-run preparation, review queue, transport router, and orchestrator behavior.
+
+Core prerequisite stack:
+
+```text
+transport/schemas
+-> transport/ledgers
+-> social/models + social/ledgers
+-> source_ingestion
+-> source_review
+-> source_worklist
+-> cli/operator_console wiring
+```
+
+Separate broader stack:
+
+```text
+transport/interface + policies + retries + transformations
+-> transport/queues + providers + adapters + orchestrator
+-> social/review_queue
+-> social/service
+-> campaign creation / approval / dry-run / packet lifecycle
+-> renderers / reconcile / lineage / operator console
+```
+
+Granular endpoint replacement:
+
+- `CLOSE-131A` transport schemas/models: `ready`.
+- `CLOSE-131B` transport ledger primitives: `pending`.
+- `CLOSE-131C` social models and social ledger shell: `pending`.
+- `CLOSE-131D` source ingestion and source review base: `pending`.
+- `CLOSE-131E` review queue / human-gated lifecycle: `pending`.
+- `CLOSE-131F` transport orchestration/provider boundary: `pending`.
+- `CLOSE-130` source worklist bridge retry: blocked on prerequisite layers.
+
+First safe commit slice:
+
+- `signal_agent/transport/schemas/models.py`
+- `signal_agent/transport/schemas/__init__.py`
+
+First-slice exclusions:
+
+- `signal_agent/transport/__init__.py`
+- `signal_agent/transport/ledgers/**`
+- `signal_agent/social_orchestration/**`
+- `tests/test_transport_orchestration.py`
+- `tests/.probe_workspace/**`
+
+Do-not-mix boundaries:
+
+- no campaign creation execution
+- no approval execution
+- no dry-run preparation
+- no transport orchestrator
+- no provider/router/adapter boundary
+- no network code
+- no credentials
+- no browser automation
+- no generated/runtime/private paths
+- no release-branch worktree mutation
 
 ## Release Branch Cherry-Pick Strategy
 
