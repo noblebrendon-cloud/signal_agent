@@ -269,6 +269,46 @@ Public-surface release admission still requires:
 - leakage review
 - milestone packaging
 
+### Social Source Worklist Bridge Admission
+
+`CLOSE-130` `Add social source campaign worklist bridge` is a partial social orchestration slice. It is not part of the current release branch `codex/release-closeout-governance-chain`.
+
+Scope:
+
+- source-memory evaluation documentation
+- source-to-campaign worklist architecture documentation
+- read-only worklist report builder
+- `source-campaign-worklist` CLI wiring
+- optional operator console source worklist summary
+- focused module and CLI tests
+
+Release status:
+
+- candidate component for a later social orchestration milestone only after it is committed from a self-contained staged set
+- not pushed
+- not tagged
+- not GitHub-release-ready
+- not Zenodo-ready
+- currently blocked by untracked source-memory base modules outside the reviewed staged set
+
+Archive status:
+
+- not a Zenodo candidate by itself
+- could contribute to a future social orchestration milestone only after push, tag, release notes, leakage review, milestone packaging, and archive metadata
+
+Non-admitted behavior:
+
+- campaign creation
+- ingestion expansion
+- rendering
+- approvals
+- dry-run preparation
+- adapters
+- credentials
+- scraping
+- browser automation
+- network activity
+
 ### Release Branch Cherry-Pick Strategy
 
 Preferred strategy: create a clean release branch from `origin/main` in a separate worktree, then cherry-pick approved safe commits in order while excluding `a094d66`.

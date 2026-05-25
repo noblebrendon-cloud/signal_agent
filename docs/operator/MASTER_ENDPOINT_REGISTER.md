@@ -153,6 +153,7 @@ This register begins from the Phase 0 triage queue and records closeout evidence
 | `CLOSE-110` | Review public-surface readiness for release grouping | Public surfaces | `closed` | `c362c10`; `b8bb70e`; `2a45585`; `610fdc4`; public-surface config examples, docs, source, and tests | Push-review audit approved the public-surface commits for push once the `a094d66` blocker is resolved or bypassed. Main remains blocked by `a094d66`. | Hold for future public-surface readiness milestone grouping; do not treat review approval as push, tag, release, or archive admission. | Push-review audit passed, forbidden-path check passed, read-only boundary is preserved, and focused verification passed. |
 | `CLOSE-120` | Record push and release readiness audit | Release control | `closed` | `origin/main..HEAD`; git status counts; release candidate gates | Audit completed with no staging, no push, no tag, no GitHub release, and no Zenodo archive. Main must not be pushed blindly because the ahead chain contains at least one questionable/mixed commit. | Use the audit result to review blocking commits before deciding a safe push path. | Push/release audit result is recorded and next review targets are explicit. |
 | `CLOSE-121` | Review questionable ahead commit `a094d66` | Letters of Light / release control | `closed` | `a094d66`; `data/outputs/letters_of_light/**`; `data/state/letters_of_light_*.jsonl`; Letters of Light source/docs/tests | Read-only review found the commit is not push-safe as-is. Source/docs/tests are coherent, but the commit mixes them with generated outputs and runtime-state JSONL. | Keep `main` push blocked and resolve `CLOSE-092` before publishing `main`, unless an explicit human exception is recorded. | A push disposition for `a094d66` is recorded before pushing `main` or forming a release branch. |
+| `CLOSE-130` | Commit social source-to-campaign worklist bridge | Social orchestration | `partial` | `docs/architecture/SOCIAL_ORCHESTRATION_SOURCE_MEMORY_EVALUATION.md`; `docs/architecture/SOCIAL_ORCHESTRATION_SOURCE_CAMPAIGN_WORKLIST.md`; `signal_agent/social_orchestration/source_worklist.py`; `signal_agent/social_orchestration/cli.py`; `signal_agent/social_orchestration/operator_console.py`; `tests/test_social_orchestration_source_worklist.py`; `tests/test_social_orchestration_source_worklist_cli.py`; untracked social orchestration base modules | Worklist bridge implementation and tests pass in the dirty workspace, but the exact allowed staged set depends on untracked social orchestration base modules that were not included in the reviewed file list. Committing only the worklist files would create a commit that is not self-contained. | Commit or review the source-memory base package first, or expand the reviewed social orchestration slice to include the required base modules and tests. | Worklist bridge is committed from a self-contained staged set with no campaign creation, no approval, no dry-run, no adapter, no network, no browser automation, and no generated/runtime/private paths staged. |
 
 ## Commit Closure Evidence
 
@@ -324,6 +325,64 @@ Verification:
 ```
 
 Result: `24 passed in 2.95s`.
+
+## Social Source Worklist Bridge
+
+`CLOSE-130` records the read-only source-to-campaign worklist bridge as a bounded social orchestration lane. It is separate from the release-branch closeout chain and must not be mixed into `codex/release-closeout-governance-chain` without a separate branch decision.
+
+The implementation passed targeted verification, but the commit gate failed closed: `signal_agent/social_orchestration/cli.py`, `operator_console.py`, `source_worklist.py`, and the new tests depend on untracked social orchestration base modules that were outside the reviewed staged set. No files were committed for this endpoint.
+
+Scope:
+
+- `docs/architecture/SOCIAL_ORCHESTRATION_SOURCE_MEMORY_EVALUATION.md`
+- `docs/architecture/SOCIAL_ORCHESTRATION_SOURCE_CAMPAIGN_WORKLIST.md`
+- `signal_agent/social_orchestration/source_worklist.py`
+- `signal_agent/social_orchestration/cli.py`
+- `signal_agent/social_orchestration/operator_console.py`
+- `tests/test_social_orchestration_source_worklist.py`
+- `tests/test_social_orchestration_source_worklist_cli.py`
+
+Added command:
+
+```powershell
+python -m signal_agent.social_orchestration.cli source-campaign-worklist
+```
+
+Added operator console flag:
+
+```powershell
+python -m signal_agent.social_orchestration.cli operator-console --include-source-worklist
+```
+
+Report schema: `social_source_campaign_worklist_v1`.
+
+Boundary:
+
+- no campaign creation
+- no ingestion expansion
+- no rendering
+- no approvals
+- no dry-run preparation
+- no adapters
+- no credentials
+- no scraping
+- no browser automation
+- no network activity
+- suggested `create-campaign` commands are non-executed and placeholder-bound for platform and audience
+
+Verification:
+
+- Focused worklist tests: `19 passed`.
+- Requested social orchestration suite: `163 passed in 92.74s`.
+- `compileall` passed for `signal_agent\social_orchestration` and `signal_agent\transport\ledgers`.
+- Targeted whitespace checks were clean.
+
+Fail-closed staging evidence:
+
+- Staged set was reviewed and then unstaged.
+- Forbidden staged path count was `0`.
+- No push, tag, GitHub release, Zenodo archive, release branch mutation, or commit was performed.
+- Required prerequisite: commit or review the source-memory base package, or expand this slice to include the base social orchestration modules and their tests.
 
 ## Release Branch Cherry-Pick Strategy
 
