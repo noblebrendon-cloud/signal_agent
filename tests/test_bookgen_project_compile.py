@@ -29,7 +29,13 @@ def test_communication_architecture_project_compiles_to_render_spec(tmp_path: Pa
     assert "procedural trust is not obedience" in spec["chapters"][9]["body"].lower()
     assert "identity is not the enemy" in spec["chapters"][10]["body"].lower()
     assert "ai does not invent the discourse problem" in spec["chapters"][11]["body"].lower()
-    assert "DRAFT CHAPTER PLACEHOLDER" in spec["chapters"][12]["body"]
+    assert "the failure is not only bad messages" in spec["chapters"][12]["body"].lower()
+    assert "coherence is continuity under pressure" in spec["chapters"][13]["body"].lower()
+    assert "governed communication is the attempt to make the structure match the claim" in spec["chapters"][14]["body"].lower()
+    assert "legitimate systems are not systems that never fail" in spec["chapters"][15]["body"].lower()
+    assert "DRAFT CHAPTER PLACEHOLDER" not in "\n".join(
+        chapter["body"] for chapter in spec["chapters"]
+    )
     assert spec["project"]["slug"] == "communication_architecture"
 
     outputs = render_from_spec(
@@ -43,7 +49,7 @@ def test_communication_architecture_project_compiles_to_render_spec(tmp_path: Pa
     assert outputs.cover_front_txt.exists()
     assert outputs.letter_one_sentence_txt.exists()
     assert rendered.count("{#chapter-") == 16
-    assert "DRAFT CHAPTER PLACEHOLDER" in rendered
+    assert "DRAFT CHAPTER PLACEHOLDER" not in rendered
 
 
 def test_project_compile_writes_yaml_spec_with_markdown_body(tmp_path: Path) -> None:
