@@ -317,7 +317,7 @@ The read-only dependency map replaced the broad `CLOSE-131` source-memory base c
 
 ```text
 CLOSE-131A transport schemas/models [closed locally]
--> CLOSE-131B transport ledger primitives
+-> CLOSE-131B transport ledger primitives [closed locally]
 -> CLOSE-131C social models and social ledger shell
 -> CLOSE-131D source ingestion and source review base
 -> CLOSE-130 source worklist bridge retry
@@ -348,7 +348,34 @@ CLOSE-131A exclusions:
 - `tests/test_transport_orchestration.py`
 - `tests/.probe_workspace/**`
 
-Next local prerequisite slice: `CLOSE-131B` transport ledger primitives.
+CLOSE-131A handoff: `CLOSE-131B` transport ledger primitives.
+
+CLOSE-131B local commit scope:
+
+- `signal_agent/transport/ledgers/jsonl.py`
+- `signal_agent/transport/ledgers/store.py`
+- `signal_agent/transport/ledgers/__init__.py`
+
+CLOSE-131B verification:
+
+- `py_compile` passed for all three ledger files.
+- Scoped whitespace gate passed.
+- Focused test discovery found no ledger-only test file.
+- `tests/test_transport_orchestration.py` was not run because it imports orchestrator, router, queue, and retry policy.
+- No provider, adapter, network, credential, orchestrator, queue, social orchestration, generated-state, runtime-state, or external-action dependency was admitted.
+
+CLOSE-131B exclusions:
+
+- `signal_agent/transport/__init__.py`
+- `signal_agent/transport/orchestrator.py`
+- `signal_agent/transport/providers/**`
+- `signal_agent/transport/adapters/**`
+- `signal_agent/transport/queues/**`
+- `signal_agent/social_orchestration/**`
+- `tests/test_transport_orchestration.py`
+- `tests/.probe_workspace/**`
+
+Next local prerequisite slice: `CLOSE-131C` social models and social ledger shell.
 
 The social orchestration milestone remains future/not ready. Release admission requires committed prerequisite slices, leakage review, focused verification, push-safe branch decision, release notes, tag decision, milestone packaging, and archive metadata.
 

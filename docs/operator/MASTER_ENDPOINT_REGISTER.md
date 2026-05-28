@@ -156,8 +156,8 @@ This register begins from the Phase 0 triage queue and records closeout evidence
 | `CLOSE-130` | Commit social source-to-campaign worklist bridge | Social orchestration | `partial` | `docs/architecture/SOCIAL_ORCHESTRATION_SOURCE_MEMORY_EVALUATION.md`; `docs/architecture/SOCIAL_ORCHESTRATION_SOURCE_CAMPAIGN_WORKLIST.md`; `signal_agent/social_orchestration/source_worklist.py`; `signal_agent/social_orchestration/cli.py`; `signal_agent/social_orchestration/operator_console.py`; `tests/test_social_orchestration_source_worklist.py`; `tests/test_social_orchestration_source_worklist_cli.py`; untracked social orchestration base modules | Worklist bridge implementation and tests pass in the dirty workspace, but the exact allowed staged set depends on untracked social orchestration base modules that were not included in the reviewed file list. Committing only the worklist files would create a commit that is not self-contained. | Commit or review the source-memory base package first, or expand the reviewed social orchestration slice to include the required base modules and tests. | Worklist bridge is committed from a self-contained staged set with no campaign creation, no approval, no dry-run, no adapter, no network, no browser automation, and no generated/runtime/private paths staged. |
 | `CLOSE-131` | Review social source-memory base package | Social orchestration | `superseded` | `signal_agent/social_orchestration/ledgers.py`; `models.py`; `service.py`; `source_ingestion.py`; `source_review.py`; related transport package | Dependency mapping found the five-file base candidate is too broad. `service.py` pulls campaign creation, approval, dry-run preparation, review queue, transport router, and orchestrator behavior. | Replace with granular endpoints `CLOSE-131A` through `CLOSE-131F`, then retry `CLOSE-130` after prerequisites land. | Broad base-package endpoint is not used for staging; every dependency layer has its own commit boundary. |
 | `CLOSE-131A` | Commit transport schemas and models | Transport / social prerequisite | `closed` | `signal_agent/transport/schemas/models.py`; `signal_agent/transport/schemas/__init__.py` | First safe dependency layer is bounded to pure schema/model files. The files compile and do not import orchestrator, providers, adapters, social orchestration service, runtime ledgers, credentials, network code, or generated state. | Move to `CLOSE-131B` transport ledger primitives. | Schema/model files compile and land without orchestrator, provider, adapter, network, credential, ledger, social orchestration, or generated/runtime paths. |
-| `CLOSE-131B` | Commit transport ledger primitives | Transport / social prerequisite | `ready` | `signal_agent/transport/ledgers/jsonl.py`; `signal_agent/transport/ledgers/store.py`; `signal_agent/transport/ledgers/__init__.py` | Depends on `CLOSE-131A`. Append-only local ledger primitives must be reviewed without provider/orchestrator surfaces. | Review ledger primitives and focused ledger tests without staging top-level transport, social orchestration, adapters, providers, or generated/runtime state. | Append-only local ledger primitives are committed with no adapter, provider, network, credential, or generated/runtime payloads. |
-| `CLOSE-131C` | Commit social models and ledger shell | Social orchestration prerequisite | `pending` | `signal_agent/social_orchestration/models.py`; `signal_agent/social_orchestration/ledgers.py` | Depends on transport schemas and ledger primitives. | Review social data models and ledger wrappers without ingestion, review, worklist, service, CLI, or operator console wiring. | Social models and ledger shell land as a self-contained prerequisite. |
+| `CLOSE-131B` | Commit transport ledger primitives | Transport / social prerequisite | `closed` | `signal_agent/transport/ledgers/jsonl.py`; `signal_agent/transport/ledgers/store.py`; `signal_agent/transport/ledgers/__init__.py` | Local append-only JSONL ledger primitives are bounded below transport orchestration. The files compile and do not import orchestrator, providers, adapters, queues, social orchestration service, network code, credentials, generated state, or external-action surfaces. No narrow ledger-only tests were identified; `tests/test_transport_orchestration.py` imports the orchestrator, router, queue, and retry policy, so it was intentionally not run. | Move to `CLOSE-131C` social models and social ledger shell. | Append-only local ledger primitives are committed with no adapter, provider, network, credential, or generated/runtime payloads. |
+| `CLOSE-131C` | Commit social models and ledger shell | Social orchestration prerequisite | `ready` | `signal_agent/social_orchestration/models.py`; `signal_agent/social_orchestration/ledgers.py` | Depends on transport schemas and ledger primitives. | Review social data models and ledger wrappers without ingestion, review, worklist, service, CLI, or operator console wiring. | Social models and ledger shell land as a self-contained prerequisite. |
 | `CLOSE-131D` | Commit source ingestion and source review base | Social orchestration source memory | `pending` | `signal_agent/social_orchestration/source_ingestion.py`; `signal_agent/social_orchestration/source_review.py`; focused source tests | Depends on social models and ledgers. Ingestion mutates local source artifacts and source ledgers, while review is read-only. | Split or commit only if focused tests prove local-only source memory without campaign creation, approval, dry-run, adapters, or network. | Source ingestion/review base lands with local-only boundaries and no broader service coupling. |
 | `CLOSE-131E` | Commit review queue and human-gated lifecycle | Social orchestration lifecycle | `pending` | `signal_agent/social_orchestration/review_queue.py`; focused lifecycle tests | Campaign review transitions are useful but mutate lifecycle ledgers and must not mix with worklist retry. | Review separately after source-memory base. | Human-gated review queue lands with explicit transition and ledger boundaries. |
 | `CLOSE-131F` | Review transport orchestration and provider boundary | Transport orchestration | `pending` | `signal_agent/transport/interface/**`; `policies/**`; `retries/**`; `transformations/**`; `queues/**`; `providers/**`; `adapters/**`; `orchestrator.py`; related tests | Transport orchestration includes provider/router/adapter and execution boundaries. It is too broad for source-memory prerequisites. | Split into local primitives, queue/policy, provider/router, adapter, and orchestrator slices before staging. | Transport execution boundary is committed only through reviewed, no-credential, no-unapproved-network slices. |
@@ -425,8 +425,8 @@ transport/interface + policies + retries + transformations
 Granular endpoint replacement:
 
 - `CLOSE-131A` transport schemas/models: `closed`.
-- `CLOSE-131B` transport ledger primitives: `ready`.
-- `CLOSE-131C` social models and social ledger shell: `pending`.
+- `CLOSE-131B` transport ledger primitives: `closed`.
+- `CLOSE-131C` social models and social ledger shell: `ready`.
 - `CLOSE-131D` source ingestion and source review base: `pending`.
 - `CLOSE-131E` review queue / human-gated lifecycle: `pending`.
 - `CLOSE-131F` transport orchestration/provider boundary: `pending`.
@@ -444,6 +444,27 @@ CLOSE-131A exclusions:
 
 - `signal_agent/transport/__init__.py`
 - `signal_agent/transport/ledgers/**`
+- `signal_agent/social_orchestration/**`
+- `tests/test_transport_orchestration.py`
+- `tests/.probe_workspace/**`
+
+CLOSE-131B closure evidence:
+
+- `signal_agent/transport/ledgers/jsonl.py`
+- `signal_agent/transport/ledgers/store.py`
+- `signal_agent/transport/ledgers/__init__.py`
+- `.\.venv\Scripts\python.exe -B -m py_compile signal_agent\transport\ledgers\jsonl.py signal_agent\transport\ledgers\store.py signal_agent\transport\ledgers\__init__.py` passed.
+- `git diff --check -- signal_agent/transport/ledgers/jsonl.py signal_agent/transport/ledgers/store.py signal_agent/transport/ledgers/__init__.py` passed.
+- Import review found only stdlib imports, `signal_agent.transport.schemas`, and local ledger re-exports.
+- Focused test discovery found no ledger-only test file. `tests/test_transport_orchestration.py` imports orchestrator, router, queue, and retry policy, so it was deferred as too broad for this slice.
+
+CLOSE-131B exclusions:
+
+- `signal_agent/transport/__init__.py`
+- `signal_agent/transport/orchestrator.py`
+- `signal_agent/transport/providers/**`
+- `signal_agent/transport/adapters/**`
+- `signal_agent/transport/queues/**`
 - `signal_agent/social_orchestration/**`
 - `tests/test_transport_orchestration.py`
 - `tests/.probe_workspace/**`
