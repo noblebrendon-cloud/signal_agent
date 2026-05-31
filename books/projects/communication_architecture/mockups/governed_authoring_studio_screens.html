@@ -1,0 +1,1121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Governed Authoring Studio Wireframe</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #eef2f5;
+      --panel: #ffffff;
+      --panel-soft: #f8fafc;
+      --ink: #17202a;
+      --muted: #5e6b78;
+      --line: #d7dee7;
+      --teal: #0f766e;
+      --teal-soft: #e7f5f2;
+      --blue: #2457a6;
+      --blue-soft: #eaf1fb;
+      --amber: #b7791f;
+      --amber-soft: #fff7df;
+      --rose: #a43f56;
+      --rose-soft: #fdecef;
+      --shadow: 0 10px 28px rgba(23, 32, 42, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0;
+    }
+
+    button,
+    input,
+    textarea {
+      font: inherit;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr) 310px;
+      min-height: 100vh;
+      max-width: 1760px;
+      margin: 0 auto;
+      background: var(--panel);
+      border-left: 1px solid var(--line);
+      border-right: 1px solid var(--line);
+    }
+
+    .left-rail,
+    .right-rail {
+      background: #f7f9fb;
+      border-color: var(--line);
+      padding: 18px;
+    }
+
+    .left-rail {
+      border-right: 1px solid var(--line);
+    }
+
+    .right-rail {
+      border-left: 1px solid var(--line);
+    }
+
+    .brand {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 22px;
+    }
+
+    .brand-mark,
+    .icon-box {
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      background: var(--ink);
+      color: white;
+      font-weight: 800;
+      font-size: 13px;
+    }
+
+    .brand-title {
+      font-weight: 800;
+      line-height: 1.15;
+    }
+
+    .brand-subtitle,
+    .caption,
+    .muted {
+      color: var(--muted);
+    }
+
+    .brand-subtitle {
+      margin-top: 3px;
+      font-size: 12px;
+    }
+
+    .rail-label {
+      margin: 24px 0 9px;
+      color: #7a8795;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .nav {
+      display: grid;
+      gap: 6px;
+    }
+
+    .nav-button {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 10px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      background: transparent;
+      color: #3d4a58;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .nav-button:hover,
+    .nav-button[aria-selected="true"] {
+      background: white;
+      border-color: var(--line);
+      box-shadow: 0 4px 14px rgba(23, 32, 42, 0.06);
+      color: var(--ink);
+    }
+
+    .nav-icon {
+      display: grid;
+      place-items: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      background: #ecf1f5;
+      color: var(--blue);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .chapter-mini-list {
+      display: grid;
+      gap: 8px;
+      max-height: 44vh;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .chapter-mini {
+      padding: 9px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: white;
+    }
+
+    .chapter-mini-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 5px;
+    }
+
+    .chapter-mini-title {
+      font-size: 12px;
+      line-height: 1.35;
+      color: #293541;
+    }
+
+    .main {
+      display: flex;
+      min-width: 0;
+      flex-direction: column;
+    }
+
+    .topbar {
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--line);
+      background: white;
+    }
+
+    .topbar-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: 22px;
+      line-height: 1.25;
+    }
+
+    h2 {
+      font-size: 18px;
+    }
+
+    h3 {
+      font-size: 15px;
+    }
+
+    .subtitle {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .top-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .button {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: white;
+      color: var(--ink);
+      padding: 9px 12px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .button.primary {
+      border-color: var(--teal);
+      background: var(--teal);
+      color: white;
+    }
+
+    .workspace {
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 22px;
+      background: #eef2f5;
+    }
+
+    .screen {
+      display: none;
+      gap: 18px;
+      min-width: 0;
+    }
+
+    .screen.active {
+      display: grid;
+    }
+
+    .grid {
+      display: grid;
+      gap: 18px;
+      min-width: 0;
+    }
+
+    .grid.two {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .grid.three {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .grid.four {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .card {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: white;
+      box-shadow: var(--shadow);
+    }
+
+    .card.pad {
+      padding: 18px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: flex-start;
+      gap: 11px;
+    }
+
+    .section-copy {
+      display: grid;
+      gap: 4px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      padding: 3px 8px;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .pill.good {
+      border-color: #9bd2c7;
+      background: var(--teal-soft);
+      color: var(--teal);
+    }
+
+    .pill.active {
+      border-color: #a9bee2;
+      background: var(--blue-soft);
+      color: var(--blue);
+    }
+
+    .pill.warn {
+      border-color: #efcf84;
+      background: var(--amber-soft);
+      color: var(--amber);
+    }
+
+    .pill.risk {
+      border-color: #e7a8b8;
+      background: var(--rose-soft);
+      color: var(--rose);
+    }
+
+    .progress-grid {
+      display: grid;
+      grid-template-columns: repeat(8, minmax(112px, 1fr));
+      gap: 10px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      max-width: 100%;
+    }
+
+    .phase {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel-soft);
+      padding: 12px;
+      min-height: 88px;
+    }
+
+    .phase.done {
+      background: white;
+      border-color: #b6ddd5;
+    }
+
+    .phase.current {
+      background: var(--amber-soft);
+      border-color: #efcf84;
+    }
+
+    .phase-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-weight: 800;
+      font-size: 13px;
+    }
+
+    .phase-detail {
+      margin-top: 9px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .status-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: #aab5c0;
+    }
+
+    .done .status-dot {
+      background: var(--teal);
+    }
+
+    .current .status-dot {
+      background: var(--amber);
+    }
+
+    .metric-row,
+    .rail-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .metric {
+      display: grid;
+      gap: 8px;
+      min-height: 112px;
+    }
+
+    .metric-value {
+      font-size: 28px;
+      font-weight: 850;
+      line-height: 1;
+    }
+
+    .metric-label {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .part-list,
+    .check-list,
+    .asset-list,
+    .timeline {
+      display: grid;
+      gap: 10px;
+    }
+
+    .part-row,
+    .check-row,
+    .asset-row,
+    .timeline-row {
+      display: grid;
+      gap: 8px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel-soft);
+      padding: 12px;
+    }
+
+    .part-row {
+      grid-template-columns: 92px minmax(0, 1fr) auto;
+      align-items: center;
+    }
+
+    .check-row {
+      grid-template-columns: 24px minmax(0, 1fr) auto;
+      align-items: center;
+    }
+
+    .timeline-row {
+      grid-template-columns: 76px minmax(0, 1fr) auto;
+      align-items: center;
+    }
+
+    .tiny-check {
+      display: grid;
+      place-items: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      background: var(--teal);
+      color: white;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .chapter-workspace {
+      display: grid;
+      grid-template-columns: 320px minmax(0, 1fr);
+      gap: 18px;
+      min-width: 0;
+    }
+
+    .chapter-list {
+      display: grid;
+      gap: 8px;
+      max-height: 74vh;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .chapter-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel-soft);
+      padding: 10px;
+      cursor: pointer;
+    }
+
+    .chapter-card.active {
+      border-color: #a9bee2;
+      background: white;
+      box-shadow: 0 6px 18px rgba(36, 87, 166, 0.12);
+    }
+
+    .chapter-number {
+      color: #7b8794;
+      font-size: 11px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    .chapter-title {
+      margin-top: 5px;
+      font-size: 13px;
+      font-weight: 750;
+      line-height: 1.35;
+    }
+
+    .editor-shell {
+      display: grid;
+      grid-template-rows: auto minmax(240px, 1fr);
+      min-height: 640px;
+    }
+
+    .editor-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1px solid var(--line);
+      padding: 14px 16px;
+    }
+
+    .editor-toolbar .section-copy,
+    .editor-toolbar > div:first-child {
+      min-width: 0;
+    }
+
+    .editor-toolbar .caption {
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .editor-body {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0;
+      min-height: 0;
+    }
+
+    .manuscript-pane {
+      padding: 20px;
+      border-bottom: 1px solid var(--line);
+      background: #fff;
+    }
+
+    .manuscript-title {
+      margin-bottom: 14px;
+      font-size: 18px;
+      font-weight: 850;
+      line-height: 1.25;
+    }
+
+    .manuscript-text {
+      max-width: 760px;
+      color: #2d3946;
+      line-height: 1.72;
+      font-size: 15px;
+    }
+
+    .annotation-pane {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      padding: 16px;
+      background: var(--panel-soft);
+    }
+
+    .annotation-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: white;
+      padding: 12px;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 720px;
+      background: white;
+      font-size: 14px;
+    }
+
+    th,
+    td {
+      padding: 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: var(--panel-soft);
+      color: #51606d;
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .review-score {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .score-box {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: white;
+      padding: 12px;
+    }
+
+    .score-value {
+      font-size: 22px;
+      font-weight: 850;
+    }
+
+    .campaign-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) 320px;
+      gap: 18px;
+      min-width: 0;
+    }
+
+    .theme-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .theme-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: white;
+      padding: 14px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .asset-row {
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+    }
+
+    .theme-card .asset-row {
+      grid-template-columns: 1fr;
+    }
+
+    .theme-card .asset-row .button {
+      width: fit-content;
+    }
+
+    .rail-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: white;
+      padding: 14px;
+      margin-bottom: 14px;
+      box-shadow: 0 6px 18px rgba(23, 32, 42, 0.05);
+    }
+
+    .rail-card h3 {
+      margin-bottom: 12px;
+    }
+
+    .rail-row {
+      padding: 8px 0;
+      border-bottom: 1px solid #edf1f5;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .rail-row:last-child {
+      border-bottom: 0;
+    }
+
+    .insight {
+      color: #334151;
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .mobile-tabs {
+      display: none;
+      overflow-x: auto;
+      gap: 8px;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--line);
+      background: #f7f9fb;
+    }
+
+    @media (max-width: 1280px) {
+      .app {
+        grid-template-columns: 240px minmax(0, 1fr);
+      }
+
+      .right-rail {
+        display: none;
+      }
+
+      .grid.four,
+      .review-score {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 940px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .left-rail {
+        display: none;
+      }
+
+      .mobile-tabs {
+        display: flex;
+      }
+
+      .topbar-inner,
+      .chapter-workspace,
+      .campaign-layout,
+      .editor-body,
+      .grid.two,
+      .grid.three,
+      .grid.four,
+      .theme-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar-inner {
+        display: grid;
+      }
+
+      .top-actions {
+        justify-content: flex-start;
+      }
+
+      .editor-body {
+        display: grid;
+      }
+
+      .workspace {
+        padding: 14px;
+      }
+
+      .annotation-pane {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="left-rail">
+      <div class="brand">
+        <div class="brand-mark">GA</div>
+        <div>
+          <div class="brand-title">Governed Authoring Studio</div>
+          <div class="brand-subtitle">Book project cockpit</div>
+        </div>
+      </div>
+
+      <nav class="nav" aria-label="Primary screens">
+        <button class="nav-button" data-target="overview" aria-selected="true"><span class="nav-icon">01</span>Project Overview</button>
+        <button class="nav-button" data-target="drafting" aria-selected="false"><span class="nav-icon">02</span>Chapter Drafting</button>
+        <button class="nav-button" data-target="review" aria-selected="false"><span class="nav-icon">03</span>Full Review Gate</button>
+        <button class="nav-button" data-target="campaign" aria-selected="false"><span class="nav-icon">04</span>Pre-Launch Campaign</button>
+      </nav>
+
+      <div class="rail-label">Manuscript State</div>
+      <div class="chapter-mini-list">
+        <div class="chapter-mini"><div class="chapter-mini-top"><b>Part I</b><span class="pill good">Reviewed</span></div><div class="chapter-mini-title">Architecture, persuasion, terrain, attention</div></div>
+        <div class="chapter-mini"><div class="chapter-mini-top"><b>Part II</b><span class="pill good">Reviewed</span></div><div class="chapter-mini-title">Influence, resistance, narrative gravity, ethics</div></div>
+        <div class="chapter-mini"><div class="chapter-mini-top"><b>Part III</b><span class="pill good">Reviewed</span></div><div class="chapter-mini-title">Velocity, trust collapse, identity pressure, AI scale</div></div>
+        <div class="chapter-mini"><div class="chapter-mini-top"><b>Part IV</b><span class="pill good">Reviewed</span></div><div class="chapter-mini-title">Governance, coherence, governed communication, legitimacy</div></div>
+      </div>
+
+      <div class="rail-label">Artifact Boundary</div>
+      <div class="chapter-mini-list">
+        <div class="chapter-mini"><div class="chapter-mini-top"><b>Source</b><span class="pill good">Committed</span></div><div class="chapter-mini-title">Markdown, manifest, spec, tests, reviews</div></div>
+        <div class="chapter-mini"><div class="chapter-mini-top"><b>Outputs</b><span class="pill warn">Local</span></div><div class="chapter-mini-title">Rendered book, cover text, PDF</div></div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="topbar-inner">
+          <div>
+            <div class="metric-row" style="justify-content: flex-start; gap: 10px; flex-wrap: wrap;">
+              <h1>Communication Architecture</h1>
+              <span class="pill good">Reviewed Full Draft</span>
+              <span class="pill active">147-page PDF</span>
+            </div>
+            <p class="subtitle">Communication architecture -> influence systems -> discourse collapse -> governed systems</p>
+          </div>
+          <div class="top-actions">
+            <button class="button">Compile</button>
+            <button class="button">Render</button>
+            <button class="button">Review Gate</button>
+            <button class="button primary">Prepare Launch</button>
+          </div>
+        </div>
+      </header>
+
+      <div class="mobile-tabs" aria-label="Mobile screens">
+        <button class="button" data-target="overview">Overview</button>
+        <button class="button" data-target="drafting">Drafting</button>
+        <button class="button" data-target="review">Review</button>
+        <button class="button" data-target="campaign">Campaign</button>
+      </div>
+
+      <section class="workspace">
+        <div class="screen active" id="overview">
+          <section class="card pad">
+            <div class="section-header">
+              <div class="section-title">
+                <div class="icon-box">WF</div>
+                <div class="section-copy">
+                  <h2>Project Overview</h2>
+                  <p class="caption">Lifecycle, source boundary, manuscript state, and next governed action.</p>
+                </div>
+              </div>
+              <span class="pill active">Second-draft prep</span>
+            </div>
+            <div class="progress-grid">
+              <div class="phase done"><div class="phase-top">Concept<span class="status-dot"></span></div><div class="phase-detail">Thesis and strategic purpose admitted.</div></div>
+              <div class="phase done"><div class="phase-top">Spine<span class="status-dot"></span></div><div class="phase-detail">Four-part structure, 16 chapters.</div></div>
+              <div class="phase done"><div class="phase-top">Drafting<span class="status-dot"></span></div><div class="phase-detail">16 of 16 chapters drafted.</div></div>
+              <div class="phase done"><div class="phase-top">Part Reviews<span class="status-dot"></span></div><div class="phase-detail">Three part reviews completed.</div></div>
+              <div class="phase done"><div class="phase-top">Full Review<span class="status-dot"></span></div><div class="phase-detail">Coherence review checkpointed.</div></div>
+              <div class="phase current"><div class="phase-top">Publication Prep<span class="status-dot"></span></div><div class="phase-detail">Metadata, proofing, part pages.</div></div>
+              <div class="phase"><div class="phase-top">Pre-Launch<span class="status-dot"></span></div><div class="phase-detail">Campaign engine derives from source.</div></div>
+              <div class="phase"><div class="phase-top">Launch Ready<span class="status-dot"></span></div><div class="phase-detail">Release snapshot and archive.</div></div>
+            </div>
+          </section>
+
+          <section class="grid four">
+            <div class="card pad metric"><span class="pill good">Source</span><div class="metric-value">16/16</div><div class="metric-label">Chapters drafted and reviewed</div></div>
+            <div class="card pad metric"><span class="pill good">Reviews</span><div class="metric-value">4</div><div class="metric-label">Part and full-manuscript gates</div></div>
+            <div class="card pad metric"><span class="pill active">Artifact</span><div class="metric-value">147</div><div class="metric-label">Generated PDF pages</div></div>
+            <div class="card pad metric"><span class="pill warn">Next</span><div class="metric-value">2D</div><div class="metric-label">Second-draft publication pass</div></div>
+          </section>
+
+          <section class="grid two">
+            <div class="card pad">
+              <div class="section-header">
+                <div class="section-title"><div class="icon-box">AR</div><div><h2>Argument Arc</h2><p class="caption">Each part adds a layer.</p></div></div>
+              </div>
+              <div class="part-list">
+                <div class="part-row"><b>Part I</b><span>Communication creates architecture.</span><span class="pill good">Stable</span></div>
+                <div class="part-row"><b>Part II</b><span>Influence moves through that architecture.</span><span class="pill good">Stable</span></div>
+                <div class="part-row"><b>Part III</b><span>Modern incentives deform discourse.</span><span class="pill good">Stable</span></div>
+                <div class="part-row"><b>Part IV</b><span>Governance and coherence answer the collapse.</span><span class="pill good">Stable</span></div>
+              </div>
+            </div>
+            <div class="card pad">
+              <div class="section-header">
+                <div class="section-title"><div class="icon-box">SG</div><div><h2>Next Gate</h2><p class="caption">Move from reviewed draft into publication prep.</p></div></div>
+              </div>
+              <div class="check-list">
+                <div class="check-row"><span class="tiny-check">1</span><span>Second-draft pass adds grounded examples.</span><span class="pill warn">Next</span></div>
+                <div class="check-row"><span class="tiny-check">2</span><span>Decide whether authoring metadata renders in final output.</span><span class="pill warn">Next</span></div>
+                <div class="check-row"><span class="tiny-check">3</span><span>Add part markers after source checkpoint remains stable.</span><span class="pill warn">Next</span></div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="screen" id="drafting">
+          <section class="chapter-workspace">
+            <div class="card pad">
+              <div class="section-header">
+                <div class="section-title"><div class="icon-box">CH</div><div><h2>Chapter Drafting Workspace</h2><p class="caption">Source markdown and continuity state.</p></div></div>
+              </div>
+              <div class="chapter-list">
+                <div class="chapter-card"><div class="chapter-number">Chapter 01</div><div class="chapter-title">Communication Is Not Just Information</div><span class="pill good">Reviewed</span></div>
+                <div class="chapter-card"><div class="chapter-number">Chapter 02</div><div class="chapter-title">The Invisible Structure Behind Persuasion</div><span class="pill good">Reviewed</span></div>
+                <div class="chapter-card"><div class="chapter-number">Chapter 03</div><div class="chapter-title">Language as Psychological Terrain</div><span class="pill good">Reviewed</span></div>
+                <div class="chapter-card"><div class="chapter-number">Chapter 04</div><div class="chapter-title">The Architecture of Attention</div><span class="pill good">Reviewed</span></div>
+                <div class="chapter-card active"><div class="chapter-number">Chapter 15</div><div class="chapter-title">Governed Communication</div><span class="pill good">Reviewed</span></div>
+                <div class="chapter-card"><div class="chapter-number">Chapter 16</div><div class="chapter-title">Toward Legitimate Systems</div><span class="pill good">Reviewed</span></div>
+              </div>
+            </div>
+
+            <div class="card editor-shell">
+              <div class="editor-toolbar">
+                <div>
+                  <h2>Governed Communication</h2>
+                  <p class="caption">Chapter source: 15_governed_communication.md</p>
+                </div>
+                <div class="top-actions">
+                  <span class="pill good">Reviewed</span>
+                  <button class="button">Open Source</button>
+                  <button class="button">Run Audit</button>
+                </div>
+              </div>
+              <div class="editor-body">
+                <div class="manuscript-pane">
+                  <div class="manuscript-title">Governed communication is practical structure.</div>
+                  <div class="manuscript-text">
+                    <p>Coherence needs structure, not slogans. A system can praise truth while rewarding speed. It can praise agency while designing for dependency. It can praise openness while hiding procedure. Governed communication is the attempt to make the structure match the claim.</p>
+                    <p>Bounded influence, clarification pathways, visible procedure, and non-extractive design make influence answerable while preserving agency.</p>
+                  </div>
+                </div>
+                <aside class="annotation-pane">
+                  <div class="annotation-card"><b>Continuity Rule</b><p class="caption">Preserve coherence without enforcing sameness.</p></div>
+                  <div class="annotation-card"><b>Invariant</b><p class="caption">Agency is supported by architecture, not replaced by it.</p></div>
+                  <div class="annotation-card"><b>Second Draft</b><p class="caption">Add a concrete example of a clarification pathway.</p></div>
+                  <div class="annotation-card"><b>Output Link</b><p class="caption">Compiled spec -> rendered markdown -> PDF.</p></div>
+                </aside>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="screen" id="review">
+          <section class="card pad">
+            <div class="section-header">
+              <div class="section-title"><div class="icon-box">RG</div><div><h2>Full Review / Stage Gate</h2><p class="caption">Promotion decision from reviewed manuscript into publication prep.</p></div></div>
+              <span class="pill good">Gate passed</span>
+            </div>
+            <div class="review-score">
+              <div class="score-box"><div class="score-value">Pass</div><div class="metric-label">Four-part arc</div></div>
+              <div class="score-box"><div class="score-value">Pass</div><div class="metric-label">Vocabulary stability</div></div>
+              <div class="score-box"><div class="score-value">Pass</div><div class="metric-label">AI boundary</div></div>
+              <div class="score-box"><div class="score-value">Pass</div><div class="metric-label">Governance frame</div></div>
+              <div class="score-box"><div class="score-value">Next</div><div class="metric-label">Publication polish</div></div>
+            </div>
+          </section>
+
+          <section class="grid two">
+            <div class="card pad">
+              <h2>Review Gates</h2>
+              <div class="check-list" style="margin-top: 14px;">
+                <div class="check-row"><span class="tiny-check">OK</span><span>Part I: hidden architecture of communication.</span><span class="pill good">Passed</span></div>
+                <div class="check-row"><span class="tiny-check">OK</span><span>Part II: influence systems and ethical boundary.</span><span class="pill good">Passed</span></div>
+                <div class="check-row"><span class="tiny-check">OK</span><span>Part III: collapse diagnosis under incentive pressure.</span><span class="pill good">Passed</span></div>
+                <div class="check-row"><span class="tiny-check">OK</span><span>Full manuscript: continuity and final closure.</span><span class="pill good">Passed</span></div>
+              </div>
+            </div>
+            <div class="card pad">
+              <h2>Second-Draft Priorities</h2>
+              <div class="check-list" style="margin-top: 14px;">
+                <div class="check-row"><span class="tiny-check">1</span><span>Add grounded examples to dense conceptual sections.</span><span class="pill warn">Open</span></div>
+                <div class="check-row"><span class="tiny-check">2</span><span>Trim repeated non-determinism disclaimers.</span><span class="pill warn">Open</span></div>
+                <div class="check-row"><span class="tiny-check">3</span><span>Decide metadata and part-page rendering behavior.</span><span class="pill warn">Open</span></div>
+                <div class="check-row"><span class="tiny-check">4</span><span>Plan citation/source strategy after concept polish.</span><span class="pill warn">Open</span></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="card pad">
+            <h2>Promotion Packet</h2>
+            <div class="table-wrap" style="margin-top: 14px;">
+              <table>
+                <thead><tr><th>Artifact</th><th>State</th><th>Role</th><th>Boundary</th></tr></thead>
+                <tbody>
+                  <tr><td>Chapter markdown</td><td><span class="pill good">Committed</span></td><td>Source of truth</td><td>Tracked</td></tr>
+                  <tr><td>Book manifest</td><td><span class="pill good">Committed</span></td><td>Project assembly</td><td>Tracked</td></tr>
+                  <tr><td>Compiled YAML spec</td><td><span class="pill good">Committed</span></td><td>Renderer input</td><td>Tracked for now</td></tr>
+                  <tr><td>Rendered markdown and PDF</td><td><span class="pill warn">Local</span></td><td>Rebuildable artifact</td><td>Untracked until release snapshot</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+
+        <div class="screen" id="campaign">
+          <section class="campaign-layout">
+            <div class="grid">
+              <div class="card pad">
+                <div class="section-header">
+                  <div class="section-title"><div class="icon-box">CE</div><div><h2>Pre-Launch Campaign Engine</h2><p class="caption">Campaign assets derive from manuscript source, review gates, and tone invariants.</p></div></div>
+                  <span class="pill warn">Draft engine</span>
+                </div>
+                <div class="theme-grid">
+                  <div class="theme-card"><span class="pill active">Architecture</span><h3>Communication is architecture</h3><p class="caption">Chapters 1-4</p><div class="asset-row"><span>Essay, quote cards, short posts</span><button class="button">Queue</button></div></div>
+                  <div class="theme-card"><span class="pill active">Influence</span><h3>Clarification vs capture</h3><p class="caption">Chapters 5-8</p><div class="asset-row"><span>Thread, email angle, discussion prompt</span><button class="button">Queue</button></div></div>
+                  <div class="theme-card"><span class="pill active">Collapse</span><h3>Emotional velocity and trust failure</h3><p class="caption">Chapters 9-12</p><div class="asset-row"><span>Video hook, diagnostic post, carousel</span><button class="button">Queue</button></div></div>
+                  <div class="theme-card"><span class="pill active">Governance</span><h3>Systems that preserve agency</h3><p class="caption">Chapters 13-16</p><div class="asset-row"><span>Launch essay, framework post, founder note</span><button class="button">Queue</button></div></div>
+                </div>
+              </div>
+
+              <div class="card pad">
+                <h2>Campaign Matrix</h2>
+                <div class="table-wrap" style="margin-top: 14px;">
+                  <table>
+                    <thead><tr><th>Theme</th><th>Linked chapters</th><th>Asset types</th><th>Governance check</th></tr></thead>
+                    <tbody>
+                      <tr><td>Architecture</td><td>1-4</td><td>Substack essay, quote card</td><td>No persuasion hacks</td></tr>
+                      <tr><td>Influence</td><td>5-8</td><td>Thread, discussion prompt</td><td>Agency visible</td></tr>
+                      <tr><td>Collapse</td><td>9-12</td><td>Video hook, diagnostic post</td><td>No doom framing</td></tr>
+                      <tr><td>Governance</td><td>13-16</td><td>Launch essay, framework post</td><td>No product pitch</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <aside class="grid">
+              <div class="card pad">
+                <h2>Launch Sequence</h2>
+                <div class="timeline" style="margin-top: 14px;">
+                  <div class="timeline-row"><b>Week 1</b><span>Thesis and architecture framing</span><span class="pill active">Plan</span></div>
+                  <div class="timeline-row"><b>Week 2</b><span>Influence systems and ethics</span><span class="pill active">Plan</span></div>
+                  <div class="timeline-row"><b>Week 3</b><span>Collapse diagnosis and AI scale</span><span class="pill active">Plan</span></div>
+                  <div class="timeline-row"><b>Week 4</b><span>Governance and launch offer</span><span class="pill active">Plan</span></div>
+                </div>
+              </div>
+              <div class="card pad">
+                <h2>Campaign Invariants</h2>
+                <div class="check-list" style="margin-top: 14px;">
+                  <div class="check-row"><span class="tiny-check">OK</span><span>Do not turn the book into tactics content.</span><span></span></div>
+                  <div class="check-row"><span class="tiny-check">OK</span><span>Do not extract outrage from collapse diagnosis.</span><span></span></div>
+                  <div class="check-row"><span class="tiny-check">OK</span><span>Keep agency, truth, and legitimacy visible.</span><span></span></div>
+                  <div class="check-row"><span class="tiny-check">OK</span><span>Source material governs launch claims.</span><span></span></div>
+                </div>
+              </div>
+            </aside>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <aside class="right-rail">
+      <div class="rail-card">
+        <h3>Current State</h3>
+        <div class="rail-row"><span>Lifecycle</span><span class="pill active">Publication Prep</span></div>
+        <div class="rail-row"><span>Manuscript</span><b>Reviewed draft</b></div>
+        <div class="rail-row"><span>Chapters</span><b>16/16</b></div>
+        <div class="rail-row"><span>PDF</span><b>147 pages</b></div>
+        <div class="rail-row"><span>Commit</span><b>d86852c</b></div>
+      </div>
+
+      <div class="rail-card">
+        <h3>Active Invariants</h3>
+        <div class="check-list">
+          <div class="check-row"><span class="tiny-check">OK</span><span>Preserve agency and truth.</span><span></span></div>
+          <div class="check-row"><span class="tiny-check">OK</span><span>Governance is structured conditions.</span><span></span></div>
+          <div class="check-row"><span class="tiny-check">OK</span><span>Coherence is not sameness.</span><span></span></div>
+          <div class="check-row"><span class="tiny-check">OK</span><span>AI is acceleration infrastructure.</span><span></span></div>
+        </div>
+      </div>
+
+      <div class="rail-card">
+        <h3>System Insight</h3>
+        <p class="insight">The strongest interface move is to make every public asset traceable back to manuscript source, review gate, and launch invariant.</p>
+        <p class="insight" style="margin-top: 10px;">General path: Artifact -> Source State -> Review Gate -> Generated Output -> Deployment / Campaign -> Evidence.</p>
+      </div>
+    </aside>
+  </div>
+
+  <script>
+    const buttons = Array.from(document.querySelectorAll("[data-target]"));
+    const screens = Array.from(document.querySelectorAll(".screen"));
+
+    function showScreen(target, updateHash = true) {
+      screens.forEach((screen) => {
+        screen.classList.toggle("active", screen.id === target);
+      });
+
+      buttons.forEach((button) => {
+        if (button.classList.contains("nav-button")) {
+          button.setAttribute("aria-selected", String(button.dataset.target === target));
+        }
+      });
+
+      if (updateHash && window.location.hash.replace("#", "") !== target) {
+        window.location.hash = target;
+      }
+
+      requestAnimationFrame(() => {
+        window.scrollTo(0, 0);
+        const workspace = document.querySelector(".workspace");
+        if (workspace) workspace.scrollTop = 0;
+      });
+    }
+
+    buttons.forEach((button) => {
+      button.addEventListener("click", () => showScreen(button.dataset.target));
+    });
+
+    const initialTarget = window.location.hash.replace("#", "");
+    if (initialTarget && screens.some((screen) => screen.id === initialTarget)) {
+      showScreen(initialTarget, false);
+    }
+  </script>
+</body>
+</html>
