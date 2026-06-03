@@ -1,21 +1,3 @@
-# Why Governance Matters More Than Content
-
-Part: IV - Governance, Coherence, and the Future
-Status: First draft
-
-## Purpose
-
-Argue that discourse outcomes are shaped by systems, incentives, procedures, and legitimacy structures.
-
-## Seed Points
-
-- Systems shape behavior
-- Incentives shape discourse
-- Architecture shapes outcomes
-- Legitimacy emerges from procedural structure
-
-## Draft Body
-
 The failure is not only bad messages.
 
 The failure is the environment that selects, rewards, constrains, amplifies, hides, and legitimates messages.

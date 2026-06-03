@@ -1,22 +1,3 @@
-# The Architecture of Attention
-
-Part: I - The Hidden Architecture of Communication
-Status: First draft
-
-## Purpose
-
-Connect communication architecture to platform attention systems and the selection pressures they create.
-
-## Seed Points
-
-- Social media reward loops
-- Engagement systems
-- Emotional amplification
-- Why outrage spreads faster than clarity
-- Algorithmic selection pressure
-
-## Draft Body
-
 Attention is where communication becomes consequential.
 
 A sentence can be true, carefully framed, ethically structured, and psychologically precise, but if it never enters attention, it does not become part of public life. It may exist as a record. It may be available somewhere. But availability is not the same as presence. Communication begins to matter socially when attention gathers around it, returns to it, repeats it, argues with it, remembers it, or acts from it.

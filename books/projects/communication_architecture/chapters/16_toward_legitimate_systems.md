@@ -1,21 +1,3 @@
-# Toward Legitimate Systems
-
-Part: IV - Governance, Coherence, and the Future
-Status: First draft
-
-## Purpose
-
-Close the book by connecting transparent discourse architecture, AI governance, agency preservation, and humane system design.
-
-## Seed Points
-
-- AI governance
-- Transparent discourse architecture
-- Human agency preservation
-- Designing systems that do not psychologically deform people
-
-## Draft Body
-
 Legitimate systems are not systems that never fail.
 
 Legitimate systems are systems that remain visible, constrained, corrigible, coherent, and answerable when pressure arrives.

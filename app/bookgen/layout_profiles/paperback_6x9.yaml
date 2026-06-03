@@ -1,0 +1,26 @@
+name: paperback_6x9
+description: Compact 6x9-inch paperback layout for prose-heavy books.
+pdf_engine: xelatex
+documentclass: book
+classoptions:
+  - oneside
+  - openany
+fontsize: 11pt
+linestretch: 1.08
+mainfont: Georgia
+geometry:
+  - paperwidth=6in
+  - paperheight=9in
+  - top=0.85in
+  - bottom=0.95in
+  - inner=0.9in
+  - outer=0.7in
+chapter_page_behavior: openany
+paragraphs:
+  indent: 1.2em
+  skip: 0pt
+latex:
+  toc_depth: 0
+  widow_penalty: 10000
+  club_penalty: 10000
+  display_widow_penalty: 10000

@@ -1,22 +1,3 @@
-# The Four Modes of Influence
-
-Part: II - Influence Systems
-Status: First draft
-
-## Purpose
-
-Distinguish coercion, persuasion, resonance, and governance by their relationship to human agency.
-
-## Seed Points
-
-- Coercion
-- Persuasion
-- Resonance
-- Governance
-- How each mode affects agency differently
-
-## Draft Body
-
 Part I asked what kind of environment communication creates. Part II begins with a different question: what kinds of influence move through that environment?
 
 That shift matters because influence is often treated too loosely. We use the same word for a threat, an argument, a moment of recognition, an institutional rule, a social norm, an interface design, a public ritual, and a private appeal. All of these can shape behavior. All of them can alter what a person notices, accepts, resists, repeats, or becomes willing to do. But they do not shape agency in the same way.

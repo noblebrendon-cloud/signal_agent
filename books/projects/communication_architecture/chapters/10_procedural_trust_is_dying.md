@@ -1,21 +1,3 @@
-# Procedural Trust Is Dying
-
-Part: III - The Collapse of Modern Discourse
-Status: First draft
-
-## Purpose
-
-Analyze legitimacy failure as a procedural problem, not merely a disagreement over content.
-
-## Seed Points
-
-- Moderation opacity
-- Institutional distrust
-- Narrative tribalism
-- Asymmetrical legitimacy
-
-## Draft Body
-
 Distrust is not only about conclusions.
 
 People do not merely ask whether a statement is true. They ask where it came from, who selected it, why it was amplified, why another claim was suppressed, who made the rule, who enforced it, and whether the same standard would be applied if the roles were reversed. They ask whether the process can be seen, questioned, appealed, or corrected. When those questions cannot be answered, distrust moves deeper than disagreement.

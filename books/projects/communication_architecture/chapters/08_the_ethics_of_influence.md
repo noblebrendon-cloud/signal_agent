@@ -1,21 +1,3 @@
-# The Ethics of Influence
-
-Part: II - Influence Systems
-Status: First draft
-
-## Purpose
-
-Separate legitimate influence from manipulation by grounding communication in agency, transparency, and truth-preservation.
-
-## Seed Points
-
-- Manipulation vs illumination
-- Truth-preserving communication
-- Influence without coercion
-- Transparency and legitimacy
-
-## Draft Body
-
 Influence cannot be judged only by effectiveness.
 
 That has been the pressure running beneath Part II. Coercion can produce compliance. Persuasion can change judgment. Resonance can create recognition. Governance can shape the conditions under which all of those forces operate. Resistance can slow influence, expose its weaknesses, or protect agency from being consumed. Narrative gravity can keep an idea alive long after the first exchange has ended.

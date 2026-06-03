@@ -1,21 +1,3 @@
-# Governed Communication
-
-Part: IV - Governance, Coherence, and the Future
-Status: First draft
-
-## Purpose
-
-Define governed communication as bounded, procedurally visible, clarifying, and non-extractive.
-
-## Seed Points
-
-- Bounded influence
-- Clarification pathways
-- Visibility of procedure
-- Non-extractive discourse systems
-
-## Draft Body
-
 Coherence needs structure, not slogans.
 
 It is easy to say that communication should be truthful, humane, transparent, responsible, or coherent. Those words matter, but they do not govern anything by themselves. A system can praise truth while rewarding speed. It can praise agency while designing for dependency. It can praise openness while hiding procedure. It can praise coherence while demanding constant performance. The language of virtue does not repair an architecture that selects against the virtue it names.

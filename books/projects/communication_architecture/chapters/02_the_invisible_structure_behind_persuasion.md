@@ -1,22 +1,3 @@
-# The Invisible Structure Behind Persuasion
-
-Part: I - The Hidden Architecture of Communication
-Status: First draft
-
-## Purpose
-
-Show how persuasion is shaped by hidden structures before explicit argument begins.
-
-## Seed Points
-
-- Framing
-- Presupposition
-- Narrative sequencing
-- Cognitive participation
-- Why people defend self-generated conclusions harder
-
-## Draft Body
-
 Persuasion is often visible only at the surface. We notice the claim, the slogan, the request, the argument, the conclusion someone wants us to accept. Because that is what appears in front of us, we assume that persuasion lives mainly in the sentence itself.
 
 But the sentence is rarely the whole event. Before a person agrees or disagrees, a structure has usually already been built around the claim. A question has been framed. A contrast has been selected. A sequence has been arranged. Some facts have been made central and others peripheral. Some assumptions have been treated as already settled. The listener has been placed, gently or aggressively, inside a role.

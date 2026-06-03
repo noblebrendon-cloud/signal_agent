@@ -1,21 +1,3 @@
-# AI and the Industrialization of Persuasion
-
-Part: III - The Collapse of Modern Discourse
-Status: First draft
-
-## Purpose
-
-Frame AI persuasion as a scale and governance problem without overstating deterministic control.
-
-## Seed Points
-
-- Synthetic rhetoric
-- Infinite-scale framing systems
-- AI-generated emotional optimization
-- Identity-targeted persuasion systems
-
-## Draft Body
-
 AI does not invent the discourse problem. It accelerates it.
 
 That distinction matters. If the argument begins by treating AI as a strange new force that suddenly corrupts an otherwise healthy public sphere, the argument becomes too easy and too false. The pressures described in Part III were already present: emotional velocity, weakened procedural trust, identity pressure, narrative tribalism, and the tendency of engagement systems to reward capture more reliably than clarification. AI does not create those pressures from nothing. It gives them new scale, speed, variation, and opacity.

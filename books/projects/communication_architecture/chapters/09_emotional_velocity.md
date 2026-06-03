@@ -1,21 +1,3 @@
-# Emotional Velocity
-
-Part: III - The Collapse of Modern Discourse
-Status: First draft
-
-## Purpose
-
-Explain how discourse systems increasingly reward speed, intensity, and affective acceleration over coherence.
-
-## Seed Points
-
-- Rage optimization
-- Incentive deformation
-- Engagement economies
-- Performative identity
-
-## Draft Body
-
 Part III begins where ethics meets incentive pressure.
 
 The previous chapters asked what influence is, how it meets resistance, why some narratives persist, and when influence clarifies rather than captures. Those questions matter most when communication is slow enough for judgment to remain visible. But modern discourse often moves faster than judgment, procedure, correction, or memory can comfortably follow. Messages do not merely persuade. They accelerate. They collide. They repeat before they are understood. They become public before they are examined. They gather reaction before they gather context.

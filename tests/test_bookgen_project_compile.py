@@ -16,7 +16,10 @@ def test_communication_architecture_project_compiles_to_render_spec(tmp_path: Pa
     assert len(spec["chapters"]) == 16
     assert spec["chapters"][11]["title"] == "AI and the Industrialization of Persuasion"
     assert spec["chapters"][11]["part"] == "III - The Collapse of Modern Discourse"
-    assert "# AI and the Industrialization of Persuasion" in spec["chapters"][11]["body"]
+    assert not spec["chapters"][11]["body"].lstrip().startswith("#")
+    assert "Part:" not in spec["chapters"][11]["body"]
+    assert "Status:" not in spec["chapters"][11]["body"]
+    assert "## Draft Body" not in spec["chapters"][11]["body"]
     assert "communication is not merely informational" in spec["chapters"][0]["body"].lower()
     assert "the invisible structure behind persuasion" in spec["chapters"][1]["body"].lower()
     assert "language creates terrain" in spec["chapters"][2]["body"].lower()
@@ -49,6 +52,8 @@ def test_communication_architecture_project_compiles_to_render_spec(tmp_path: Pa
     assert outputs.cover_front_txt.exists()
     assert outputs.letter_one_sentence_txt.exists()
     assert rendered.count("{#chapter-") == 16
+    assert "# AI and the Industrialization of Persuasion {#chapter-12}" in rendered
+    assert "Ai And The Industrialization" not in rendered
     assert "DRAFT CHAPTER PLACEHOLDER" not in rendered
 
 

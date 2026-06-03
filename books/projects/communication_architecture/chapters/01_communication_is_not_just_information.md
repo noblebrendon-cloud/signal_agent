@@ -1,21 +1,3 @@
-# Communication Is Not Just Information
-
-Part: I - The Hidden Architecture of Communication
-Status: First draft
-
-## Purpose
-
-Explain why communication should be treated as architecture rather than simple information transfer.
-
-## Seed Points
-
-- Why facts alone rarely change people
-- Emotional and identity-layer processing
-- The illusion of pure logic
-- Communication as environmental shaping
-
-## Draft Body
-
 The common mistake is to treat communication as if it were mainly the movement of information from one mind to another. In that model, a person has a thought, wraps it in language, sends it across a channel, and another person receives it. If the words are accurate enough and the listener is rational enough, the meaning arrives.
 
 That model is useful for certain technical problems. It can help explain transmission, clarity, noise, signal loss, and the difference between what was sent and what was received. But it becomes dangerously incomplete when it is used to explain human discourse. People do not encounter language as empty containers waiting to be filled with facts. They encounter it from inside bodies, histories, loyalties, fears, memories, obligations, hopes, identities, and social pressures. A sentence does not land on neutral ground. It lands inside an already structured world.

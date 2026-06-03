@@ -5,30 +5,81 @@ author: mrcol
 year: '2026'
 copyright_holder: mrcol
 description: >-
-  A short-to-medium analytical book about communication architecture,
-  influence, discourse legitimacy, governance, and coherence under pressure.
+  A book about how communication, persuasion, platforms, AI, and institutions
+  shape human judgment under pressure, and why legitimacy, agency, and
+  governance matter more than content alone.
 purpose: >-
   Establish a canonical authorship artifact supporting governed AI,
   deterministic orchestration, discourse legitimacy, coherence, and human
   agency under acceleration.
 front_matter:
   cover_blurb: |-
-    DRAFT COVER BLURB PLACEHOLDER.
+    People often assume communication fails because people lack information.
+    The Architecture of Influence argues that communication fails because the
+    architecture around meaning has collapsed.
 
-    An analytical book project about communication architecture, influence,
-    discourse legitimacy, governance, and coherence under pressure.
+    Language never arrives on neutral ground. It moves through frames,
+    emotional pressure, identity, attention, institutional legitimacy, and
+    procedural trust. In platform environments and AI-mediated systems, those
+    conditions can be optimized, scaled, and governed, or left to reward speed,
+    outrage, and manipulation.
+
+    This book offers a systems theory of influence: how communication shapes
+    judgment under pressure, why agency matters more than mere content delivery,
+    and what legitimate discourse systems must preserve if humans are going to
+    remain coherent inside accelerating media, institutions, and AI.
   copyright: |-
     The Architecture of Influence
     Communication, Legitimacy, and Coherence Under Pressure
 
     Copyright (c) 2026 mrcol.
-    Draft project render. Not final publication copy.
+    All rights reserved.
   preface: |-
-    DRAFT PREFACE PLACEHOLDER.
+    This book exists because the usual story about communication failure is too
+    small.
 
-    This render spec is compiled from the communication_architecture project
-    manifest and chapter markdown files. Replace draft placeholders with
-    authored manuscript prose before treating this as publication copy.
+    We are often told that people misunderstand each other because they do not
+    have enough facts, because they are bad at reasoning, or because the right
+    message has not yet been delivered clearly enough. Those explanations are
+    sometimes useful. They are also incomplete. Facts matter, but facts do not
+    land on neutral ground. They arrive inside histories, identities, incentives,
+    emotional pressure, institutional memory, social risk, and procedures people
+    either trust or do not trust.
+
+    The argument of this book is that communication is not merely
+    informational. It is architectural. Every act of speech happens inside an
+    arrangement of conditions that shapes what can be noticed, admitted, trusted,
+    remembered, resisted, and acted upon. A message does not only carry content.
+    It also carries a frame, a sequence, a pressure, a theory of the listener,
+    and an implied structure of legitimacy.
+
+    That matters more now because communication has become infrastructure.
+    Platforms do not simply host speech. They rank it, compress it, reward it,
+    repeat it, monetize it, bury it, and teach participants which forms of
+    attention travel fastest. Institutions do not merely issue statements. They
+    either make their procedures visible enough to sustain trust, or they train
+    people to hear even accurate claims through suspicion. AI does not simply
+    create content. It lowers the cost of generating, testing, scaling, and
+    personalizing influence.
+
+    This is not a book against persuasion. Influence is part of human life.
+    Teaching influences. Friendship influences. Art influences. Governance
+    influences. The ethical question is not whether influence exists. It is
+    whether influence preserves agency or consumes it; whether it clarifies or
+    captures; whether it helps people see reality more truthfully or narrows
+    their field of judgment while pretending to expand it.
+
+    The chapters that follow move from ordinary communication to large-scale
+    discourse systems. They begin with the hidden architecture beneath facts and
+    arguments, then examine attention, resistance, narrative, identity,
+    emotional velocity, procedural trust, AI, governance, and legitimacy. The
+    point is not to turn readers into better manipulators. The point is to make
+    the structure visible enough that manipulation becomes harder to confuse
+    with clarity.
+
+    If communication now shapes the conditions under which people think, belong,
+    change their minds, and remain coherent under pressure, then legitimacy is
+    not decoration. It is part of the operating condition of truth itself.
 chapters:
 - number: 1
   title: Communication Is Not Just Information
@@ -94,11 +145,6 @@ chapters:
   title: Toward Legitimate Systems
   part: IV - Governance, Coherence, and the Future
   source: chapters/16_toward_legitimate_systems.md
-end_matter:
-  endnote: |-
-    DRAFT ENDNOTE PLACEHOLDER.
-
-    This project render confirms the markdown-to-spec authoring path without
-    claiming a finished manuscript.
+end_matter: {}
 letter:
-  one_sentence: This draft render establishes the analytical book project without presenting it as final manuscript copy.
+  one_sentence: People think communication fails because people lack information; this book argues it fails when the architecture around meaning collapses.

@@ -1,56 +1,62 @@
-﻿{{ meta.title }}
-{{ "=" * (meta.title | length) }}
+\frontmatter
 
-{% if meta.subtitle %}{{ meta.subtitle }}{% endif %}
-{% if meta.author %}by {{ meta.author }}{% endif %}
+\thispagestyle{empty}
+\begin{center}
+\vspace*{\fill}
+{\Huge {{ meta.title }}}{% if meta.subtitle %}\\[1.25em]
+{\Large {{ meta.subtitle }}}{% endif %}{% if meta.author %}\\[2em]
+{\large {{ meta.author }}}{% endif %}
+\vspace*{\fill}
+\end{center}
 
----
+\clearpage
 
-{% if front_matter.cover_blurb %}{{ front_matter.cover_blurb }}{% endif %}
+{% if front_matter.cover_blurb %}
+# Cover Blurb {.unnumbered}
 
+{{ front_matter.cover_blurb }}
+
+{% endif %}
 {% if front_matter.copyright %}
-## Copyright
+# Copyright {.unnumbered}
+
 {{ front_matter.copyright }}
-{% endif %}
 
+{% endif %}
 {% if front_matter.dedication %}
-## Dedication
+# Dedication {.unnumbered}
+
 {{ front_matter.dedication }}
-{% endif %}
 
+{% endif %}
 {% if front_matter.acknowledgments %}
-## Acknowledgments
+# Acknowledgments {.unnumbered}
+
 {{ front_matter.acknowledgments }}
-{% endif %}
 
+{% endif %}
 {% if front_matter.preface %}
-## Preface
+# Preface {.unnumbered}
+
 {{ front_matter.preface }}
-{% endif %}
 
-{% if chapters %}
-## Chapter Ledger
-{% for ch in chapters -%}
-{{ loop.index }}. {{ ch.title }}
-{% endfor %}
 {% endif %}
+\clearpage
+\tableofcontents
 
----
+\clearpage
+\mainmatter
 
 {% for ch in chapters %}
-## Chapter {{ loop.index }}: {{ ch.title | upper }}
+# {{ ch.title }} {{ '{#chapter-' ~ loop.index ~ '}' }}
 
 {{ ch.body }}
 
 {% endfor %}
-
 {% if end_matter.endnote %}
----
+\backmatter
 
-## Endnote
+# Endnote {.unnumbered}
+
 {{ end_matter.endnote }}
-{% endif %}
-{% if meta.subtitle %}{{ meta.subtitle }}{% endif %}
-{% if meta.author %}
-by {{ meta.author }}
 {% endif %}

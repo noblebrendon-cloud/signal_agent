@@ -1,21 +1,3 @@
-# Narrative Gravity
-
-Part: II - Influence Systems
-Status: First draft
-
-## Purpose
-
-Describe why some ideas linger, compress, repeat, and become easier to carry than others.
-
-## Seed Points
-
-- Why some ideas linger
-- Memetic persistence
-- Symbolic compression
-- Repetition and cognitive embedding
-
-## Draft Body
-
 Influence does not end when the message ends.
 
 A person hears an argument, closes the article, leaves the room, shuts the app, or moves on to the next demand of the day. The visible exchange is over. But some messages do not leave at the same speed they arrived. They remain available. They return in later situations. They give language to a feeling. They become a shortcut for judgment, a symbol for belonging, a warning sign, a memory handle, or a way to organize scattered experience.

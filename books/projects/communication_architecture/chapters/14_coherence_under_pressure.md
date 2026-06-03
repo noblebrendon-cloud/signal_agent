@@ -1,21 +1,3 @@
-# Coherence Under Pressure
-
-Part: IV - Governance, Coherence, and the Future
-Status: First draft
-
-## Purpose
-
-Describe how people and institutions preserve continuity when discourse systems reward performance and reaction.
-
-## Seed Points
-
-- Long-horizon identity
-- Consistency vs performance
-- Memory and continuity
-- Human and institutional coherence
-
-## Draft Body
-
 Governance matters because coherence has to survive pressure.
 
 That is the next step in the argument. Chapter 13 argued that content does not move through public life by itself. It moves through systems that shape visibility, incentives, constraint, appeal, accountability, and legitimacy. But governance is not an end in itself. A system can have rules and still deform the people inside it. It can have procedures and still reward performance over truth. It can have authority and still lose continuity. The deeper question is whether the system helps human beings and institutions remain coherent under pressure.

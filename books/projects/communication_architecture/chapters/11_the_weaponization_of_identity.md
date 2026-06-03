@@ -1,21 +1,3 @@
-# The Weaponization of Identity
-
-Part: III - The Collapse of Modern Discourse
-Status: First draft
-
-## Purpose
-
-Show how discourse systems convert identity into a signaling surface under pressure.
-
-## Seed Points
-
-- Group signaling
-- Moral framing
-- Digital tribal architecture
-- Selfhood as performance
-
-## Draft Body
-
 Identity is not the enemy.
 
 That has to be said first, because the phrase "weaponization of identity" can easily become careless. It can sound as if identity itself is the problem, as if belonging is a weakness, as if memory is a distortion, or as if moral responsibility should be stripped away from public life in the name of neutrality. That is not the argument here.

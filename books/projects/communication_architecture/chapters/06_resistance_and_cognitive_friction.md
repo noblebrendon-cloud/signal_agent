@@ -1,21 +1,3 @@
-# Resistance and Cognitive Friction
-
-Part: II - Influence Systems
-Status: First draft
-
-## Purpose
-
-Explain why direct argument can harden resistance when it threatens identity, belonging, or agency.
-
-## Seed Points
-
-- Why direct argument often hardens opposition
-- Defensive cognition
-- Identity threat
-- Social belonging pressures
-
-## Draft Body
-
 Resistance is not merely failure.
 
 It is tempting to describe resistance as the thing that prevents influence from working. The argument was clear, but the person resisted. The evidence was available, but the audience resisted. The procedure was explained, but the community resisted. In that language, resistance becomes a defect in the receiver, a blockage, a stubbornness, a refusal to be moved by what should have been obvious.

@@ -1,23 +1,3 @@
-# Language as Psychological Terrain
-
-Part: I - The Hidden Architecture of Communication
-Status: First draft
-
-## Purpose
-
-Define language as pressure, terrain, and positioning without reducing people to programmable systems.
-
-## Seed Points
-
-- Tension
-- Contrast
-- Implied inevitability
-- Future-positioning
-- Identity anchoring
-- Emotional pacing
-
-## Draft Body
-
 After structure comes terrain.
 
 The previous chapter looked at the invisible structure behind persuasion: frames, presuppositions, sequences, and the way people participate in conclusions. But structure is not only conceptual. It is also felt. Language does not merely arrange claims outside us. It can create conditions we move through internally: pressure, anticipation, resistance, openness, dread, urgency, trust, and doubt.
