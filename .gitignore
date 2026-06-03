@@ -51,6 +51,11 @@ SYSTEM_STATE/
 # OS/editor
 .DS_Store
 Thumbs.db
+# Windows Explorer metadata
+
+desktop.ini
+ehthumbs.db
+$RECYCLE.BIN/
 .vscode/
 
 # local scratch
