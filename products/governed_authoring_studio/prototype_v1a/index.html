@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Governed Authoring Studio V1A Prototype</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="left-rail" aria-label="Workflow navigation">
+        <div class="brand-block">
+          <div class="brand-mark" aria-hidden="true">GA</div>
+          <div>
+            <div class="brand-title">Governed Authoring Studio</div>
+            <div class="brand-subtitle">V1A concierge prototype</div>
+          </div>
+        </div>
+
+        <nav id="stepNav" class="step-nav"></nav>
+
+        <section class="rail-card">
+          <h2>Trial Participant</h2>
+          <div class="participant-row">
+            <span class="participant-id">001</span>
+            <span>Justin</span>
+          </div>
+          <p>This local prototype is seeded for the first V1A trial path.</p>
+        </section>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Foggy thought -> structured artifact draft</p>
+            <h1>V1A Workflow Prototype</h1>
+          </div>
+          <div class="topbar-actions">
+            <button id="copyInviteButton" class="button secondary" type="button">Copy invite</button>
+            <button id="resetButton" class="button ghost" type="button">Reset local state</button>
+          </div>
+        </header>
+
+        <section class="progress-strip" aria-label="Workflow progress">
+          <div class="progress-meter">
+            <div id="progressFill" class="progress-fill"></div>
+          </div>
+          <div id="progressLabel" class="progress-label"></div>
+        </section>
+
+        <section id="app" class="screen-panel" aria-live="polite"></section>
+      </main>
+
+      <aside class="right-rail" aria-label="Governance state">
+        <section class="rail-card state-card">
+          <h2>Current State</h2>
+          <dl id="stateSummary" class="state-list"></dl>
+        </section>
+
+        <section class="rail-card">
+          <h2>Active Invariants</h2>
+          <ul class="check-list">
+            <li>Source and generated output stay separate.</li>
+            <li>No silent overwrite of user material.</li>
+            <li>Human operator access is disclosed.</li>
+            <li>Review findings do not force changes.</li>
+            <li>Evidence records learning, not private source.</li>
+          </ul>
+        </section>
+
+        <section class="rail-card">
+          <h2>Privacy Reminder</h2>
+          <p>
+            V1A is concierge-assisted. Do not submit passwords, account numbers,
+            medical records, legal documents, or confidential third-party
+            material.
+          </p>
+        </section>
+      </aside>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script src="app.js"></script>
+  </body>
+</html>

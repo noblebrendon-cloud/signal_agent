@@ -60,9 +60,14 @@ Keep `notes` short and non-sensitive.
 
 Use this table for the first trial group:
 
+Current internal participant key:
+
+- `001`: Justin. Keep this key internal and remove or anonymize it before any
+  public release snapshot unless explicit permission exists.
+
 | participant_id | invite_sent | accepted | intake_received | output_delivered | feedback_received | aha_moment | would_pay | privacy_concern | main_friction | next_action | status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| P01 |  |  |  |  |  |  |  |  |  |  |  |
+| 001 | ready | pending | no | no | no |  |  |  |  | send invite/intake | invited |
 | P02 |  |  |  |  |  |  |  |  |  |  |  |
 | P03 |  |  |  |  |  |  |  |  |  |  |  |
 | P04 |  |  |  |  |  |  |  |  |  |  |  |
@@ -79,7 +84,7 @@ Use this table for the first trial group:
 
 Anonymous trial identifier.
 
-Use `P01`, `P02`, etc. Do not use full names in the tracker.
+Use `001`, `002`, etc. Do not use full names in the tracker table.
 
 ### invite_sent
 
@@ -220,7 +225,7 @@ Use only if useful:
 
 | participant_id | artifact_type | operator | time_spent | continuation_request | automation_candidate | notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| P01 |  |  |  |  |  |  |
+| 001 |  |  |  |  |  |  |
 | P02 |  |  |  |  |  |  |
 | P03 |  |  |  |  |  |  |
 | P04 |  |  |  |  |  |  |
@@ -272,13 +277,13 @@ Consider graduating only if:
 
 The tracker should make the decision harder to self-deceive.
 
-## 9. Next Artifact
+## 9. Next Action
 
-Next likely artifact:
+Next practical action:
 
 ```text
-products/governed_authoring_studio/v1a_trial_summary_template.md
+products/governed_authoring_studio/prototype_v1a/
 ```
 
-That document should turn the tracker and feedback results into a concise
-decision memo after the first 5-10 V1A trials.
+Do not create a summary template until after the first few trials produce
+actual evidence.
