@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "invariant.v1.schema.json",
+  "title": "Invariant",
+  "type": "object",
+  "required": ["invariant_id", "statement"],
+  "properties": {
+    "invariant_id": { "type": "string", "minLength": 1 },
+    "statement": { "type": "string", "minLength": 1 },
+    "version": { "type": "string" }
+  },
+  "additionalProperties": false
+}
+

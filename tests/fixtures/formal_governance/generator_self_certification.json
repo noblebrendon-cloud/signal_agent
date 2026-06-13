@@ -1,0 +1,73 @@
+{
+  "fixture_name": "generator_self_certification",
+  "run_order": 80,
+  "expected_decision": "REJECT_SELF_CERTIFICATION",
+  "proposal": {
+    "proposal_id": "proposal.generator_self_certification",
+    "requested_decision": "PROMOTE_TO_STATE",
+    "origin_state": { "state_id": "constrained", "label": "Constrained", "kind": "lifecycle" },
+    "proposed_state": { "state_id": "promoted", "label": "Promoted", "kind": "lifecycle" },
+    "root_invariant": {
+      "invariant_id": "invariant.governed_transition",
+      "statement": "No state change without validated, observable, governed transition.",
+      "version": "v1"
+    },
+    "invariant_path": {
+      "path_id": "path.lifecycle.promotion",
+      "root_invariant_id": "invariant.governed_transition",
+      "state_sequence": ["captured", "normalized", "classified", "constrained", "promoted"]
+    },
+    "branch_vector": {
+      "branch_id": "branch.generator_self_certification",
+      "origin_state": "constrained",
+      "proposed_state": "promoted",
+      "target_intent": "promote with generator approval",
+      "parent_branch_id": "branch.capture.root",
+      "root_branch_id": "branch.root",
+      "divergence_reason": "negative proof for generator self-certification",
+      "invariant_path_id": "path.lifecycle.promotion",
+      "artifact_refs": ["artifact.generator_self_certification"],
+      "variant_refs": []
+    },
+    "artifact_pocket": {
+      "pocket_id": "artifact_pocket.generator_self_certification",
+      "admission_status": "admitted",
+      "artifact_refs": [
+        {
+          "artifact_id": "artifact.generator_self_certification",
+          "artifact_type": "promotion_bundle",
+          "source_status": "admitted",
+          "content_hash": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+          "evidence_refs": ["evidence.generator_self_certification"]
+        }
+      ]
+    },
+    "variant_pocket": { "pocket_id": "variant_pocket.generator_self_certification", "variant_refs": [] },
+    "human_trigger": {
+      "trigger_id": "generator_trigger.self_cert",
+      "actor_id": "codex.generator",
+      "actor_type": "generator",
+      "role": "curator",
+      "scope": "state_promotion",
+      "approval_status": "approved",
+      "timestamp": "2026-06-13T12:00:00Z",
+      "self_certified": true
+    },
+    "rollback_path": {
+      "rollback_id": "rollback.generator_self_certification",
+      "strategy": "restore_previous_state",
+      "path_ref": "proof/rollback/generator_self_certification",
+      "not_required": false,
+      "reason": ""
+    },
+    "unresolved_tensions": [],
+    "evidence_references": [
+      {
+        "evidence_id": "evidence.generator_self_certification",
+        "uri": "fixtures/generator_self_certification.txt",
+        "content_hash": "sha256:9999999999999999999999999999999999999999999999999999999999999999"
+      }
+    ]
+  }
+}
+

@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "unresolved_tension.v1.schema.json",
+  "title": "UnresolvedTension",
+  "type": "object",
+  "required": ["tension_id", "description", "blocking"],
+  "properties": {
+    "tension_id": { "type": "string", "minLength": 1 },
+    "description": { "type": "string", "minLength": 1 },
+    "blocking": { "type": "boolean" },
+    "severity": { "type": "string", "enum": ["low", "medium", "high"] }
+  },
+  "additionalProperties": false
+}
+

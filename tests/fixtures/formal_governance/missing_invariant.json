@@ -1,0 +1,69 @@
+{
+  "fixture_name": "missing_invariant",
+  "run_order": 30,
+  "expected_decision": "REJECT_MISSING_INVARIANT",
+  "proposal": {
+    "proposal_id": "proposal.missing_invariant",
+    "requested_decision": "PROMOTE_TO_STATE",
+    "origin_state": { "state_id": "constrained", "label": "Constrained", "kind": "lifecycle" },
+    "proposed_state": { "state_id": "promoted", "label": "Promoted", "kind": "lifecycle" },
+    "root_invariant": { "invariant_id": "", "statement": "", "version": "v1" },
+    "invariant_path": {
+      "path_id": "path.lifecycle.promotion",
+      "root_invariant_id": "",
+      "state_sequence": ["captured", "normalized", "classified", "constrained", "promoted"]
+    },
+    "branch_vector": {
+      "branch_id": "branch.missing_invariant",
+      "origin_state": "constrained",
+      "proposed_state": "promoted",
+      "target_intent": "promote governed artifact into lifecycle state",
+      "parent_branch_id": "branch.capture.root",
+      "root_branch_id": "branch.root",
+      "divergence_reason": "invariant intentionally missing for negative proof",
+      "invariant_path_id": "path.lifecycle.promotion",
+      "artifact_refs": ["artifact.missing_invariant"],
+      "variant_refs": []
+    },
+    "artifact_pocket": {
+      "pocket_id": "artifact_pocket.missing_invariant",
+      "admission_status": "admitted",
+      "artifact_refs": [
+        {
+          "artifact_id": "artifact.missing_invariant",
+          "artifact_type": "promotion_bundle",
+          "source_status": "admitted",
+          "content_hash": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+          "evidence_refs": ["evidence.missing_invariant"]
+        }
+      ]
+    },
+    "variant_pocket": { "pocket_id": "variant_pocket.missing_invariant", "variant_refs": [] },
+    "human_trigger": {
+      "trigger_id": "human_trigger.missing_invariant",
+      "actor_id": "curator.alpha",
+      "actor_type": "human",
+      "role": "curator",
+      "scope": "state_promotion",
+      "approval_status": "approved",
+      "timestamp": "2026-06-13T12:00:00Z",
+      "self_certified": false
+    },
+    "rollback_path": {
+      "rollback_id": "rollback.missing_invariant",
+      "strategy": "restore_previous_state",
+      "path_ref": "proof/rollback/missing_invariant",
+      "not_required": false,
+      "reason": ""
+    },
+    "unresolved_tensions": [],
+    "evidence_references": [
+      {
+        "evidence_id": "evidence.missing_invariant",
+        "uri": "fixtures/missing_invariant.txt",
+        "content_hash": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      }
+    ]
+  }
+}
+

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "consolidation_pass.v1.schema.json",
+  "title": "ConsolidationPass",
+  "type": "object",
+  "required": ["pass_id", "source_refs"],
+  "properties": {
+    "pass_id": { "type": "string", "minLength": 1 },
+    "source_refs": { "type": "array", "items": { "type": "string" } },
+    "output_ref": { "type": "string" }
+  },
+  "additionalProperties": false
+}
+

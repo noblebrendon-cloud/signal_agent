@@ -1,0 +1,67 @@
+{
+  "fixture_name": "rollback_required_missing",
+  "run_order": 90,
+  "expected_decision": "REJECT_MISSING_ROLLBACK",
+  "proposal": {
+    "proposal_id": "proposal.rollback_required_missing",
+    "requested_decision": "PROMOTE_TO_STATE",
+    "origin_state": { "state_id": "constrained", "label": "Constrained", "kind": "lifecycle" },
+    "proposed_state": { "state_id": "promoted", "label": "Promoted", "kind": "lifecycle" },
+    "root_invariant": {
+      "invariant_id": "invariant.governed_transition",
+      "statement": "No state change without validated, observable, governed transition.",
+      "version": "v1"
+    },
+    "invariant_path": {
+      "path_id": "path.lifecycle.promotion",
+      "root_invariant_id": "invariant.governed_transition",
+      "state_sequence": ["captured", "normalized", "classified", "constrained", "promoted"]
+    },
+    "branch_vector": {
+      "branch_id": "branch.rollback_required_missing",
+      "origin_state": "constrained",
+      "proposed_state": "promoted",
+      "target_intent": "promote without rollback",
+      "parent_branch_id": "branch.capture.root",
+      "root_branch_id": "branch.root",
+      "divergence_reason": "negative proof for missing rollback path",
+      "invariant_path_id": "path.lifecycle.promotion",
+      "artifact_refs": ["artifact.rollback_required_missing"],
+      "variant_refs": []
+    },
+    "artifact_pocket": {
+      "pocket_id": "artifact_pocket.rollback_required_missing",
+      "admission_status": "admitted",
+      "artifact_refs": [
+        {
+          "artifact_id": "artifact.rollback_required_missing",
+          "artifact_type": "promotion_bundle",
+          "source_status": "admitted",
+          "content_hash": "sha256:abababababababababababababababababababababababababababababababab",
+          "evidence_refs": ["evidence.rollback_required_missing"]
+        }
+      ]
+    },
+    "variant_pocket": { "pocket_id": "variant_pocket.rollback_required_missing", "variant_refs": [] },
+    "human_trigger": {
+      "trigger_id": "human_trigger.rollback_required_missing",
+      "actor_id": "curator.alpha",
+      "actor_type": "human",
+      "role": "curator",
+      "scope": "state_promotion",
+      "approval_status": "approved",
+      "timestamp": "2026-06-13T12:00:00Z",
+      "self_certified": false
+    },
+    "rollback_path": null,
+    "unresolved_tensions": [],
+    "evidence_references": [
+      {
+        "evidence_id": "evidence.rollback_required_missing",
+        "uri": "fixtures/rollback_required_missing.txt",
+        "content_hash": "sha256:bcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbc"
+      }
+    ]
+  }
+}
+

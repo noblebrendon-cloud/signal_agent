@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "invariant_path.v1.schema.json",
+  "title": "InvariantPath",
+  "type": "object",
+  "required": ["path_id", "root_invariant_id", "state_sequence"],
+  "properties": {
+    "path_id": { "type": "string", "minLength": 1 },
+    "root_invariant_id": { "type": "string", "minLength": 1 },
+    "state_sequence": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "minItems": 1
+    }
+  },
+  "additionalProperties": false
+}
+

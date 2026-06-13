@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "branch_vector.v1.schema.json",
+  "title": "BranchVector",
+  "type": "object",
+  "required": ["branch_id", "origin_state", "divergence_reason", "invariant_path_id"],
+  "properties": {
+    "branch_id": { "type": "string", "minLength": 1 },
+    "origin_state": { "type": "string", "minLength": 1 },
+    "proposed_state": { "type": "string" },
+    "target_intent": { "type": "string" },
+    "parent_branch_id": { "type": "string" },
+    "root_branch_id": { "type": "string" },
+    "divergence_reason": { "type": "string", "minLength": 1 },
+    "invariant_path_id": { "type": "string", "minLength": 1 },
+    "artifact_refs": { "type": "array", "items": { "type": "string" } },
+    "variant_refs": { "type": "array", "items": { "type": "string" } }
+  },
+  "additionalProperties": false
+}
+

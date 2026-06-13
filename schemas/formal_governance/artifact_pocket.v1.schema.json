@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "artifact_pocket.v1.schema.json",
+  "title": "ArtifactPocket",
+  "type": "object",
+  "required": ["pocket_id", "admission_status", "artifact_refs"],
+  "properties": {
+    "pocket_id": { "type": "string", "minLength": 1 },
+    "admission_status": { "type": "string", "enum": ["raw", "admitted", "promoted"] },
+    "artifact_refs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["artifact_id", "artifact_type", "source_status"],
+        "properties": {
+          "artifact_id": { "type": "string", "minLength": 1 },
+          "artifact_type": { "type": "string", "minLength": 1 },
+          "source_status": { "type": "string", "enum": ["raw", "admitted", "promoted"] },
+          "content_hash": { "type": "string" },
+          "evidence_refs": { "type": "array", "items": { "type": "string" } }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
+

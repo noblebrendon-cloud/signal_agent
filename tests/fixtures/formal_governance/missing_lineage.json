@@ -1,0 +1,73 @@
+{
+  "fixture_name": "missing_lineage",
+  "run_order": 20,
+  "expected_decision": "REJECT_INVALID_LINEAGE",
+  "proposal": {
+    "proposal_id": "proposal.missing_lineage",
+    "requested_decision": "PROMOTE_TO_STATE",
+    "origin_state": { "state_id": "constrained", "label": "Constrained", "kind": "lifecycle" },
+    "proposed_state": { "state_id": "promoted", "label": "Promoted", "kind": "lifecycle" },
+    "root_invariant": {
+      "invariant_id": "invariant.governed_transition",
+      "statement": "No state change without validated, observable, governed transition.",
+      "version": "v1"
+    },
+    "invariant_path": {
+      "path_id": "path.lifecycle.promotion",
+      "root_invariant_id": "invariant.governed_transition",
+      "state_sequence": ["captured", "normalized", "classified", "constrained", "promoted"]
+    },
+    "branch_vector": {
+      "branch_id": "branch.missing_lineage",
+      "origin_state": "constrained",
+      "proposed_state": "promoted",
+      "target_intent": "promote governed artifact into lifecycle state",
+      "parent_branch_id": "",
+      "root_branch_id": "",
+      "divergence_reason": "lineage intentionally missing for negative proof",
+      "invariant_path_id": "path.lifecycle.promotion",
+      "artifact_refs": ["artifact.missing_lineage"],
+      "variant_refs": []
+    },
+    "artifact_pocket": {
+      "pocket_id": "artifact_pocket.missing_lineage",
+      "admission_status": "admitted",
+      "artifact_refs": [
+        {
+          "artifact_id": "artifact.missing_lineage",
+          "artifact_type": "promotion_bundle",
+          "source_status": "admitted",
+          "content_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "evidence_refs": ["evidence.missing_lineage"]
+        }
+      ]
+    },
+    "variant_pocket": { "pocket_id": "variant_pocket.missing_lineage", "variant_refs": [] },
+    "human_trigger": {
+      "trigger_id": "human_trigger.missing_lineage",
+      "actor_id": "curator.alpha",
+      "actor_type": "human",
+      "role": "curator",
+      "scope": "state_promotion",
+      "approval_status": "approved",
+      "timestamp": "2026-06-13T12:00:00Z",
+      "self_certified": false
+    },
+    "rollback_path": {
+      "rollback_id": "rollback.missing_lineage",
+      "strategy": "restore_previous_state",
+      "path_ref": "proof/rollback/missing_lineage",
+      "not_required": false,
+      "reason": ""
+    },
+    "unresolved_tensions": [],
+    "evidence_references": [
+      {
+        "evidence_id": "evidence.missing_lineage",
+        "uri": "fixtures/missing_lineage.txt",
+        "content_hash": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      }
+    ]
+  }
+}
+

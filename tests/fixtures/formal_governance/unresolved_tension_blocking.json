@@ -1,0 +1,80 @@
+{
+  "fixture_name": "unresolved_tension_blocking",
+  "run_order": 50,
+  "expected_decision": "DEFER_UNRESOLVED_TENSION",
+  "proposal": {
+    "proposal_id": "proposal.unresolved_tension_blocking",
+    "requested_decision": "PROMOTE_TO_STATE",
+    "origin_state": { "state_id": "constrained", "label": "Constrained", "kind": "lifecycle" },
+    "proposed_state": { "state_id": "promoted", "label": "Promoted", "kind": "lifecycle" },
+    "root_invariant": {
+      "invariant_id": "invariant.governed_transition",
+      "statement": "No state change without validated, observable, governed transition.",
+      "version": "v1"
+    },
+    "invariant_path": {
+      "path_id": "path.lifecycle.promotion",
+      "root_invariant_id": "invariant.governed_transition",
+      "state_sequence": ["captured", "normalized", "classified", "constrained", "promoted"]
+    },
+    "branch_vector": {
+      "branch_id": "branch.blocking_tension",
+      "origin_state": "constrained",
+      "proposed_state": "promoted",
+      "target_intent": "promote with unresolved tension",
+      "parent_branch_id": "branch.capture.root",
+      "root_branch_id": "branch.root",
+      "divergence_reason": "negative proof for unresolved tension deferral",
+      "invariant_path_id": "path.lifecycle.promotion",
+      "artifact_refs": ["artifact.blocking_tension"],
+      "variant_refs": []
+    },
+    "artifact_pocket": {
+      "pocket_id": "artifact_pocket.blocking_tension",
+      "admission_status": "admitted",
+      "artifact_refs": [
+        {
+          "artifact_id": "artifact.blocking_tension",
+          "artifact_type": "promotion_bundle",
+          "source_status": "admitted",
+          "content_hash": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+          "evidence_refs": ["evidence.blocking_tension"]
+        }
+      ]
+    },
+    "variant_pocket": { "pocket_id": "variant_pocket.blocking_tension", "variant_refs": [] },
+    "human_trigger": {
+      "trigger_id": "human_trigger.blocking_tension",
+      "actor_id": "curator.alpha",
+      "actor_type": "human",
+      "role": "curator",
+      "scope": "state_promotion",
+      "approval_status": "approved",
+      "timestamp": "2026-06-13T12:00:00Z",
+      "self_certified": false
+    },
+    "rollback_path": {
+      "rollback_id": "rollback.blocking_tension",
+      "strategy": "restore_previous_state",
+      "path_ref": "proof/rollback/blocking_tension",
+      "not_required": false,
+      "reason": ""
+    },
+    "unresolved_tensions": [
+      {
+        "tension_id": "tension.blocking",
+        "description": "Evidence conflict must be resolved before promotion.",
+        "blocking": true,
+        "severity": "high"
+      }
+    ],
+    "evidence_references": [
+      {
+        "evidence_id": "evidence.blocking_tension",
+        "uri": "fixtures/blocking_tension.txt",
+        "content_hash": "sha256:4444444444444444444444444444444444444444444444444444444444444444"
+      }
+    ]
+  }
+}
+

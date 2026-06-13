@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "invariant_architecture.v1.schema.json",
+  "title": "InvariantArchitecture",
+  "type": "object",
+  "required": ["architecture_id", "node_ids", "invariant_ids"],
+  "properties": {
+    "architecture_id": { "type": "string", "minLength": 1 },
+    "node_ids": { "type": "array", "items": { "type": "string" } },
+    "invariant_ids": { "type": "array", "items": { "type": "string" } }
+  },
+  "additionalProperties": false
+}
+

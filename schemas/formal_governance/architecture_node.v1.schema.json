@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "architecture_node.v1.schema.json",
+  "title": "ArchitectureNode",
+  "type": "object",
+  "required": ["node_id", "node_type"],
+  "properties": {
+    "node_id": { "type": "string", "minLength": 1 },
+    "node_type": { "type": "string", "minLength": 1 },
+    "authority_scope": { "type": "string" }
+  },
+  "additionalProperties": false
+}
+

@@ -1,0 +1,103 @@
+{
+  "fixture_name": "duplicate_transition",
+  "run_order": 100,
+  "expected_decision": "BLOCK_DUPLICATE",
+  "proposal": {
+    "proposal_id": "proposal.duplicate_transition",
+    "requested_decision": "PROMOTE_TO_STATE",
+    "origin_state": { "state_id": "constrained", "label": "Constrained", "kind": "lifecycle" },
+    "proposed_state": { "state_id": "promoted", "label": "Promoted", "kind": "lifecycle" },
+    "root_invariant": {
+      "invariant_id": "invariant.governed_transition",
+      "statement": "No state change without validated, observable, governed transition.",
+      "version": "v1"
+    },
+    "invariant_path": {
+      "path_id": "path.lifecycle.promotion",
+      "root_invariant_id": "invariant.governed_transition",
+      "state_sequence": ["captured", "normalized", "classified", "constrained", "promoted"]
+    },
+    "branch_vector": {
+      "branch_id": "branch.promotion.alpha",
+      "origin_state": "constrained",
+      "proposed_state": "promoted",
+      "target_intent": "promote governed artifact into lifecycle state",
+      "parent_branch_id": "branch.capture.root",
+      "root_branch_id": "branch.root",
+      "divergence_reason": "candidate cluster has enough governed evidence for promotion",
+      "invariant_path_id": "path.lifecycle.promotion",
+      "artifact_refs": ["artifact.alpha"],
+      "variant_refs": []
+    },
+    "artifact_pocket": {
+      "pocket_id": "artifact_pocket.alpha",
+      "admission_status": "admitted",
+      "artifact_refs": [
+        {
+          "artifact_id": "artifact.alpha",
+          "artifact_type": "promotion_bundle",
+          "source_status": "admitted",
+          "content_hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "evidence_refs": ["evidence.alpha.source"]
+        }
+      ]
+    },
+    "variant_pocket": { "pocket_id": "variant_pocket.alpha", "variant_refs": [] },
+    "human_trigger": {
+      "trigger_id": "human_trigger.alpha",
+      "actor_id": "curator.alpha",
+      "actor_type": "human",
+      "role": "curator",
+      "scope": "state_promotion",
+      "approval_status": "approved",
+      "timestamp": "2026-06-13T12:00:00Z",
+      "self_certified": false
+    },
+    "rollback_path": {
+      "rollback_id": "rollback.alpha",
+      "strategy": "restore_previous_state",
+      "path_ref": "proof/rollback/alpha",
+      "not_required": false,
+      "reason": ""
+    },
+    "unresolved_tensions": [
+      {
+        "tension_id": "tension.alpha.note",
+        "description": "Nonblocking wording issue carried forward.",
+        "blocking": false,
+        "severity": "low"
+      }
+    ],
+    "evidence_references": [
+      {
+        "evidence_id": "evidence.alpha.source",
+        "uri": "fixtures/source_alpha.txt",
+        "content_hash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    ],
+    "architecture_nodes": [
+      {
+        "node_id": "node.formal_governance",
+        "node_type": "proof_pack",
+        "authority_scope": "parallel_formal_runtime"
+      }
+    ],
+    "invariant_architecture": {
+      "architecture_id": "architecture.formal_governance.v0",
+      "node_ids": ["node.formal_governance"],
+      "invariant_ids": ["invariant.governed_transition"]
+    },
+    "consolidation_pass": {
+      "pass_id": "consolidation.alpha",
+      "source_refs": ["artifact.alpha"],
+      "output_ref": "artifact.alpha"
+    },
+    "claim_assertions": [
+      {
+        "claim_id": "claim.alpha",
+        "statement": "The artifact has enough governed evidence for promotion."
+      }
+    ]
+  }
+}
+

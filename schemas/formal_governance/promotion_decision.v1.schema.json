@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "promotion_decision.v1.schema.json",
+  "title": "PromotionDecision",
+  "type": "object",
+  "required": ["deterministic_decision_id", "decision", "decision_reason", "gate_results", "proposal_id"],
+  "properties": {
+    "deterministic_decision_id": { "type": "string", "minLength": 1 },
+    "decision": {
+      "type": "string",
+      "enum": [
+        "ADMIT_ARTIFACT",
+        "CONSOLIDATE_ONLY",
+        "PROMOTE_TO_STATE",
+        "DEFER_UNRESOLVED_TENSION",
+        "REJECT_INVALID_LINEAGE",
+        "REJECT_MISSING_INVARIANT",
+        "REJECT_RAW_ARTIFACT_SELF_PROMOTION",
+        "REJECT_MISSING_EVIDENCE",
+        "REJECT_MISSING_AUTHORITY",
+        "REJECT_SELF_CERTIFICATION",
+        "REJECT_MISSING_ROLLBACK",
+        "BLOCK_DUPLICATE",
+        "MANUAL_REVIEW_REQUIRED"
+      ]
+    },
+    "decision_reason": { "type": "string" },
+    "proposal_id": { "type": "string" },
+    "gate_results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["gate_name", "status", "reason_code", "message"],
+        "properties": {
+          "gate_name": { "type": "string" },
+          "status": { "type": "string" },
+          "reason_code": { "type": "string" },
+          "message": { "type": "string" },
+          "outcome": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
+

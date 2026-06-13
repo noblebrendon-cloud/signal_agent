@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "variant_pocket.v1.schema.json",
+  "title": "VariantPocket",
+  "type": "object",
+  "required": ["pocket_id", "variant_refs"],
+  "properties": {
+    "pocket_id": { "type": "string", "minLength": 1 },
+    "variant_refs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["variant_id", "parent_artifact_id"],
+        "properties": {
+          "variant_id": { "type": "string", "minLength": 1 },
+          "parent_artifact_id": { "type": "string", "minLength": 1 },
+          "change_summary": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
+

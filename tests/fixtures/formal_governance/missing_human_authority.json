@@ -1,0 +1,64 @@
+{
+  "fixture_name": "missing_human_authority",
+  "run_order": 70,
+  "expected_decision": "REJECT_MISSING_AUTHORITY",
+  "proposal": {
+    "proposal_id": "proposal.missing_human_authority",
+    "requested_decision": "PROMOTE_TO_STATE",
+    "origin_state": { "state_id": "constrained", "label": "Constrained", "kind": "lifecycle" },
+    "proposed_state": { "state_id": "promoted", "label": "Promoted", "kind": "lifecycle" },
+    "root_invariant": {
+      "invariant_id": "invariant.governed_transition",
+      "statement": "No state change without validated, observable, governed transition.",
+      "version": "v1"
+    },
+    "invariant_path": {
+      "path_id": "path.lifecycle.promotion",
+      "root_invariant_id": "invariant.governed_transition",
+      "state_sequence": ["captured", "normalized", "classified", "constrained", "promoted"]
+    },
+    "branch_vector": {
+      "branch_id": "branch.missing_human_authority",
+      "origin_state": "constrained",
+      "proposed_state": "promoted",
+      "target_intent": "promote without human authority",
+      "parent_branch_id": "branch.capture.root",
+      "root_branch_id": "branch.root",
+      "divergence_reason": "negative proof for missing human authority",
+      "invariant_path_id": "path.lifecycle.promotion",
+      "artifact_refs": ["artifact.missing_human_authority"],
+      "variant_refs": []
+    },
+    "artifact_pocket": {
+      "pocket_id": "artifact_pocket.missing_human_authority",
+      "admission_status": "admitted",
+      "artifact_refs": [
+        {
+          "artifact_id": "artifact.missing_human_authority",
+          "artifact_type": "promotion_bundle",
+          "source_status": "admitted",
+          "content_hash": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+          "evidence_refs": ["evidence.missing_human_authority"]
+        }
+      ]
+    },
+    "variant_pocket": { "pocket_id": "variant_pocket.missing_human_authority", "variant_refs": [] },
+    "human_trigger": null,
+    "rollback_path": {
+      "rollback_id": "rollback.missing_human_authority",
+      "strategy": "restore_previous_state",
+      "path_ref": "proof/rollback/missing_human_authority",
+      "not_required": false,
+      "reason": ""
+    },
+    "unresolved_tensions": [],
+    "evidence_references": [
+      {
+        "evidence_id": "evidence.missing_human_authority",
+        "uri": "fixtures/missing_human_authority.txt",
+        "content_hash": "sha256:7777777777777777777777777777777777777777777777777777777777777777"
+      }
+    ]
+  }
+}
+
