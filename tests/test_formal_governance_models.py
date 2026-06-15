@@ -61,17 +61,23 @@ def test_all_required_schema_files_are_present_and_parseable() -> None:
 def test_decision_outcome_enum_contains_required_outcomes() -> None:
     expected = {
         "ADMIT_ARTIFACT",
+        "ADMIT_SOURCE_PACKET",
         "CONSOLIDATE_ONLY",
         "PROMOTE_TO_STATE",
         "DEFER_UNRESOLVED_TENSION",
         "REJECT_INVALID_LINEAGE",
+        "REJECT_MISSING_SOURCE",
         "REJECT_MISSING_INVARIANT",
         "REJECT_RAW_ARTIFACT_SELF_PROMOTION",
         "REJECT_MISSING_EVIDENCE",
         "REJECT_MISSING_AUTHORITY",
+        "REJECT_MISSING_HUMAN_REVIEW",
         "REJECT_SELF_CERTIFICATION",
+        "REJECT_SELF_APPROVAL",
         "REJECT_MISSING_ROLLBACK",
         "BLOCK_DUPLICATE",
+        "EMIT_PROVISIONAL_DRAFT",
+        "APPROVE_OUTPUT",
         "MANUAL_REVIEW_REQUIRED",
     }
 
@@ -109,4 +115,3 @@ def test_duplicate_fixture_has_same_deterministic_transition_identity_as_valid_f
 
     assert valid.proposal_id != duplicate.proposal_id
     assert deterministic_transition_id(valid) == deterministic_transition_id(duplicate)
-

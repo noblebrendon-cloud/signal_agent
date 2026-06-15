@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "draft_candidate.v1.schema.json",
+  "title": "GovernedAuthoringDraftCandidate",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "draft_candidate_id",
+    "source_packet_id",
+    "status",
+    "claim_refs",
+    "evidence_refs",
+    "source_material_refs",
+    "unresolved_tensions"
+  ],
+  "properties": {
+    "schema_version": { "const": "governed_authoring.draft_candidate.v1" },
+    "draft_candidate_id": { "type": "string", "minLength": 1 },
+    "source_packet_id": { "type": "string", "minLength": 1 },
+    "status": {
+      "type": "string",
+      "enum": ["provisional", "publication_ready"]
+    },
+    "claim_refs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["claim_id", "statement", "evidence_refs", "status"],
+        "properties": {
+          "claim_id": { "type": "string", "minLength": 1 },
+          "statement": { "type": "string" },
+          "evidence_refs": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "status": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "source_material_refs": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "unresolved_tensions": {
+      "type": "array",
+      "items": { "type": "object" }
+    }
+  },
+  "additionalProperties": false
+}

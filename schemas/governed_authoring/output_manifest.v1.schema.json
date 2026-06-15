@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "output_manifest.v1.schema.json",
+  "title": "GovernedAuthoringOutputManifest",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "output_manifest_id",
+    "source_packet_id",
+    "draft_candidate_id",
+    "review_decision_id",
+    "output_status",
+    "decision",
+    "decision_reason",
+    "claim_refs",
+    "evidence_refs",
+    "unresolved_tensions",
+    "messages",
+    "canonical_ledger_entry_id"
+  ],
+  "properties": {
+    "schema_version": { "const": "governed_authoring.output_manifest.v1" },
+    "output_manifest_id": { "type": "string", "minLength": 1 },
+    "source_packet_id": { "type": "string", "minLength": 1 },
+    "draft_candidate_id": { "type": "string" },
+    "review_decision_id": { "type": "string" },
+    "output_status": {
+      "type": "string",
+      "enum": ["provisional", "rejected", "deferred", "approved"]
+    },
+    "decision": {
+      "type": "string",
+      "enum": [
+        "REJECT_MISSING_SOURCE",
+        "REJECT_MISSING_EVIDENCE",
+        "DEFER_UNRESOLVED_TENSION",
+        "REJECT_MISSING_HUMAN_REVIEW",
+        "REJECT_SELF_APPROVAL",
+        "EMIT_PROVISIONAL_DRAFT",
+        "APPROVE_OUTPUT"
+      ]
+    },
+    "decision_reason": { "type": "string" },
+    "claim_refs": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "unresolved_tensions": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "messages": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "canonical_ledger_entry_id": { "type": "string" }
+  },
+  "additionalProperties": false
+}

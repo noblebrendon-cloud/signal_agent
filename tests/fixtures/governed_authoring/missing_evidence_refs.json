@@ -1,0 +1,36 @@
+{
+  "schema_version": "governed_authoring.source_packet.v1",
+  "source_packet_id": "ga.source.missing_evidence",
+  "requested_output_status": "approved",
+  "draft_mode": "publication_ready",
+  "title": "Missing evidence refs",
+  "source_material": [
+    {
+      "source_id": "source.missing_evidence.001",
+      "text": "Publication-ready Governed Authoring output cannot proceed without evidence references.",
+      "uri": "",
+      "content_hash": "",
+      "evidence_refs": []
+    }
+  ],
+  "claims": [
+    {
+      "claim_id": "claim.missing_evidence.001",
+      "statement": "Publication-ready Governed Authoring output cannot proceed without evidence references.",
+      "evidence_refs": [],
+      "status": "publication_ready"
+    }
+  ],
+  "evidence_refs": [],
+  "unresolved_tensions": [],
+  "review_decision": {
+    "review_decision_id": "review.missing_evidence.001",
+    "actor_id": "reviewer.human.001",
+    "actor_type": "human",
+    "role": "authoring_reviewer",
+    "scope": "governed_authoring_output",
+    "decision": "approved",
+    "timestamp": "2026-06-15T12:05:00Z",
+    "self_certified": false
+  }
+}

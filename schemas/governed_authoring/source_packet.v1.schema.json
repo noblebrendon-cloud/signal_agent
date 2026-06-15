@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "source_packet.v1.schema.json",
+  "title": "GovernedAuthoringSourcePacket",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "source_packet_id",
+    "requested_output_status",
+    "draft_mode",
+    "source_material",
+    "claims",
+    "evidence_refs",
+    "unresolved_tensions",
+    "review_decision"
+  ],
+  "properties": {
+    "schema_version": { "const": "governed_authoring.source_packet.v1" },
+    "source_packet_id": { "type": "string", "minLength": 1 },
+    "requested_output_status": {
+      "type": "string",
+      "enum": ["provisional", "approved", "publication_ready"]
+    },
+    "draft_mode": {
+      "type": "string",
+      "enum": ["provisional", "unverified", "publication_ready"]
+    },
+    "title": { "type": "string" },
+    "source_material": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["source_id"],
+        "properties": {
+          "source_id": { "type": "string", "minLength": 1 },
+          "text": { "type": "string" },
+          "uri": { "type": "string" },
+          "content_hash": { "type": "string" },
+          "evidence_refs": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["claim_id", "statement", "evidence_refs", "status"],
+        "properties": {
+          "claim_id": { "type": "string", "minLength": 1 },
+          "statement": { "type": "string" },
+          "evidence_refs": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "status": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "unresolved_tensions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["tension_id", "description", "blocking"],
+        "properties": {
+          "tension_id": { "type": "string", "minLength": 1 },
+          "description": { "type": "string" },
+          "blocking": { "type": "boolean" },
+          "severity": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "review_decision": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": [
+            "review_decision_id",
+            "actor_id",
+            "actor_type",
+            "role",
+            "scope",
+            "decision",
+            "timestamp",
+            "self_certified"
+          ],
+          "properties": {
+            "review_decision_id": { "type": "string", "minLength": 1 },
+            "actor_id": { "type": "string" },
+            "actor_type": { "type": "string" },
+            "role": { "type": "string" },
+            "scope": { "type": "string" },
+            "decision": { "type": "string" },
+            "timestamp": { "type": "string" },
+            "self_certified": { "type": "boolean" }
+          },
+          "additionalProperties": false
+        }
+      ]
+    }
+  },
+  "additionalProperties": false
+}

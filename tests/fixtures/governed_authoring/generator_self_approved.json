@@ -1,0 +1,42 @@
+{
+  "schema_version": "governed_authoring.source_packet.v1",
+  "source_packet_id": "ga.source.self_approved",
+  "requested_output_status": "approved",
+  "draft_mode": "publication_ready",
+  "title": "Generator self approval",
+  "source_material": [
+    {
+      "source_id": "source.self_approved.001",
+      "text": "Generator or model review cannot approve its own Governed Authoring output.",
+      "uri": "",
+      "content_hash": "",
+      "evidence_refs": [
+        "evidence:source.self_approved.001"
+      ]
+    }
+  ],
+  "claims": [
+    {
+      "claim_id": "claim.self_approved.001",
+      "statement": "Generator or model review cannot approve its own Governed Authoring output.",
+      "evidence_refs": [
+        "evidence:source.self_approved.001"
+      ],
+      "status": "publication_ready"
+    }
+  ],
+  "evidence_refs": [
+    "evidence:source.self_approved.001"
+  ],
+  "unresolved_tensions": [],
+  "review_decision": {
+    "review_decision_id": "review.self_approved.001",
+    "actor_id": "codex.generator",
+    "actor_type": "generator",
+    "role": "authoring_reviewer",
+    "scope": "governed_authoring_output",
+    "decision": "approved",
+    "timestamp": "2026-06-15T12:15:00Z",
+    "self_certified": true
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "schema_version": "governed_authoring.source_packet.v1",
+  "source_packet_id": "ga.source.approved",
+  "requested_output_status": "approved",
+  "draft_mode": "publication_ready",
+  "title": "Approved governed output",
+  "source_material": [
+    {
+      "source_id": "source.approved.001",
+      "text": "Approved Governed Authoring output requires evidence, review authority, and tension recording.",
+      "uri": "",
+      "content_hash": "",
+      "evidence_refs": [
+        "evidence:source.approved.001"
+      ]
+    }
+  ],
+  "claims": [
+    {
+      "claim_id": "claim.approved.001",
+      "statement": "Approved Governed Authoring output requires evidence, review authority, and tension recording.",
+      "evidence_refs": [
+        "evidence:source.approved.001"
+      ],
+      "status": "publication_ready"
+    }
+  ],
+  "evidence_refs": [
+    "evidence:source.approved.001"
+  ],
+  "unresolved_tensions": [
+    {
+      "tension_id": "tension.nonblocking.style",
+      "description": "Tone refinement remains open but does not block backend approval.",
+      "blocking": false,
+      "severity": "low"
+    }
+  ],
+  "review_decision": {
+    "review_decision_id": "review.approved.001",
+    "actor_id": "reviewer.human.001",
+    "actor_type": "human",
+    "role": "authoring_reviewer",
+    "scope": "governed_authoring_output",
+    "decision": "approved",
+    "timestamp": "2026-06-15T12:00:00Z",
+    "self_certified": false
+  }
+}

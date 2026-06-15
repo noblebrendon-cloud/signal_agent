@@ -10,17 +10,23 @@
       "type": "string",
       "enum": [
         "ADMIT_ARTIFACT",
+        "ADMIT_SOURCE_PACKET",
         "CONSOLIDATE_ONLY",
         "PROMOTE_TO_STATE",
         "DEFER_UNRESOLVED_TENSION",
         "REJECT_INVALID_LINEAGE",
+        "REJECT_MISSING_SOURCE",
         "REJECT_MISSING_INVARIANT",
         "REJECT_RAW_ARTIFACT_SELF_PROMOTION",
         "REJECT_MISSING_EVIDENCE",
         "REJECT_MISSING_AUTHORITY",
+        "REJECT_MISSING_HUMAN_REVIEW",
         "REJECT_SELF_CERTIFICATION",
+        "REJECT_SELF_APPROVAL",
         "REJECT_MISSING_ROLLBACK",
         "BLOCK_DUPLICATE",
+        "EMIT_PROVISIONAL_DRAFT",
+        "APPROVE_OUTPUT",
         "MANUAL_REVIEW_REQUIRED"
       ]
     },
@@ -44,4 +50,3 @@
   },
   "additionalProperties": false
 }
-

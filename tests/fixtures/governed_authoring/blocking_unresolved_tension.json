@@ -1,0 +1,49 @@
+{
+  "schema_version": "governed_authoring.source_packet.v1",
+  "source_packet_id": "ga.source.blocking_tension",
+  "requested_output_status": "approved",
+  "draft_mode": "publication_ready",
+  "title": "Blocking unresolved tension",
+  "source_material": [
+    {
+      "source_id": "source.blocking_tension.001",
+      "text": "Blocking unresolved tensions must defer approval even when evidence is present.",
+      "uri": "",
+      "content_hash": "",
+      "evidence_refs": [
+        "evidence:source.blocking_tension.001"
+      ]
+    }
+  ],
+  "claims": [
+    {
+      "claim_id": "claim.blocking_tension.001",
+      "statement": "Blocking unresolved tensions must defer approval even when evidence is present.",
+      "evidence_refs": [
+        "evidence:source.blocking_tension.001"
+      ],
+      "status": "publication_ready"
+    }
+  ],
+  "evidence_refs": [
+    "evidence:source.blocking_tension.001"
+  ],
+  "unresolved_tensions": [
+    {
+      "tension_id": "tension.blocking.lineage",
+      "description": "Source lineage conflict must be resolved before approval.",
+      "blocking": true,
+      "severity": "high"
+    }
+  ],
+  "review_decision": {
+    "review_decision_id": "review.blocking_tension.001",
+    "actor_id": "reviewer.human.001",
+    "actor_type": "human",
+    "role": "authoring_reviewer",
+    "scope": "governed_authoring_output",
+    "decision": "approved",
+    "timestamp": "2026-06-15T12:10:00Z",
+    "self_certified": false
+  }
+}

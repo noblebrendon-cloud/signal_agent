@@ -1,0 +1,27 @@
+{
+  "schema_version": "governed_authoring.source_packet.v1",
+  "source_packet_id": "ga.source.provisional",
+  "requested_output_status": "provisional",
+  "draft_mode": "provisional",
+  "title": "Provisional governed draft",
+  "source_material": [
+    {
+      "source_id": "source.provisional.001",
+      "text": "A provisional Governed Authoring draft can exist before publication evidence is complete.",
+      "uri": "",
+      "content_hash": "",
+      "evidence_refs": []
+    }
+  ],
+  "claims": [
+    {
+      "claim_id": "claim.provisional.001",
+      "statement": "A provisional Governed Authoring draft can exist before publication evidence is complete.",
+      "evidence_refs": [],
+      "status": "provisional"
+    }
+  ],
+  "evidence_refs": [],
+  "unresolved_tensions": [],
+  "review_decision": null
+}

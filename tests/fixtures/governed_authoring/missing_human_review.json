@@ -1,0 +1,33 @@
+{
+  "schema_version": "governed_authoring.source_packet.v1",
+  "source_packet_id": "ga.source.missing_review",
+  "requested_output_status": "approved",
+  "draft_mode": "publication_ready",
+  "title": "Missing human review",
+  "source_material": [
+    {
+      "source_id": "source.missing_review.001",
+      "text": "Approved Governed Authoring output must have explicit human review authority.",
+      "uri": "",
+      "content_hash": "",
+      "evidence_refs": [
+        "evidence:source.missing_review.001"
+      ]
+    }
+  ],
+  "claims": [
+    {
+      "claim_id": "claim.missing_review.001",
+      "statement": "Approved Governed Authoring output must have explicit human review authority.",
+      "evidence_refs": [
+        "evidence:source.missing_review.001"
+      ],
+      "status": "publication_ready"
+    }
+  ],
+  "evidence_refs": [
+    "evidence:source.missing_review.001"
+  ],
+  "unresolved_tensions": [],
+  "review_decision": null
+}

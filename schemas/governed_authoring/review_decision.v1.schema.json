@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "review_decision.v1.schema.json",
+  "title": "GovernedAuthoringReviewDecision",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "review_decision_id",
+    "actor_id",
+    "actor_type",
+    "role",
+    "scope",
+    "decision",
+    "timestamp",
+    "self_certified"
+  ],
+  "properties": {
+    "schema_version": { "const": "governed_authoring.review_decision.v1" },
+    "review_decision_id": { "type": "string", "minLength": 1 },
+    "actor_id": { "type": "string" },
+    "actor_type": {
+      "type": "string",
+      "enum": ["human", "agent", "generator", "model"]
+    },
+    "role": { "type": "string" },
+    "scope": { "type": "string" },
+    "decision": {
+      "type": "string",
+      "enum": ["approved", "rejected", "deferred"]
+    },
+    "timestamp": { "type": "string" },
+    "self_certified": { "type": "boolean" }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,12 @@
+{
+  "schema_version": "governed_authoring.source_packet.v1",
+  "source_packet_id": "ga.source.missing",
+  "requested_output_status": "provisional",
+  "draft_mode": "provisional",
+  "title": "Missing source material",
+  "source_material": [],
+  "claims": [],
+  "evidence_refs": [],
+  "unresolved_tensions": [],
+  "review_decision": null
+}

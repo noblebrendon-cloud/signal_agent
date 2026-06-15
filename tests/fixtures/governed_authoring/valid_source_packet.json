@@ -1,0 +1,33 @@
+{
+  "schema_version": "governed_authoring.source_packet.v1",
+  "source_packet_id": "ga.source.valid",
+  "requested_output_status": "provisional",
+  "draft_mode": "provisional",
+  "title": "Valid source packet",
+  "source_material": [
+    {
+      "source_id": "source.valid.001",
+      "text": "Governed Authoring must carry source material into a backend proof path.",
+      "uri": "",
+      "content_hash": "",
+      "evidence_refs": [
+        "evidence:source.valid.001"
+      ]
+    }
+  ],
+  "claims": [
+    {
+      "claim_id": "claim.valid.source",
+      "statement": "Governed Authoring must carry source material into a backend proof path.",
+      "evidence_refs": [
+        "evidence:source.valid.001"
+      ],
+      "status": "provisional"
+    }
+  ],
+  "evidence_refs": [
+    "evidence:source.valid.001"
+  ],
+  "unresolved_tensions": [],
+  "review_decision": null
+}
