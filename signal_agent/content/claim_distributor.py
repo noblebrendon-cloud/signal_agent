@@ -25,7 +25,11 @@ DISTRIBUTION_LOG = CLAIMS_DIR / "distribution_log.jsonl"
 X_MAX_CHARS = 280
 
 
-def distribute_claim(claim: Dict[str, Any]) -> Dict[str, Any]:
+def distribute_claim(
+    claim: Dict[str, Any],
+    *,
+    canonical_ledger_path: Path | None = None,
+) -> Dict[str, Any]:
     """
     Generate all platform outputs from a single claim.
 
@@ -42,7 +46,19 @@ def distribute_claim(claim: Dict[str, Any]) -> Dict[str, Any]:
     core = claim["core_assertion"]
     statement = claim["statement"]
     evidence = claim.get("evidence_refs", [])
-    require_claim_evidence(claim, action="publication_ready")
+    require_claim_evidence(
+        claim,
+        action="publication_ready",
+        canonical_ledger_path=canonical_ledger_path,
+        subsystem_refs=[
+            {
+                "subsystem": "claim_distributor",
+                "ref_type": "distribution_log",
+                "path": str(DISTRIBUTION_LOG),
+                "claim_id": claim_id,
+            }
+        ],
+    )
 
     # Create output directory
     out_dir = DISTRIBUTED_DIR / claim_id

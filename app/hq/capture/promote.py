@@ -411,6 +411,40 @@ def _append_promo_log(
         raise RuntimeError(f"Failed to append promotion log to {log_path}") from exc
 
 
+def _append_canonical_hq_promotion_decision(
+    canonical_ledger_path: Optional[Path],
+    *,
+    validation: Dict[str, Any],
+    artifact_id: str,
+    bundle_filename: str,
+    cluster_id: str,
+    candidate_cluster_members: List[str],
+    bundle_path: Path,
+    transition_ledger_path: Path,
+    artifact_registry_path: Path,
+    transition_event: Optional[Dict[str, Any]] = None,
+    promotion_log_path: Optional[Path] = None,
+) -> None:
+    if canonical_ledger_path is None:
+        return
+
+    from signal_agent.formal_governance.adapters import append_hq_promotion_entry
+
+    append_hq_promotion_entry(
+        Path(canonical_ledger_path),
+        validation=validation,
+        artifact_id=artifact_id,
+        bundle_filename=bundle_filename,
+        cluster_id=cluster_id,
+        candidate_cluster_members=candidate_cluster_members,
+        bundle_path=bundle_path,
+        promotion_log_path=promotion_log_path,
+        transition_ledger_path=transition_ledger_path,
+        transition_event=transition_event,
+        artifact_registry_path=artifact_registry_path,
+    )
+
+
 def promote_run(
     window_hours: float = 48.0,
     min_cluster_size: int = 2,
@@ -420,6 +454,7 @@ def promote_run(
     strategy: str = "hybrid",
     force: bool = False,
     capture_dir: Optional[Path] = None,
+    canonical_ledger_path: Optional[Path] = None,
 ) -> Dict[str, Any]:
     """
     Run promotion: cluster raw captures, emit bundles, route them, and archive raw inputs.
@@ -509,7 +544,7 @@ def promote_run(
             },
         )
         if not validation.get("allowed"):
-            emit_transition_event(
+            transition_event = emit_transition_event(
                 validation,
                 run_id=promotion_run_id,
                 artifact_id=artifact_id,
@@ -521,6 +556,18 @@ def promote_run(
                     "bundle_filename": bundle_name,
                 },
                 event_type="transition_rejected",
+            )
+            _append_canonical_hq_promotion_decision(
+                canonical_ledger_path,
+                validation=validation,
+                artifact_id=artifact_id,
+                bundle_filename=bundle_name,
+                cluster_id=cid,
+                candidate_cluster_members=filenames,
+                bundle_path=bundle_path,
+                transition_ledger_path=transition_ledger_path,
+                transition_event=transition_event,
+                artifact_registry_path=registry_path,
             )
             current_label = prior_state if prior_state else "missing"
             raise RuntimeError(
@@ -535,7 +582,7 @@ def promote_run(
         with open(bundle_path, "w", encoding="utf-8", newline="\n") as f:
             f.write(content)
 
-        emit_transition_event(
+        transition_event = emit_transition_event(
             validation,
             run_id=promotion_run_id,
             artifact_id=artifact_id,
@@ -590,6 +637,20 @@ def promote_run(
         }
 
         _append_promo_log(base, log_entry)
+
+        _append_canonical_hq_promotion_decision(
+            canonical_ledger_path,
+            validation=validation,
+            artifact_id=artifact_id,
+            bundle_filename=bundle_name,
+            cluster_id=cid,
+            candidate_cluster_members=filenames,
+            bundle_path=bundle_path,
+            transition_ledger_path=transition_ledger_path,
+            transition_event=transition_event,
+            artifact_registry_path=registry_path,
+            promotion_log_path=base / "promotion_log.jsonl",
+        )
 
         # Emit PromotionSucceeded event (best-effort)
         try:

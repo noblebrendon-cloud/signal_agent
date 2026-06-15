@@ -114,6 +114,51 @@ def _claim_decision_id(claim: Dict[str, Any], action: str) -> str:
     )
 
 
+def _claim_subsystem_refs(
+    claim: Dict[str, Any],
+    *,
+    action: str,
+    extra_refs: Optional[list[dict[str, Any]]] = None,
+) -> list[dict[str, Any]]:
+    refs = [
+        {
+            "subsystem": "claim_engine",
+            "ref_type": "claims_ledger",
+            "path": str(LEDGER_PATH),
+            "claim_id": str(claim.get("claim_id", "")),
+            "action": action,
+        }
+    ]
+    refs.extend(dict(item) for item in extra_refs or [])
+    return refs
+
+
+def _append_canonical_claim_decision(
+    canonical_ledger_path: Optional[Path],
+    *,
+    claim: Dict[str, Any],
+    action: str,
+    decision: PromotionDecision,
+    subsystem_refs: Optional[list[dict[str, Any]]] = None,
+) -> None:
+    if canonical_ledger_path is None:
+        return
+
+    from signal_agent.formal_governance.adapters import append_claim_evidence_entry
+
+    append_claim_evidence_entry(
+        Path(canonical_ledger_path),
+        claim=claim,
+        action=action,
+        decision=decision,
+        subsystem_refs=_claim_subsystem_refs(
+            claim,
+            action=action,
+            extra_refs=subsystem_refs,
+        ),
+    )
+
+
 def _claim_gate_result(
     *,
     status: GateStatus,
@@ -205,10 +250,23 @@ def evaluate_claim_evidence(
     )
 
 
-def require_claim_evidence(claim: Dict[str, Any], *, action: str) -> PromotionDecision:
+def require_claim_evidence(
+    claim: Dict[str, Any],
+    *,
+    action: str,
+    canonical_ledger_path: Optional[Path] = None,
+    subsystem_refs: Optional[list[dict[str, Any]]] = None,
+) -> PromotionDecision:
     """Return a decision or raise when evidence governance blocks the claim action."""
 
     decision = evaluate_claim_evidence(claim, action=action)
+    _append_canonical_claim_decision(
+        canonical_ledger_path,
+        claim=claim,
+        action=action,
+        decision=decision,
+        subsystem_refs=subsystem_refs,
+    )
     if decision.decision in {
         DecisionOutcome.REJECT_MISSING_EVIDENCE,
         DecisionOutcome.REJECT_SELF_CERTIFICATION,
@@ -251,6 +309,7 @@ def build_claim(
     status: str = "provisional",
     evidence_authority: Optional[Dict[str, Any]] = None,
     self_certified_evidence: bool = False,
+    canonical_ledger_path: Optional[Path] = None,
 ) -> Dict[str, Any]:
     """
     Build a structured claim without writing it.
@@ -283,7 +342,11 @@ def build_claim(
         claim["self_certified_evidence"] = True
 
     if status in PROVISIONAL_CLAIM_STATUSES:
-        require_claim_evidence(claim, action="draft")
+        require_claim_evidence(
+            claim,
+            action="draft",
+            canonical_ledger_path=canonical_ledger_path,
+        )
 
     return claim
 
@@ -297,6 +360,7 @@ def generate_claim(
     status: str = "anchored",
     evidence_authority: Optional[Dict[str, Any]] = None,
     self_certified_evidence: bool = False,
+    canonical_ledger_path: Optional[Path] = None,
 ) -> Dict[str, Any]:
     """
     Generate a structured claim from raw insight text.
@@ -312,12 +376,17 @@ def generate_claim(
         status=status,
         evidence_authority=evidence_authority,
         self_certified_evidence=self_certified_evidence,
+        canonical_ledger_path=canonical_ledger_path,
     )
 
     if status in PROVISIONAL_CLAIM_STATUSES:
         return claim
 
-    require_claim_evidence(claim, action="anchor")
+    require_claim_evidence(
+        claim,
+        action="anchor",
+        canonical_ledger_path=canonical_ledger_path,
+    )
 
     # Ensure directories exist
     _ensure_dirs()
@@ -370,7 +439,11 @@ status: anchored
 
 # --- Quick Capture (zero friction) ---
 
-def quick_capture(raw_text: str) -> Dict[str, Any]:
+def quick_capture(
+    raw_text: str,
+    *,
+    canonical_ledger_path: Optional[Path] = None,
+) -> Dict[str, Any]:
     """
     Zero-friction claim capture.
 
@@ -386,6 +459,7 @@ def quick_capture(raw_text: str) -> Dict[str, Any]:
         raw_text=raw_text,
         source_trigger="quick_capture",
         source_id="direct",
+        canonical_ledger_path=canonical_ledger_path,
     )
 
 

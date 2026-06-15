@@ -73,6 +73,7 @@ def build_ledger_entry(
     timestamp: str,
     index: int,
     previous_hash: str,
+    subsystem_refs: list[dict[str, Any]] | None = None,
 ) -> LedgerEntry:
     payload: dict[str, Any] = {
         "schema_version": LEDGER_SCHEMA_VERSION,
@@ -97,6 +98,7 @@ def build_ledger_entry(
         "unresolved_tensions": [item.to_dict() for item in proposal.unresolved_tensions],
         "rollback_path": None if proposal.rollback_path is None else proposal.rollback_path.to_dict(),
         "evidence_references": [dict(item) for item in proposal.evidence_references],
+        "subsystem_refs": [dict(item) for item in subsystem_refs or []],
         "content_hash": stable_hash(proposal.to_dict()),
         "previous_hash": previous_hash,
     }
@@ -110,6 +112,7 @@ def append_ledger_entry(
     proposal: TransitionProposal,
     decision: PromotionDecision,
     timestamp: str,
+    subsystem_refs: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     ledger_path = Path(path)
     ledger_path.parent.mkdir(parents=True, exist_ok=True)
@@ -121,6 +124,7 @@ def append_ledger_entry(
         timestamp=timestamp,
         index=len(existing),
         previous_hash=previous_hash,
+        subsystem_refs=subsystem_refs,
     ).to_dict()
     with open(ledger_path, "a", encoding="utf-8") as handle:
         handle.write(canonical_json(entry) + "\n")
@@ -146,4 +150,3 @@ def verify_ledger(path: Path) -> dict[str, Any]:
         "issues": issues,
         "last_record_hash": expected_previous if entries else None,
     }
-

@@ -22,6 +22,7 @@
     "unresolved_tensions",
     "rollback_path",
     "evidence_references",
+    "subsystem_refs",
     "content_hash",
     "previous_hash",
     "record_hash"
@@ -45,10 +46,10 @@
     "unresolved_tensions": { "type": "array" },
     "rollback_path": { "type": ["object", "null"] },
     "evidence_references": { "type": "array" },
+    "subsystem_refs": { "type": "array" },
     "content_hash": { "type": "string" },
     "previous_hash": { "type": "string" },
     "record_hash": { "type": "string" }
   },
   "additionalProperties": false
 }
-
