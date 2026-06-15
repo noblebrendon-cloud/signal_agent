@@ -1,43 +1,95 @@
-# Governed Authoring Studio V1A Prototype
+# Governed Authoring Studio Prototype V1A
 
-Status: dependency-free local browser prototype
+This repository contains a static V1A workflow prototype for Governed Authoring Studio.
 
-This folder contains the first runnable V1A prototype for Governed Authoring
-Studio. It is intentionally small: plain HTML, CSS, and JavaScript.
-
-The prototype exercises the concierge-assisted V1A workflow:
+It demonstrates the intended user/operator flow for a concierge-assisted thin UI:
 
 ```text
-intake -> operator packet -> spine -> draft -> review -> output -> evidence
+Intake
+-> Operator packet
+-> Spine
+-> Draft
+-> Review
+-> Output
+-> Evidence
 ```
 
-## What It Is
+This is not a production app, hosted SaaS product, public beta, publishing platform, or full Governed Authoring System.
 
-- a local browser prototype
-- a workflow simulator for the first V1A trial
-- a product surface for testing the core transformation
-- a place to inspect screen shape before building a hosted app
+The prototype is static and local/browser-based. It has no backend, no database, no authentication, no analytics, no file upload system, and no live user account model.
 
-## What It Is Not
+The purpose is to show the workflow shape before building a hosted private alpha.
 
-- a hosted SaaS app
-- a React scaffold
-- an AI backend
-- a database implementation
-- a production privacy system
-- a publishing or campaign engine
+## 1. Purpose
 
-## How To Open
+The purpose of this repository is to prove that a static browser prototype exists for the V1A concierge-assisted workflow.
 
-Open this file directly in a browser:
+It gives the workflow a visible shape before a hosted app is built.
+
+## 2. What This Prototype Shows
+
+- Intake.
+- Operator packet.
+- Spine.
+- Draft.
+- Review.
+- Output.
+- Evidence.
+- Source/output separation.
+- Human operator disclosure.
+- Non-sensitive evidence capture.
+
+## 3. What This Prototype Does Not Do
+
+- It does not run as a production app.
+- It does not provide hosted SaaS access.
+- It does not represent a public beta.
+- It does not provide a full publishing platform.
+- It does not run a campaign engine.
+- It does not operate as an automated agent system.
+- It does not expose or replace the internal HQ cockpit.
+- It does not implement the full Governed Authoring System.
+- It does not replace human judgment, authorship, or review.
+
+## 4. Workflow Gates
+
+The prototype follows this gate sequence:
 
 ```text
-products/governed_authoring_studio/prototype_v1a/index.html
+Intake
+-> Operator packet
+-> Spine
+-> Draft
+-> Review
+-> Output
+-> Evidence
 ```
 
-No install step is required.
+Each gate is intended to make the V1A workflow visible for review. The generated text is deterministic prototype output and should not be treated as final product behavior.
 
-The app stores local prototype state in `localStorage` under:
+## 5. Public-Safety Boundary
+
+The prototype uses `P01 - Example participant` as an anonymized example participant.
+
+Do not add real participant names, private source material, personal emails, secrets, API keys, tokens, passwords, generated trial outputs, or private local path references to this repository.
+
+The repository is public-facing documentation and static prototype code only.
+
+## 6. Relationship To V1A Planning Docs
+
+This prototype follows the V1A planning/specification spine in the `governed-authoring-studio-v1a-planning` repository.
+
+The planning repo documents the product boundary, MVP scope, workflow, intake form, operator runbook, output template, privacy note, trial plan, evidence log, and release plan.
+
+This prototype shows the workflow shape those documents describe.
+
+## 7. Local Use
+
+Open `index.html` in a browser.
+
+No install step, build step, backend, database, server, analytics, or external dependency is required.
+
+The prototype stores local browser state in `localStorage` under:
 
 ```text
 gas_v1a_prototype_state
@@ -45,47 +97,22 @@ gas_v1a_prototype_state
 
 Use the `Reset local state` button to clear the local prototype run.
 
-## Seeded Trial
+## 8. Static Bridge Packet Surface
 
-The prototype is seeded for:
+The output screen can export a backend-compatible governed authoring bridge packet as JSON and can import a backend output manifest or prototype result packet as JSON.
 
-```text
-participant_id: 001
-participant: Justin
-```
+Static prototype packet export/import only.
+No backend submission occurs from this UI.
+No production writes occur from this UI.
 
-The app can copy a send-ready invite and intake note, but it does not send
-external messages.
+The export/import panel preserves evidence refs, unresolved tensions, review status, and output status for the documented Phase 7 bridge contract. It flags publication-ready packets that lack evidence refs and generator/model self-approval before any backend run occurs elsewhere.
 
-## Workflow Screens
+This is still a static browser prototype. The panel does not call Python, add a server, make network requests, write ledgers, create production authoring artifacts, or make the UI backend-governed.
 
-1. Intake
-2. Operator packet
-3. Spine
-4. Draft
-5. Review
-6. Output
-7. Evidence
+## 9. Release Status
 
-The generated spine, draft, review, and output packet are deterministic local
-prototype outputs. They are not AI-generated and should not be treated as final
-product behavior.
+This repository is prepared as a static V1A prototype proof object.
 
-## Governance Rules Preserved
+No GitHub release should be created until the prototype text and UI have been reviewed.
 
-- Source and generated output stay separate.
-- No silent overwrite of user material.
-- Human operator access is disclosed.
-- Review findings guide action but do not force edits.
-- Evidence capture is non-sensitive and product-learning oriented.
-
-## Next Build Use
-
-Use this prototype to run the first concierge-assisted trial path and observe:
-
-- whether the intake fields are understandable
-- whether the workflow state is obvious
-- whether the spine step creates the value moment
-- whether the review gate feels specific
-- whether the evidence capture is lightweight enough
-- what should be automated next
+Do not connect Zenodo, DOI, ORCID, OpenAIRE, or other publication records until release text is stable and explicitly approved.

@@ -16,12 +16,12 @@
   const defaultState = {
     activeStep: "intake",
     participant: {
-      id: "001",
-      displayName: "Justin",
+      id: "P01",
+      displayName: "Example participant",
       inviteStatus: "ready to send",
     },
     intake: {
-      name: "Justin",
+      name: "Example participant",
       email: "",
       followUp: "email",
       projectTitle: "",
@@ -47,17 +47,28 @@
     draft: null,
     review: null,
     output: null,
+    bridge: {
+      requestedOutputStatus: "provisional",
+      draftMode: "provisional",
+      evidenceRefsText: "",
+      unresolvedTensionsText: "[]",
+      reviewDecision: "none",
+      reviewerType: "human",
+      reviewSelfCertified: false,
+      importPacketText: "",
+      importedResult: null,
+    },
     evidence: {
       inviteSent: "ready",
       accepted: "pending",
       intakeReceived: "no",
       outputDelivered: "no",
       feedbackReceived: "no",
-      ahaMoment: "",
-      wouldPay: "",
-      privacyConcern: "",
-      mainFriction: "",
-      nextAction: "send invite/intake",
+      ahaMoment: "not recorded",
+      wouldPay: "not recorded",
+      privacyConcern: "not recorded",
+      mainFriction: "none",
+      nextAction: "send intake",
       status: "invited",
       operatorNotes: "",
     },
@@ -71,13 +82,14 @@
   const progressFill = document.getElementById("progressFill");
   const progressLabel = document.getElementById("progressLabel");
   const toast = document.getElementById("toast");
+  const bridgeApi = window.GovernedAuthoringPrototypeBridge;
 
   document.getElementById("copyInviteButton").addEventListener("click", () => {
     copyText(buildInviteText());
   });
 
   document.getElementById("resetButton").addEventListener("click", () => {
-    if (!window.confirm("Reset the local prototype state for participant 001?")) {
+    if (!window.confirm("Reset the local prototype state for P01 - Example participant?")) {
       return;
     }
     state = structuredClone(defaultState);
@@ -90,10 +102,20 @@
     try {
       const raw = localStorage.getItem(storageKey);
       if (!raw) return structuredClone(defaultState);
-      return { ...structuredClone(defaultState), ...JSON.parse(raw) };
+      return hydrateState(JSON.parse(raw));
     } catch (error) {
       return structuredClone(defaultState);
     }
+  }
+
+  function hydrateState(savedState) {
+    const saved = isPlainObject(savedState) ? savedState : {};
+    const next = { ...structuredClone(defaultState), ...saved };
+    next.participant = { ...structuredClone(defaultState.participant), ...(isPlainObject(saved.participant) ? saved.participant : {}) };
+    next.intake = { ...structuredClone(defaultState.intake), ...(isPlainObject(saved.intake) ? saved.intake : {}) };
+    next.evidence = { ...structuredClone(defaultState.evidence), ...(isPlainObject(saved.evidence) ? saved.evidence : {}) };
+    next.bridge = { ...structuredClone(defaultState.bridge), ...(isPlainObject(saved.bridge) ? saved.bridge : {}) };
+    return next;
   }
 
   function saveState() {
@@ -195,7 +217,7 @@
           <h2>Participant Intake</h2>
           <p>Capture enough source material and consent to begin the concierge-assisted V1A workflow.</p>
           <form id="intakeForm" class="form-grid" autocomplete="off">
-            ${inputField("name", "Name", state.intake.name, "Justin", true)}
+            ${inputField("name", "Name", state.intake.name, "Example participant", true)}
             ${inputField("email", "Email", state.intake.email, "name@example.com", false, "email")}
             ${selectField("followUp", "Preferred follow-up", state.intake.followUp, ["email", "short call", "async notes only"])}
             ${inputField("projectTitle", "Working title", state.intake.projectTitle, "A rough title is enough")}
@@ -227,7 +249,7 @@
 
         <aside class="card">
           <h2>Invite / Intake Packet</h2>
-          <p class="small-note">Copy this message into the channel you use for Justin. The app does not send external messages.</p>
+          <p class="small-note">Copy this message into the channel you use for P01 - Example participant. The app does not send external messages.</p>
           <div class="button-row">
             <button id="copyInviteInline" class="button secondary" type="button">Copy invite text</button>
             <button id="markInviteReady" class="button ghost" type="button">Mark ready</button>
@@ -257,11 +279,11 @@
     document.getElementById("copyInviteInline").addEventListener("click", () => copyText(buildInviteText()));
     document.getElementById("markInviteReady").addEventListener("click", () => {
       state.evidence.inviteSent = "ready";
-      state.evidence.nextAction = "send invite/intake";
+      state.evidence.nextAction = "send intake";
       state.evidence.status = "invited";
       saveState();
       render();
-      showToast("Justin invite marked ready to send.");
+      showToast("P01 invite marked ready to send.");
     });
   }
 
@@ -465,6 +487,10 @@
 
   function renderOutput() {
     state.output = state.output || buildOutputPacket();
+    state.bridge = { ...structuredClone(defaultState.bridge), ...(isPlainObject(state.bridge) ? state.bridge : {}) };
+    const bridgePacket = buildStaticBridgePacket();
+    const bridgeJson = prettyBridgeJson(bridgePacket);
+    const importedResult = state.bridge.importedResult;
     saveState();
 
     app.innerHTML = `
@@ -473,7 +499,7 @@
           <div>
             <span class="pill good">Output packet ready</span>
             <h2>Exportable Packet</h2>
-            <p>Copy or download the packet. This is what the participant receives after the V1A run.</p>
+            <p>Copy or download the participant packet, or export a static bridge JSON packet for backend-compatible review outside this UI.</p>
           </div>
           <textarea id="outputPacket" class="export-box" aria-label="Output packet">${escapeHtml(state.output.markdown)}</textarea>
           <div class="button-row">
@@ -484,20 +510,61 @@
           </div>
         </section>
 
-        <aside class="card">
-          <h2>Delivery Checklist</h2>
-          <ul class="check-list">
-            <li>Source material preserved separately.</li>
-            <li>Assumptions marked.</li>
-            <li>Review gate included.</li>
-            <li>Privacy reminder included.</li>
-            <li>Next step visible.</li>
-          </ul>
+        <aside class="card stack">
+          <section>
+            <h2>Delivery Checklist</h2>
+            <ul class="check-list">
+              <li>Source material preserved separately.</li>
+              <li>Assumptions marked.</li>
+              <li>Review gate included.</li>
+              <li>Privacy reminder included.</li>
+              <li>Next step visible.</li>
+            </ul>
+          </section>
+
+          <section class="section-card">
+            <h3>Static Bridge Boundary</h3>
+            <p>Static prototype packet export/import only. No backend submission occurs from this UI. No production writes occur from this UI.</p>
+          </section>
+
+          <section class="section-card stack">
+            <h3>Bridge Export Controls</h3>
+            <form id="bridgeControls" class="form-grid" autocomplete="off">
+              ${selectField("bridgeRequestedOutputStatus", "Output status", state.bridge.requestedOutputStatus, ["provisional", "rejected", "deferred", "approved"])}
+              ${selectField("bridgeDraftMode", "Draft mode", state.bridge.draftMode, ["provisional", "publication_ready"])}
+              ${selectField("bridgeReviewDecision", "Review decision", state.bridge.reviewDecision, ["none", "approved", "deferred", "rejected"])}
+              ${selectField("bridgeReviewerType", "Reviewer type", state.bridge.reviewerType, ["human", "generator", "model"])}
+              <label class="checkbox-row field full">
+                <input id="bridgeReviewSelfCertified" type="checkbox" ${state.bridge.reviewSelfCertified ? "checked" : ""}>
+                <span>Review is self-certified.</span>
+              </label>
+              ${textareaField("bridgeEvidenceRefs", "Evidence refs", state.bridge.evidenceRefsText, "One evidence ref per line. Required for approved publication-ready packets.")}
+              ${textareaField("bridgeUnresolvedTensions", "Unresolved tensions JSON", state.bridge.unresolvedTensionsText, "[{\"id\":\"prototype.tension.example\",\"description\":\"Clarify source lineage.\",\"blocking\":true,\"severity\":\"high\"}]")}
+            </form>
+            ${renderBridgeIssueList(bridgePacket.bridge_issues)}
+            <textarea id="bridgeExportPacket" class="code-box" aria-label="Backend-compatible bridge export JSON">${escapeHtml(bridgeJson)}</textarea>
+            <div class="button-row">
+              <button id="refreshBridgeExport" class="button secondary" type="button">Refresh JSON</button>
+              <button id="copyBridgeExport" class="button secondary" type="button">Copy JSON</button>
+              <button id="downloadBridgeExport" class="button secondary" type="button">Download JSON</button>
+            </div>
+          </section>
+
+          <section class="section-card stack">
+            <h3>Import Backend Result</h3>
+            <p class="small-note">Paste a backend output manifest, prototype result packet, or backend run result. Parsing is local only.</p>
+            <textarea id="bridgeImportPacket" class="code-box" aria-label="Backend result import JSON">${escapeHtml(state.bridge.importPacketText || sampleBackendResultJson())}</textarea>
+            <div class="button-row">
+              <button id="importBridgeResult" class="button secondary" type="button">Import result</button>
+            </div>
+            ${importedResult ? renderImportedBridgeResult(importedResult) : ""}
+          </section>
         </aside>
       </div>
     `;
 
     bindBackButtons();
+    bindBridgeControls();
     document.getElementById("copyOutput").addEventListener("click", () => {
       state.output.markdown = document.getElementById("outputPacket").value;
       saveState();
@@ -514,6 +581,192 @@
       state.evidence.status = "delivered";
       setStep("evidence");
     });
+  }
+
+  function bindBridgeControls() {
+    const refreshButton = document.getElementById("refreshBridgeExport");
+    const copyButton = document.getElementById("copyBridgeExport");
+    const downloadButton = document.getElementById("downloadBridgeExport");
+    const importButton = document.getElementById("importBridgeResult");
+
+    refreshButton.addEventListener("click", () => {
+      captureBridgeControls();
+      saveState();
+      render();
+      showToast("Bridge export refreshed locally.");
+    });
+
+    copyButton.addEventListener("click", () => {
+      captureBridgeControls();
+      const packet = buildStaticBridgePacket();
+      const json = prettyBridgeJson(packet);
+      document.getElementById("bridgeExportPacket").value = json;
+      saveState();
+      copyText(json);
+    });
+
+    downloadButton.addEventListener("click", () => {
+      captureBridgeControls();
+      const json = prettyBridgeJson(buildStaticBridgePacket());
+      document.getElementById("bridgeExportPacket").value = json;
+      saveState();
+      downloadText("governed-authoring-static-bridge-packet.json", json, "application/json;charset=utf-8");
+    });
+
+    importButton.addEventListener("click", () => {
+      captureBridgeControls();
+      const importText = document.getElementById("bridgeImportPacket").value;
+      state.bridge.importPacketText = importText;
+      const parsed = bridgeApi.parseJsonText(importText);
+      if (!parsed.ok) {
+        saveState();
+        showToast(`Import failed: ${parsed.error}`);
+        return;
+      }
+      const result = bridgeApi.importBackendResultPacket(parsed.payload);
+      state.bridge.importedResult = result;
+      if (result.evidence_refs.length) {
+        state.bridge.evidenceRefsText = result.evidence_refs.join("\n");
+      }
+      if (result.unresolved_tensions.length) {
+        state.bridge.unresolvedTensionsText = prettyBridgeJson(result.unresolved_tensions);
+      }
+      saveState();
+      render();
+      showToast(`Imported ${result.output_status || "backend"} result locally.`);
+    });
+  }
+
+  function captureBridgeControls() {
+    state.bridge = { ...structuredClone(defaultState.bridge), ...(isPlainObject(state.bridge) ? state.bridge : {}) };
+    state.bridge.requestedOutputStatus = document.getElementById("bridgeRequestedOutputStatus").value;
+    state.bridge.draftMode = document.getElementById("bridgeDraftMode").value;
+    state.bridge.reviewDecision = document.getElementById("bridgeReviewDecision").value;
+    state.bridge.reviewerType = document.getElementById("bridgeReviewerType").value;
+    state.bridge.reviewSelfCertified = document.getElementById("bridgeReviewSelfCertified").checked;
+    state.bridge.evidenceRefsText = document.getElementById("bridgeEvidenceRefs").value;
+    state.bridge.unresolvedTensionsText = document.getElementById("bridgeUnresolvedTensions").value;
+  }
+
+  function buildStaticBridgePacket() {
+    const packet = buildPrototypePacketForBridge();
+    const bridgePacket = bridgeApi.buildBridgePacket(packet);
+    const parsedTensions = parseBridgeTensions(state.bridge.unresolvedTensionsText);
+    if (!parsedTensions.ok) {
+      bridgePacket.bridge_issues.push({
+        severity: "error",
+        code: "invalid_unresolved_tensions_json",
+        message: parsedTensions.error,
+      });
+    }
+    return bridgePacket;
+  }
+
+  function buildPrototypePacketForBridge() {
+    const bridge = state.bridge || defaultState.bridge;
+    return {
+      sourcePacketId: `prototype.packet.${state.participant.id}`,
+      participant: state.participant,
+      governance: {
+        requestedOutputStatus: bridge.requestedOutputStatus,
+        draftMode: bridge.draftMode,
+        unresolvedTensions: parseBridgeTensions(bridge.unresolvedTensionsText).payload,
+      },
+      intake: state.intake,
+      review: state.review,
+      output: state.output,
+      evidence: state.evidence,
+      evidenceRefs: refsFromText(bridge.evidenceRefsText),
+      reviewDecision: buildBridgeReviewDecision(bridge),
+    };
+  }
+
+  function buildBridgeReviewDecision(bridge) {
+    if (!bridge.reviewDecision || bridge.reviewDecision === "none") {
+      return null;
+    }
+    const actorType = bridge.reviewerType || "human";
+    return {
+      reviewDecisionId: `prototype.review.${state.participant.id}`,
+      actorId: actorType === "human" ? "prototype.human_reviewer" : `prototype.${actorType}`,
+      actorType,
+      role: "authoring_reviewer",
+      scope: "governed_authoring_output",
+      decision: bridge.reviewDecision,
+      timestamp: "",
+      selfCertified: Boolean(bridge.reviewSelfCertified),
+    };
+  }
+
+  function parseBridgeTensions(text) {
+    const trimmed = (text || "").trim();
+    if (!trimmed) {
+      return { ok: true, payload: [] };
+    }
+    const parsed = bridgeApi.parseJsonText(trimmed);
+    if (!parsed.ok) {
+      return { ok: false, payload: [], error: `Unresolved tensions JSON is invalid: ${parsed.error}` };
+    }
+    if (!Array.isArray(parsed.payload)) {
+      return { ok: false, payload: [], error: "Unresolved tensions JSON must be an array." };
+    }
+    return { ok: true, payload: parsed.payload };
+  }
+
+  function refsFromText(text) {
+    return (text || "")
+      .split(/[\n,]+/)
+      .map((ref) => ref.trim())
+      .filter(Boolean)
+      .filter((ref, index, refs) => refs.indexOf(ref) === index);
+  }
+
+  function renderBridgeIssueList(issues) {
+    if (!issues.length) {
+      return '<ul class="check-list"><li>Bridge packet has no local validation issues.</li></ul>';
+    }
+    return `
+      <ul class="check-list warning-list">
+        ${issues.map((issue) => `<li>${escapeHtml(issue.code)}: ${escapeHtml(issue.message)}</li>`).join("")}
+      </ul>
+    `;
+  }
+
+  function renderImportedBridgeResult(result) {
+    const rows = [
+      ["Output status", result.output_status],
+      ["Review status", result.review_status],
+      ["Decision", result.decision || "not supplied"],
+      ["Evidence refs", result.evidence_refs.join(", ") || "none"],
+      ["Unresolved tensions", result.unresolved_tensions.length ? `${result.unresolved_tensions.length}` : "none"],
+    ];
+    return `
+      <div class="summary-grid">
+        ${rows.map(([term, value]) => summaryItem(term, value)).join("")}
+      </div>
+      <pre class="code-box">${escapeHtml(prettyBridgeJson(result))}</pre>
+    `;
+  }
+
+  function sampleBackendResultJson() {
+    return prettyBridgeJson({
+      schema_version: "governed_authoring.output_manifest.v1",
+      output_manifest_id: "output_manifest.example",
+      source_packet_id: `prototype.packet.${state.participant.id}`,
+      draft_candidate_id: "draft.example",
+      review_decision_id: "review.example",
+      output_status: "provisional",
+      decision: "ALLOW_PROVISIONAL_DRAFT",
+      decision_reason: "provisional_output_ready",
+      evidence_refs: refsFromText(state.bridge.evidenceRefsText),
+      unresolved_tensions: parseBridgeTensions(state.bridge.unresolvedTensionsText).payload,
+      messages: ["Example local import payload. Replace before importing."],
+      canonical_ledger_entry_id: "",
+    });
+  }
+
+  function prettyBridgeJson(value) {
+    return bridgeApi.toPrettyJson(value);
   }
 
   function renderEvidence() {
@@ -867,11 +1120,11 @@ Your content is private by default. Your submitted source material and this gene
 
   function buildTrackerRow() {
     const e = state.evidence;
-    return `| 001 | ${e.inviteSent || ""} | ${e.accepted || ""} | ${e.intakeReceived || ""} | ${e.outputDelivered || ""} | ${e.feedbackReceived || ""} | ${e.ahaMoment || ""} | ${e.wouldPay || ""} | ${e.privacyConcern || ""} | ${e.mainFriction || ""} | ${e.nextAction || ""} | ${e.status || ""} |`;
+    return `| P01 | ${e.inviteSent || ""} | ${e.accepted || ""} | ${e.intakeReceived || ""} | ${e.outputDelivered || ""} | ${e.feedbackReceived || ""} | ${e.ahaMoment || ""} | ${e.wouldPay || ""} | ${e.privacyConcern || ""} | ${e.mainFriction || ""} | ${e.nextAction || ""} | ${e.status || ""} |`;
   }
 
   function buildInviteText() {
-    return `Justin, I am testing an early version of Governed Authoring Studio, a guided workflow for people with serious unfinished ideas.
+    return `Hello, I am testing an early version of Governed Authoring Studio, a guided workflow for people with serious unfinished ideas.
 
 The trial is simple: you share rough notes, fragments, or a foggy project idea. I use the workflow to turn that material into a clear direction, a structured artifact spine, one draft section, a review summary, and suggested next steps.
 
@@ -933,6 +1186,10 @@ If you are open to trying it, the intake asks for artifact type, rough notes, de
     return text.charAt(0).toUpperCase() + text.slice(1);
   }
 
+  function isPlainObject(value) {
+    return value && Object.prototype.toString.call(value) === "[object Object]";
+  }
+
   function escapeHtml(value) {
     return String(value ?? "")
       .replace(/&/g, "&amp;")
@@ -973,8 +1230,8 @@ If you are open to trying it, the intake asks for artifact type, rough notes, de
     }
   }
 
-  function downloadText(filename, text) {
-    const blob = new Blob([text], { type: "text/markdown;charset=utf-8" });
+  function downloadText(filename, text, contentType = "text/markdown;charset=utf-8") {
+    const blob = new Blob([text], { type: contentType });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
