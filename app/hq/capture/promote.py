@@ -488,11 +488,6 @@ def promote_run(
             bundles.append({"bundle": bundle_name, "status": "exists_skipped"})
             continue
 
-        # Build and write bundle
-        content = _build_bundle_content(cluster, cid)
-        with open(bundle_path, "w", encoding="utf-8", newline="\n") as f:
-            f.write(content)
-
         artifact_id = bundle_name
         registry_path, transition_ledger_path = _canonical_state_paths(base)
         from shared.state_registry import record_state, get_state
@@ -532,6 +527,13 @@ def promote_run(
                 f"Canonical gate rejected promotion: "
                 f"{current_label}->promoted: {validation.get('reason')}"
             )
+
+        # Final promoted artifact materialization happens only after the
+        # governed promotion decision succeeds. Candidate preparation above is
+        # in-memory only and must not create promoted bundle artifacts.
+        content = _build_bundle_content(cluster, cid)
+        with open(bundle_path, "w", encoding="utf-8", newline="\n") as f:
+            f.write(content)
 
         emit_transition_event(
             validation,
