@@ -1,0 +1,53 @@
+{
+  "schema_version": "governed_authoring.prototype_bridge.v1",
+  "source_packet": {
+    "schema_version": "governed_authoring.source_packet.v1",
+    "source_packet_id": "prototype.packet.offline.approved",
+    "requested_output_status": "approved",
+    "draft_mode": "publication_ready",
+    "title": "Offline approved static export",
+    "source_material": [
+      {
+        "source_id": "prototype.source.offline.approved",
+        "text": "Static prototype source text with evidence for an offline approved authoring verification.",
+        "uri": "",
+        "content_hash": "",
+        "evidence_refs": [
+          "evidence:prototype.source.offline.001"
+        ]
+      }
+    ],
+    "claims": [
+      {
+        "claim_id": "prototype.claim.offline.approved",
+        "statement": "Create an approved governed authoring output packet.",
+        "evidence_refs": [
+          "evidence:prototype.source.offline.001"
+        ],
+        "status": "publication_ready"
+      }
+    ],
+    "evidence_refs": [
+      "evidence:prototype.source.offline.001"
+    ],
+    "unresolved_tensions": [
+      {
+        "tension_id": "prototype.tension.offline.nonblocking",
+        "description": "Minor style question remains visible but does not block approval.",
+        "blocking": false,
+        "severity": "low"
+      }
+    ],
+    "review_decision": {
+      "review_decision_id": "prototype.review.offline.approved",
+      "actor_id": "prototype.human_reviewer",
+      "actor_type": "human",
+      "role": "authoring_reviewer",
+      "scope": "governed_authoring_output",
+      "decision": "approved",
+      "timestamp": "2026-06-15T15:00:00Z",
+      "self_certified": false
+    }
+  },
+  "bridge_issues": []
+}

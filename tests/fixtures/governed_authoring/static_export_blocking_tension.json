@@ -1,0 +1,53 @@
+{
+  "schema_version": "governed_authoring.prototype_bridge.v1",
+  "source_packet": {
+    "schema_version": "governed_authoring.source_packet.v1",
+    "source_packet_id": "prototype.packet.offline.blocking_tension",
+    "requested_output_status": "approved",
+    "draft_mode": "publication_ready",
+    "title": "Offline blocking tension static export",
+    "source_material": [
+      {
+        "source_id": "prototype.source.offline.blocking_tension",
+        "text": "Static prototype source text with evidence but unresolved lineage risk.",
+        "uri": "",
+        "content_hash": "",
+        "evidence_refs": [
+          "evidence:prototype.source.offline.002"
+        ]
+      }
+    ],
+    "claims": [
+      {
+        "claim_id": "prototype.claim.offline.blocking_tension",
+        "statement": "Create an approved output while a blocking tension remains.",
+        "evidence_refs": [
+          "evidence:prototype.source.offline.002"
+        ],
+        "status": "publication_ready"
+      }
+    ],
+    "evidence_refs": [
+      "evidence:prototype.source.offline.002"
+    ],
+    "unresolved_tensions": [
+      {
+        "tension_id": "prototype.tension.offline.lineage",
+        "description": "Source lineage must be clarified before approval.",
+        "blocking": true,
+        "severity": "high"
+      }
+    ],
+    "review_decision": {
+      "review_decision_id": "prototype.review.offline.blocking_tension",
+      "actor_id": "prototype.human_reviewer",
+      "actor_type": "human",
+      "role": "authoring_reviewer",
+      "scope": "governed_authoring_output",
+      "decision": "approved",
+      "timestamp": "2026-06-15T15:10:00Z",
+      "self_certified": false
+    }
+  },
+  "bridge_issues": []
+}

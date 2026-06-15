@@ -1,0 +1,31 @@
+{
+  "schema_version": "governed_authoring.prototype_bridge.v1",
+  "source_packet": {
+    "schema_version": "governed_authoring.source_packet.v1",
+    "source_packet_id": "prototype.packet.offline.provisional",
+    "requested_output_status": "provisional",
+    "draft_mode": "provisional",
+    "title": "Offline provisional static export",
+    "source_material": [
+      {
+        "source_id": "prototype.source.offline.provisional",
+        "text": "Static prototype source text for an offline provisional authoring verification.",
+        "uri": "",
+        "content_hash": "",
+        "evidence_refs": []
+      }
+    ],
+    "claims": [
+      {
+        "claim_id": "prototype.claim.offline.provisional",
+        "statement": "Create a provisional governed authoring output packet.",
+        "evidence_refs": [],
+        "status": "provisional"
+      }
+    ],
+    "evidence_refs": [],
+    "unresolved_tensions": [],
+    "review_decision": null
+  },
+  "bridge_issues": []
+}

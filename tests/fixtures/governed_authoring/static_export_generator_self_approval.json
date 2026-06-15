@@ -1,0 +1,52 @@
+{
+  "schema_version": "governed_authoring.prototype_bridge.v1",
+  "source_packet": {
+    "schema_version": "governed_authoring.source_packet.v1",
+    "source_packet_id": "prototype.packet.offline.generator_self_approval",
+    "requested_output_status": "approved",
+    "draft_mode": "publication_ready",
+    "title": "Offline generator self-approval static export",
+    "source_material": [
+      {
+        "source_id": "prototype.source.offline.generator_self_approval",
+        "text": "Static prototype source text with evidence but generator self-approval.",
+        "uri": "",
+        "content_hash": "",
+        "evidence_refs": [
+          "evidence:prototype.source.offline.003"
+        ]
+      }
+    ],
+    "claims": [
+      {
+        "claim_id": "prototype.claim.offline.generator_self_approval",
+        "statement": "Create an approved output through generator self-approval.",
+        "evidence_refs": [
+          "evidence:prototype.source.offline.003"
+        ],
+        "status": "publication_ready"
+      }
+    ],
+    "evidence_refs": [
+      "evidence:prototype.source.offline.003"
+    ],
+    "unresolved_tensions": [],
+    "review_decision": {
+      "review_decision_id": "prototype.review.offline.generator_self_approval",
+      "actor_id": "prototype.generator",
+      "actor_type": "generator",
+      "role": "authoring_reviewer",
+      "scope": "governed_authoring_output",
+      "decision": "approved",
+      "timestamp": "2026-06-15T15:15:00Z",
+      "self_certified": true
+    }
+  },
+  "bridge_issues": [
+    {
+      "severity": "error",
+      "code": "generator_self_approval",
+      "message": "Generator/model/self-certified review cannot satisfy human approval."
+    }
+  ]
+}

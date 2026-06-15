@@ -1,0 +1,46 @@
+{
+  "schema_version": "governed_authoring.prototype_bridge.v1",
+  "source_packet": {
+    "schema_version": "governed_authoring.source_packet.v1",
+    "source_packet_id": "prototype.packet.offline.missing_evidence",
+    "requested_output_status": "approved",
+    "draft_mode": "publication_ready",
+    "title": "Offline missing evidence static export",
+    "source_material": [
+      {
+        "source_id": "prototype.source.offline.missing_evidence",
+        "text": "Static prototype source text requesting publication-ready approval without evidence.",
+        "uri": "",
+        "content_hash": "",
+        "evidence_refs": []
+      }
+    ],
+    "claims": [
+      {
+        "claim_id": "prototype.claim.offline.missing_evidence",
+        "statement": "Create a publication-ready output without evidence.",
+        "evidence_refs": [],
+        "status": "publication_ready"
+      }
+    ],
+    "evidence_refs": [],
+    "unresolved_tensions": [],
+    "review_decision": {
+      "review_decision_id": "prototype.review.offline.missing_evidence",
+      "actor_id": "prototype.human_reviewer",
+      "actor_type": "human",
+      "role": "authoring_reviewer",
+      "scope": "governed_authoring_output",
+      "decision": "approved",
+      "timestamp": "2026-06-15T15:05:00Z",
+      "self_certified": false
+    }
+  },
+  "bridge_issues": [
+    {
+      "severity": "error",
+      "code": "missing_evidence_refs",
+      "message": "Publication-ready prototype packet lacks evidence references."
+    }
+  ]
+}
