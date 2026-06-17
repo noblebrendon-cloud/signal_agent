@@ -62,3 +62,41 @@ $RECYCLE.BIN/
 winget_info.txt
 winget_out.txt
 
+# Source-control triage: generated/local outputs
+artifacts/
+outbound/
+reviews/
+books/out/
+data/claims/
+data/docs/processed/
+data/graph/
+data/operator/
+data/outputs/
+data/platform/
+data/reddit/
+data/validation/
+data/intake/text/*.pdf
+orchestration_core/execution_log.jsonl
+signal_agent/leviathan/diagnostic/causality/ledger/*.jsonl
+signal_agent/runtime/processed/
+
+# Runtime locks
+data/**/*.lock
+*.jsonl.lock
+
+# Local probe/test workspaces and scratch output
+tests/.probe_workspace/
+tmp_route_debug/
+tmp_probe.ps1
+tmp_test_output.txt
+tests_output*.txt
+probe_output.txt
+parse_results.txt
+test_simple.txt
+docx_dump.json
+out*.json
+
+# Build/package metadata and editor temp files
+*.egg-info/
+~$*
+
