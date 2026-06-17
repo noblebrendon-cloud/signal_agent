@@ -572,6 +572,20 @@ def _entry_from_release(
     }
 
 
+def _published_at_for_index(release: Dict[str, Any], fallback: str) -> str:
+    for event in release.get("events", []):
+        if not isinstance(event, dict):
+            continue
+        if event.get("event_type") == "ReleaseSitePublished" and event.get("created_at"):
+            return str(event["created_at"])
+
+    site_target = release.get("targets", {}).get("site", {})
+    if isinstance(site_target, dict) and site_target.get("published_at"):
+        return str(site_target["published_at"])
+
+    return fallback
+
+
 def update_letters_index(
     site_root: Path,
     current_entry: Dict[str, str],
@@ -673,12 +687,13 @@ def publish_release_site(
     _write_text(page_path, page_html)
 
     now = _utc_now()
+    published_at = _published_at_for_index(release, now)
     index_entry = _entry_from_release(
         letter_id=letter_id,
         release=release,
         page=page,
         slug=slug,
-        published_at=now,
+        published_at=published_at,
     )
     index_path = update_letters_index(site, index_entry, base_url=base_url)
 

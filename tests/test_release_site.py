@@ -197,6 +197,33 @@ def test_publish_release_site_repeated_publish_does_not_duplicate_index_entry(
     assert text.count('href="/letters/abc123/"') == 1
 
 
+def test_publish_release_site_uses_existing_site_publish_timestamp_for_index(
+    tmp_state: Path,
+    tmp_path: Path,
+) -> None:
+    letter_id = "abc123"
+    letter_dir = _make_exported_release(tmp_state, letter_id)
+    release_path = letter_dir / "release.json"
+    release = json.loads(release_path.read_text(encoding="utf-8"))
+    release["events"] = [
+        {
+            "event_type": "ReleaseSitePublished",
+            "created_at": "2026-06-16T20:20:38.663422+00:00",
+        }
+    ]
+    release_path.write_text(json.dumps(release, indent=2), encoding="utf-8")
+
+    site_root = tmp_path / "site"
+    site_root.mkdir()
+    (site_root / "index.html").write_text("<html></html>", encoding="utf-8")
+
+    publish_release_site(letter_id, site_root=str(site_root), base_url="https://example.test")
+
+    text = (site_root / "letters" / "index.html").read_text(encoding="utf-8")
+    assert 'data-published-at="2026-06-16T20:20:38.663422+00:00"' in text
+    assert "2026-06-16T20:20:38.663422+00:00" in text
+
+
 def test_publish_release_site_preserves_existing_index_entries(
     tmp_state: Path,
     tmp_path: Path,
