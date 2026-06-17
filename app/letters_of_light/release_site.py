@@ -30,6 +30,7 @@ from app.letters_of_light.release import (
 DEFAULT_BASE_URL = "https://brendonrcoleman.com"
 SITE_ROOT_ENV_VARS = ("LETTERS_OF_LIGHT_SITE_ROOT", "BRENDONRCOLEMAN_SITE_ROOT")
 PUBLISHABLE_STATES = {"exported", "published"}
+LETTERS_INDEX_DATA_ID = "letters-index-data"
 
 
 def _looks_like_site_root(path: Path) -> bool:
@@ -299,6 +300,291 @@ def _render_letter_page(*, page: Dict[str, Any], canonical_url: str, media: Dict
 """
 
 
+def _html_text(value: str) -> str:
+    text = re.sub(r"<[^>]+>", "", value)
+    text = html.unescape(text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _short_excerpt(value: str, limit: int = 180) -> str:
+    text = _clean_markdown_text(value)
+    if len(text) <= limit:
+        return text
+    return text[: limit - 3].rstrip() + "..."
+
+
+def _normalize_index_entry(entry: Dict[str, Any]) -> Optional[Dict[str, str]]:
+    href = str(entry.get("href") or "").strip()
+    title = str(entry.get("title") or "").strip()
+    if not href or not title:
+        return None
+
+    letter_id = str(entry.get("letter_id") or "").strip()
+    if not letter_id:
+        letter_id = href.strip("/").split("/")[-1]
+
+    return {
+        "letter_id": letter_id,
+        "href": href,
+        "title": title,
+        "theme": str(entry.get("theme") or "").strip(),
+        "scripture_ref": str(entry.get("scripture_ref") or "").strip(),
+        "excerpt": str(entry.get("excerpt") or "").strip(),
+        "published_at": str(entry.get("published_at") or "").strip(),
+    }
+
+
+def _read_index_entries_from_json(index_html: str) -> List[Dict[str, str]]:
+    pattern = (
+        rf'<script[^>]+id="{re.escape(LETTERS_INDEX_DATA_ID)}"[^>]*>'
+        r"(.*?)"
+        r"</script>"
+    )
+    match = re.search(pattern, index_html, flags=re.DOTALL)
+    if not match:
+        return []
+
+    raw = match.group(1).strip().replace("<\\/", "</")
+    try:
+        parsed = json.loads(raw)
+    except json.JSONDecodeError:
+        return []
+
+    if not isinstance(parsed, list):
+        return []
+
+    entries: List[Dict[str, str]] = []
+    for item in parsed:
+        if isinstance(item, dict):
+            normalized = _normalize_index_entry(item)
+            if normalized:
+                entries.append(normalized)
+    return entries
+
+
+def _read_index_entries_from_markup(index_html: str) -> List[Dict[str, str]]:
+    entries: List[Dict[str, str]] = []
+    article_pattern = re.compile(r"<article\b(?P<attrs>[^>]*)>(?P<body>.*?)</article>", re.DOTALL)
+
+    for match in article_pattern.finditer(index_html):
+        attrs = match.group("attrs")
+        body = match.group("body")
+        href_match = re.search(r'href="(?P<href>/letters/[^"]+/)"', body)
+        title_match = re.search(r'<h3[^>]*class="[^"]*\bcard-title\b[^"]*"[^>]*>(?P<title>.*?)</h3>', body, re.DOTALL)
+        if not href_match or not title_match:
+            continue
+
+        p_matches = re.findall(r'<p[^>]*class="[^"]*\bcard-text\b[^"]*"[^>]*>(.*?)</p>', body, re.DOTALL)
+        theme_match = re.search(r'<span[^>]*class="[^"]*\bsection-kicker\b[^"]*"[^>]*>(?P<theme>.*?)</span>', body, re.DOTALL)
+        letter_id_match = re.search(r'data-letter-id="(?P<letter_id>[^"]+)"', attrs)
+        published_at_match = re.search(r'data-published-at="(?P<published_at>[^"]*)"', attrs)
+
+        normalized = _normalize_index_entry(
+            {
+                "letter_id": letter_id_match.group("letter_id") if letter_id_match else "",
+                "href": href_match.group("href"),
+                "title": _html_text(title_match.group("title")),
+                "theme": _html_text(theme_match.group("theme")) if theme_match else "",
+                "scripture_ref": _html_text(p_matches[0]) if p_matches else "",
+                "excerpt": _html_text(p_matches[1]) if len(p_matches) > 1 else "",
+                "published_at": published_at_match.group("published_at") if published_at_match else "",
+            }
+        )
+        if normalized:
+            entries.append(normalized)
+
+    return entries
+
+
+def _read_letters_index_entries(index_path: Path) -> List[Dict[str, str]]:
+    if not index_path.exists():
+        return []
+
+    index_html = index_path.read_text(encoding="utf-8")
+    entries = _read_index_entries_from_json(index_html)
+    if entries:
+        return entries
+    return _read_index_entries_from_markup(index_html)
+
+
+def _index_entry_key(entry: Dict[str, str]) -> str:
+    return entry.get("letter_id") or entry.get("href", "")
+
+
+def _merge_letters_index_entries(
+    existing_entries: List[Dict[str, str]],
+    current_entry: Dict[str, str],
+) -> List[Dict[str, str]]:
+    merged: Dict[str, Dict[str, str]] = {}
+    order: List[str] = []
+
+    for entry in existing_entries:
+        key = _index_entry_key(entry)
+        if not key:
+            continue
+        if key not in merged:
+            order.append(key)
+        merged[key] = entry
+
+    key = _index_entry_key(current_entry)
+    previous = merged.get(key)
+    if previous and previous.get("published_at"):
+        current_entry = dict(current_entry)
+        current_entry["published_at"] = previous["published_at"]
+    if key not in merged:
+        order.append(key)
+    merged[key] = current_entry
+
+    entries = [merged[key] for key in order if key in merged]
+    entries.sort(
+        key=lambda item: (
+            item.get("published_at", ""),
+            item.get("title", ""),
+            item.get("letter_id", ""),
+        ),
+        reverse=True,
+    )
+    return entries
+
+
+def _render_index_entry(entry: Dict[str, str]) -> str:
+    scripture = entry.get("scripture_ref", "")
+    excerpt = entry.get("excerpt", "")
+    scripture_html = f'              <p class="card-text">{html.escape(scripture)}</p>\n' if scripture else ""
+    excerpt_html = f'              <p class="card-text">{html.escape(excerpt)}</p>\n' if excerpt else ""
+    return (
+        f'          <article class="card" data-letter-id="{html.escape(entry.get("letter_id", ""))}" '
+        f'data-published-at="{html.escape(entry.get("published_at", ""))}">\n'
+        "            <div class=\"card-content\">\n"
+        f'              <span class="section-kicker">{html.escape(entry.get("theme", ""))}</span>\n'
+        f'              <h3 class="card-title">{html.escape(entry.get("title", ""))}</h3>\n'
+        f"{scripture_html}"
+        f"{excerpt_html}"
+        "            </div>\n"
+        "            <div class=\"card-actions\">\n"
+        f'              <a href="{html.escape(entry.get("href", ""))}" class="btn btn-secondary">Read Letter</a>\n'
+        "            </div>\n"
+        "          </article>"
+    )
+
+
+def _index_data_json(entries: List[Dict[str, str]]) -> str:
+    return json.dumps(entries, indent=2, ensure_ascii=False).replace("</", "<\\/")
+
+
+def _render_letters_index_page(entries: List[Dict[str, str]], base_url: str) -> str:
+    cards = "\n".join(_render_index_entry(entry) for entry in entries)
+    data_json = _index_data_json(entries)
+    canonical = f"{base_url.rstrip('/')}/letters/"
+    return f"""<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Letters of Light | Brendon R. Coleman</title>
+  <meta name="description" content="Released Letters of Light reflections from Brendon R. Coleman." />
+  <link rel="canonical" href="{html.escape(canonical)}" />
+  <meta property="og:title" content="Letters of Light | Brendon R. Coleman" />
+  <meta property="og:description" content="Released Letters of Light reflections from Brendon R. Coleman." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="{html.escape(canonical)}" />
+  <meta property="og:site_name" content="Brendon Coleman" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Letters of Light | Brendon R. Coleman" />
+  <meta name="twitter:description" content="Released Letters of Light reflections from Brendon R. Coleman." />
+  <link rel="stylesheet" href="/assets/style.css" />
+</head>
+<body>
+  <div class="site-shell">
+    <header class="site-header">
+      <div class="brand">
+        <a href="/">Brendon R. Coleman</a>
+        <span class="tag">Letters of Light</span>
+      </div>
+      <nav class="nav" aria-label="Primary">
+        <a href="/">Home</a>
+        <a href="/whitepapers/">Whitepapers</a>
+        <a href="/services/">Services</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-content">
+          <span class="section-kicker">Released Reflections</span>
+          <h1 class="hero-title">Letters of Light</h1>
+          <p class="hero-subtitle">
+            A public collection of released Letters, each reviewed and published through the owned-site release gate.
+          </p>
+        </div>
+      </section>
+
+      <section class="section">
+        <header class="section-header">
+          <span class="section-kicker">Available Now</span>
+          <h2 class="section-title">Released Letters</h2>
+        </header>
+
+        <div class="card-grid">
+{cards}
+        </div>
+      </section>
+    </main>
+
+    <script type="application/json" id="{LETTERS_INDEX_DATA_ID}">
+{data_json}
+    </script>
+
+    <footer class="site-footer">
+      <div class="footer-nav">
+        <a href="/">Home</a>
+        <a href="/whitepapers/">Whitepapers</a>
+        <a href="/services/">Services</a>
+      </div>
+      <div class="footer-meta">&copy; <span id="y"></span> Brendon R. Coleman</div>
+    </footer>
+  </div>
+
+  <script>document.getElementById("y").textContent = new Date().getFullYear();</script>
+</body>
+</html>
+"""
+
+
+def _entry_from_release(
+    *,
+    letter_id: str,
+    release: Dict[str, Any],
+    page: Dict[str, Any],
+    slug: str,
+    published_at: str,
+) -> Dict[str, str]:
+    paragraphs = page.get("paragraphs") or []
+    excerpt_source = str(page.get("description") or (paragraphs[0] if paragraphs else ""))
+    return {
+        "letter_id": letter_id,
+        "href": f"/letters/{slug}/",
+        "title": str(page.get("title") or release.get("title") or "Letter of Light"),
+        "theme": str(release.get("theme") or ""),
+        "scripture_ref": str(page.get("scripture") or release.get("scripture_ref") or ""),
+        "excerpt": _short_excerpt(excerpt_source),
+        "published_at": published_at,
+    }
+
+
+def update_letters_index(
+    site_root: Path,
+    current_entry: Dict[str, str],
+    *,
+    base_url: str = DEFAULT_BASE_URL,
+) -> Path:
+    index_path = site_root / "letters" / "index.html"
+    existing_entries = _read_letters_index_entries(index_path)
+    entries = _merge_letters_index_entries(existing_entries, current_entry)
+    _write_text(index_path, _render_letters_index_page(entries, base_url))
+    return index_path
+
+
 def _caption_with_url(text: str, canonical_url: str) -> str:
     text = text.strip()
     if not text:
@@ -386,9 +672,18 @@ def publish_release_site(
     page_path = page_dir / "index.html"
     _write_text(page_path, page_html)
 
+    now = _utc_now()
+    index_entry = _entry_from_release(
+        letter_id=letter_id,
+        release=release,
+        page=page,
+        slug=slug,
+        published_at=now,
+    )
+    index_path = update_letters_index(site, index_entry, base_url=base_url)
+
     _refresh_social_exports(letter_id, release, canonical)
 
-    now = _utc_now()
     release["release_state"] = "published"
     release["canonical_url"] = canonical
     release["updated_at"] = now
@@ -400,6 +695,8 @@ def publish_release_site(
             "url": canonical,
             "site_root": str(site),
             "page_path": str(page_path),
+            "index_path": str(index_path),
+            "published_at": index_entry["published_at"],
         }
     )
     release.setdefault("events", []).append(
@@ -408,6 +705,7 @@ def publish_release_site(
             "created_at": now,
             "canonical_url": canonical,
             "page_path": str(page_path),
+            "index_path": str(index_path),
             "site_root": str(site),
         }
     )
@@ -417,6 +715,7 @@ def publish_release_site(
         "letter_id": letter_id,
         "canonical_url": canonical,
         "page_path": str(page_path),
+        "index_path": str(index_path),
         "site_root": str(site),
         "media": media,
         "updated_at": now,
