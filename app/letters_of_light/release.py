@@ -430,7 +430,8 @@ def export_campaign(letter_id: str) -> Dict[str, Any]:
     if visual_path.exists():
         shutil.copy2(visual_path, export_dir / "visual.png")
 
-    release["release_state"] = "exported"
+    if release.get("release_state") not in {"publishing", "published"}:
+        release["release_state"] = "exported"
     release["canonical_url"] = canonical_url
     release["eligibility"] = check.to_dict()
     release["updated_at"] = _utc_now()

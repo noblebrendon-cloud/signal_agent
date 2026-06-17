@@ -28,6 +28,7 @@ BRANCH_OWNERSHIP = {
     "release-candidate": "letters_of_light_release_gate",
     "release-approve": "letters_of_light_release_gate",
     "release-export": "letters_of_light_release_gate",
+    "release-site": "letters_of_light_release_gate",
 }
 
 
@@ -78,6 +79,11 @@ def build_parser() -> argparse.ArgumentParser:
     re = sub.add_parser("release-export", help="Export platform-ready campaign package")
     re.add_argument("--letter-id", required=True, metavar="ID")
 
+    rs_pub = sub.add_parser("release-site", help="Publish exported release to the owned site")
+    rs_pub.add_argument("--letter-id", required=True, metavar="ID")
+    rs_pub.add_argument("--site-root", default=None, metavar="DIR")
+    rs_pub.add_argument("--base-url", default="https://brendonrcoleman.com", metavar="URL")
+
     return p
 
 
@@ -109,6 +115,9 @@ def main(argv: list[str] | None = None) -> int:
     elif args.cmd == "release-export":
         # letters_of_light_release_gate
         return _cmd_release_export(args)
+    elif args.cmd == "release-site":
+        # letters_of_light_release_gate
+        return _cmd_release_site(args)
 
     parser.print_help()
     return 1
@@ -318,6 +327,19 @@ def _cmd_release_export(args: argparse.Namespace) -> int:
 
     manifest = export_campaign(args.letter_id)
     print(json.dumps(manifest, indent=2))
+    return 0
+
+
+def _cmd_release_site(args: argparse.Namespace) -> int:
+    import json
+    from app.letters_of_light.release_site import publish_release_site
+
+    result = publish_release_site(
+        args.letter_id,
+        site_root=args.site_root,
+        base_url=args.base_url,
+    )
+    print(json.dumps(result, indent=2))
     return 0
 
 if __name__ == "__main__":

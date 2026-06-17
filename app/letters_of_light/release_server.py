@@ -23,6 +23,7 @@ from app.letters_of_light.release import (
     _letter_dir,
     _read_json,
 )
+from app.letters_of_light.release_site import publish_release_site
 
 
 DEFAULT_HOST = "127.0.0.1"
@@ -59,6 +60,7 @@ def _letters_payload() -> List[Dict[str, Any]]:
         enriched = dict(row)
         enriched["approved"] = bool(release.get("approved", False))
         enriched["canonical_url"] = release.get("canonical_url")
+        enriched["site_status"] = release.get("targets", {}).get("site", {}).get("status")
         enriched["release_export_dir"] = str(export_dir) if export_exists else ""
         enriched["release_export_url"] = _folder_uri(export_dir) if export_exists else ""
         rows.append(enriched)
@@ -349,7 +351,8 @@ def _render_page() -> str:
     function render(rows) {
       const eligibleCount = rows.filter((row) => row.eligible).length;
       const exportedCount = rows.filter((row) => row.release_state === "exported").length;
-      summaryEl.textContent = `${rows.length} letters | ${eligibleCount} eligible | ${exportedCount} exported`;
+      const publishedCount = rows.filter((row) => row.release_state === "published").length;
+      summaryEl.textContent = `${rows.length} letters | ${eligibleCount} eligible | ${exportedCount} exported | ${publishedCount} published`;
 
       tbody.innerHTML = rows.map((row) => {
         const eligible = row.eligible ? badge("eligible", "yes") : badge("blocked", "no");
@@ -359,6 +362,7 @@ def _render_page() -> str:
         const candidateDisabled = row.eligible ? "" : "disabled";
         const approveDisabled = row.eligible ? "" : "disabled";
         const exportActionDisabled = row.approved ? "" : "disabled";
+        const siteActionDisabled = (row.release_state === "exported" || row.release_state === "published") ? "" : "disabled";
         const exportPath = row.release_export_dir || "";
         const score = row.evaluation_total ?? "";
         const audio = row.audio_alignment ?? "";
@@ -381,6 +385,7 @@ def _render_page() -> str:
               <button type="button" ${candidateDisabled} data-action="/api/candidate" data-id="${letterId}">Candidate</button>
               <button type="button" ${approveDisabled} data-action="/api/approve" data-id="${letterId}">Approve</button>
               <button type="button" ${exportActionDisabled} data-action="/api/export" data-id="${letterId}">Export</button>
+              <button type="button" ${siteActionDisabled} data-action="/api/publish-site" data-id="${letterId}">Publish to Site</button>
               <button type="button" ${exportDisabled} data-open="${letterId}">Open</button>
             </div>
           </td>
@@ -453,6 +458,8 @@ class ReleaseRequestHandler(BaseHTTPRequestHandler):
                 result = approve_release(letter_id)
             elif path == "/api/export":
                 result = export_campaign(letter_id)
+            elif path == "/api/publish-site":
+                result = publish_release_site(letter_id)
             else:
                 self._send_json({"error": "not found"}, HTTPStatus.NOT_FOUND)
                 return
