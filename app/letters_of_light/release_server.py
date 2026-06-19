@@ -1,8 +1,8 @@
 """
 app/letters_of_light/release_server.py - Local campaign manager for release gates.
 
-This server only exposes local review controls. It does not publish to external
-platforms and does not require OAuth credentials.
+This server exposes local review controls and explicit per-platform publish
+actions. It stays bound to localhost by default.
 """
 from __future__ import annotations
 
@@ -24,6 +24,7 @@ from app.letters_of_light.release import (
     _read_json,
 )
 from app.letters_of_light.release_site import publish_release_site
+from app.letters_of_light.publishers.youtube import publish_youtube
 
 
 DEFAULT_HOST = "127.0.0.1"
@@ -42,6 +43,10 @@ def _export_dir_for(letter_id: str) -> Path:
     return _letter_dir(letter_id) / "release_export"
 
 
+def _public_release_log_for(letter_id: str) -> Dict[str, Any]:
+    return _read_json(_letter_dir(letter_id) / "public_release_log.json")
+
+
 def _folder_uri(path: Path) -> str:
     try:
         return path.resolve().as_uri()
@@ -58,9 +63,19 @@ def _letters_payload() -> List[Dict[str, Any]]:
         export_exists = export_dir.exists() and export_dir.is_dir()
 
         enriched = dict(row)
+        targets = release.get("targets", {})
+        site = targets.get("site", {}) if isinstance(targets.get("site"), dict) else {}
+        youtube = targets.get("youtube", {}) if isinstance(targets.get("youtube"), dict) else {}
+        log = _public_release_log_for(letter_id)
         enriched["approved"] = bool(release.get("approved", False))
         enriched["canonical_url"] = release.get("canonical_url")
-        enriched["site_status"] = release.get("targets", {}).get("site", {}).get("status")
+        enriched["site_status"] = site.get("status")
+        enriched["youtube_status"] = youtube.get("status")
+        enriched["youtube_url"] = youtube.get("url")
+        enriched["youtube_platform_id"] = youtube.get("platform_id") or youtube.get("video_id")
+        enriched["youtube_error"] = youtube.get("error")
+        enriched["release_log_path"] = str(_letter_dir(letter_id) / "public_release_log.json") if log else ""
+        enriched["manual_social_urls"] = log.get("social_urls", {}) if isinstance(log.get("social_urls"), dict) else {}
         enriched["release_export_dir"] = str(export_dir) if export_exists else ""
         enriched["release_export_url"] = _folder_uri(export_dir) if export_exists else ""
         rows.append(enriched)
@@ -184,7 +199,7 @@ def _render_page() -> str:
 
     table {
       width: 100%;
-      min-width: 1080px;
+      min-width: 1380px;
       border-collapse: collapse;
       background: var(--panel);
       border: 1px solid var(--line);
@@ -227,16 +242,27 @@ def _render_page() -> str:
 
     .yes { color: var(--green); background: var(--green-bg); }
     .no { color: var(--red); background: var(--red-bg); }
-    .state-exported, .state-approved { color: var(--green); background: var(--green-bg); }
+    .state-exported, .state-approved, .state-published { color: var(--green); background: var(--green-bg); }
     .state-candidate { color: var(--blue); background: var(--blue-bg); }
     .state-manual_required, .state-failed { color: var(--red); background: var(--red-bg); }
-    .state-unseen, .state-draft, .state-scheduled { color: var(--amber); background: var(--amber-bg); }
+    .state-unseen, .state-draft, .state-scheduled, .state-pending { color: var(--amber); background: var(--amber-bg); }
 
     .actions {
       display: flex;
       align-items: center;
       gap: 7px;
-      min-width: 300px;
+      min-width: 520px;
+      flex-wrap: wrap;
+    }
+
+    select {
+      min-height: 32px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--ink);
+      font: inherit;
+      padding: 6px 8px;
     }
 
     .path {
@@ -255,7 +281,7 @@ def _render_page() -> str:
         flex-direction: column;
       }
       main { padding: 14px; }
-      table { min-width: 980px; }
+      table { min-width: 1240px; }
     }
   </style>
 </head>
@@ -279,6 +305,10 @@ def _render_page() -> str:
           <th>Audio</th>
           <th>Eligibility</th>
           <th>Release State</th>
+          <th>Canonical</th>
+          <th>Site</th>
+          <th>YouTube</th>
+          <th>Manual Log</th>
           <th>Export Folder</th>
           <th>Actions</th>
         </tr>
@@ -329,11 +359,11 @@ def _render_page() -> str:
       return data;
     }
 
-    async function runAction(path, letterId) {
+    async function runAction(path, letterId, extra = {}) {
       setBusy(true);
       statusEl.textContent = `${letterId}: working`;
       try {
-        await api(path, {letter_id: letterId});
+        await api(path, {letter_id: letterId, ...extra});
         await loadLetters();
         statusEl.textContent = `${letterId}: updated`;
       } catch (error) {
@@ -346,6 +376,16 @@ def _render_page() -> str:
     function openExport(row) {
       if (!row.release_export_url) return;
       window.open(row.release_export_url, "_blank", "noopener");
+    }
+
+    async function copyManualPackage(row) {
+      const lines = [
+        `Letter: ${row.title || row.letter_id}`,
+        `Canonical: ${row.canonical_url || ""}`,
+        "Collection: https://brendonrcoleman.com/letters/",
+        `Export: ${row.release_export_dir || ""}`
+      ];
+      await navigator.clipboard.writeText(lines.join("\\n"));
     }
 
     function render(rows) {
@@ -363,6 +403,7 @@ def _render_page() -> str:
         const approveDisabled = row.eligible ? "" : "disabled";
         const exportActionDisabled = row.approved ? "" : "disabled";
         const siteActionDisabled = (row.release_state === "exported" || row.release_state === "published") ? "" : "disabled";
+        const youtubeActionDisabled = (row.approved && row.release_export_dir && row.youtube_status !== "published") ? "" : "disabled";
         const exportPath = row.release_export_dir || "";
         const score = row.evaluation_total ?? "";
         const audio = row.audio_alignment ?? "";
@@ -370,6 +411,15 @@ def _render_page() -> str:
         const title = escapeHtml(row.title || "");
         const theme = escapeHtml(row.theme || "");
         const exportTitle = escapeHtml(exportPath);
+        const canonical = row.canonical_url
+          ? `<a href="${escapeHtml(row.canonical_url)}" target="_blank" rel="noopener">Open</a>`
+          : "";
+        const site = badge(row.site_status || "pending", stateClass(row.site_status || "pending"));
+        const youtubeStatus = row.youtube_url
+          ? `<a href="${escapeHtml(row.youtube_url)}" target="_blank" rel="noopener">${badge(row.youtube_status || "published", stateClass(row.youtube_status || "published"))}</a>`
+          : badge(row.youtube_status || "pending", stateClass(row.youtube_status || "pending"));
+        const logCount = Object.values(row.manual_social_urls || {}).filter(Boolean).length;
+        const manualLog = row.release_log_path ? `${logCount} URLs` : "";
 
         return `<tr>
           <td class="id">${letterId}</td>
@@ -379,6 +429,10 @@ def _render_page() -> str:
           <td class="audio">${escapeHtml(audio)}</td>
           <td>${eligible}</td>
           <td>${stateBadge}</td>
+          <td>${canonical}</td>
+          <td>${site}</td>
+          <td>${youtubeStatus}</td>
+          <td>${escapeHtml(manualLog)}</td>
           <td><div class="path" title="${exportTitle}">${exportTitle}</div></td>
           <td>
             <div class="actions">
@@ -386,6 +440,13 @@ def _render_page() -> str:
               <button type="button" ${approveDisabled} data-action="/api/approve" data-id="${letterId}">Approve</button>
               <button type="button" ${exportActionDisabled} data-action="/api/export" data-id="${letterId}">Export</button>
               <button type="button" ${siteActionDisabled} data-action="/api/publish-site" data-id="${letterId}">Publish to Site</button>
+              <select ${youtubeActionDisabled} data-youtube-privacy="${letterId}" aria-label="YouTube privacy">
+                <option value="unlisted" selected>Unlisted</option>
+                <option value="private">Private</option>
+                <option value="public">Public</option>
+              </select>
+              <button type="button" ${youtubeActionDisabled} data-action="/api/publish/youtube" data-id="${letterId}">Publish YouTube</button>
+              <button type="button" ${exportDisabled} data-copy="${letterId}">Copy Manual Package</button>
               <button type="button" ${exportDisabled} data-open="${letterId}">Open</button>
             </div>
           </td>
@@ -393,11 +454,26 @@ def _render_page() -> str:
       }).join("");
 
       tbody.querySelectorAll("button[data-action]").forEach((button) => {
-        button.addEventListener("click", () => runAction(button.dataset.action, button.dataset.id));
+        button.addEventListener("click", () => {
+          const extra = {};
+          if (button.dataset.action === "/api/publish/youtube") {
+            const select = tbody.querySelector(`select[data-youtube-privacy="${button.dataset.id}"]`);
+            extra.privacy_status = select ? select.value : "unlisted";
+          }
+          runAction(button.dataset.action, button.dataset.id, extra);
+        });
       });
       tbody.querySelectorAll("button[data-open]").forEach((button) => {
         const row = rows.find((item) => item.letter_id === button.dataset.open);
         button.addEventListener("click", () => openExport(row));
+      });
+      tbody.querySelectorAll("button[data-copy]").forEach((button) => {
+        const row = rows.find((item) => item.letter_id === button.dataset.copy);
+        button.addEventListener("click", () => {
+          copyManualPackage(row)
+            .then(() => { statusEl.textContent = `${row.letter_id}: manual package copied`; })
+            .catch((error) => { statusEl.textContent = `${row.letter_id}: ${error.message}`; });
+        });
       });
     }
 
@@ -458,8 +534,14 @@ class ReleaseRequestHandler(BaseHTTPRequestHandler):
                 result = approve_release(letter_id)
             elif path == "/api/export":
                 result = export_campaign(letter_id)
-            elif path == "/api/publish-site":
+            elif path in {"/api/publish-site", "/api/publish/site"}:
                 result = publish_release_site(letter_id)
+            elif path == "/api/publish/youtube":
+                result = publish_youtube(
+                    letter_id,
+                    privacy_status=str(body.get("privacy_status", "unlisted")),
+                    force=bool(body.get("force", False)),
+                )
             else:
                 self._send_json({"error": "not found"}, HTTPStatus.NOT_FOUND)
                 return

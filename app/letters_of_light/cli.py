@@ -29,6 +29,7 @@ BRANCH_OWNERSHIP = {
     "release-approve": "letters_of_light_release_gate",
     "release-export": "letters_of_light_release_gate",
     "release-site": "letters_of_light_release_gate",
+    "release-youtube": "letters_of_light_release_gate",
 }
 
 
@@ -84,6 +85,16 @@ def build_parser() -> argparse.ArgumentParser:
     rs_pub.add_argument("--site-root", default=None, metavar="DIR")
     rs_pub.add_argument("--base-url", default="https://brendonrcoleman.com", metavar="URL")
 
+    yt_pub = sub.add_parser("release-youtube", help="Publish an approved release to YouTube")
+    yt_pub.add_argument("--letter-id", required=True, metavar="ID")
+    yt_pub.add_argument(
+        "--privacy-status",
+        default="unlisted",
+        choices=("private", "unlisted", "public"),
+        metavar="STATUS",
+    )
+    yt_pub.add_argument("--force", action="store_true", help="Upload again even if YouTube is already published")
+
     return p
 
 
@@ -118,6 +129,9 @@ def main(argv: list[str] | None = None) -> int:
     elif args.cmd == "release-site":
         # letters_of_light_release_gate
         return _cmd_release_site(args)
+    elif args.cmd == "release-youtube":
+        # letters_of_light_release_gate
+        return _cmd_release_youtube(args)
 
     parser.print_help()
     return 1
@@ -338,6 +352,19 @@ def _cmd_release_site(args: argparse.Namespace) -> int:
         args.letter_id,
         site_root=args.site_root,
         base_url=args.base_url,
+    )
+    print(json.dumps(result, indent=2))
+    return 0
+
+
+def _cmd_release_youtube(args: argparse.Namespace) -> int:
+    import json
+    from app.letters_of_light.publishers.youtube import publish_youtube
+
+    result = publish_youtube(
+        args.letter_id,
+        privacy_status=args.privacy_status,
+        force=args.force,
     )
     print(json.dumps(result, indent=2))
     return 0

@@ -16,6 +16,7 @@ def test_branch_ownership_is_explicit():
         "release-approve": "letters_of_light_release_gate",
         "release-export": "letters_of_light_release_gate",
         "release-site": "letters_of_light_release_gate",
+        "release-youtube": "letters_of_light_release_gate",
     }
 
 
@@ -31,6 +32,7 @@ def test_branch_ownership_is_explicit():
         (["release-approve", "--letter-id", "abc123"], "_cmd_release_approve"),
         (["release-export", "--letter-id", "abc123"], "_cmd_release_export"),
         (["release-site", "--letter-id", "abc123"], "_cmd_release_site"),
+        (["release-youtube", "--letter-id", "abc123"], "_cmd_release_youtube"),
     ],
 )
 def test_main_dispatches_to_single_owned_branch(monkeypatch, argv, expected_handler):
@@ -53,6 +55,7 @@ def test_main_dispatches_to_single_owned_branch(monkeypatch, argv, expected_hand
         "_cmd_release_approve",
         "_cmd_release_export",
         "_cmd_release_site",
+        "_cmd_release_youtube",
     ):
         monkeypatch.setattr(lol_cli, handler_name, make_handler(handler_name))
 
