@@ -1,0 +1,404 @@
+version: 1
+workflows:
+  inspect_system_state:
+    description: Inspect canonical system state, lanes, control states, and current authority records.
+    intent_ids:
+      - inspect_system_state
+    tool_chain:
+      - inspect_system_state
+    aliases:
+      - inspect system state
+      - system state
+      - status
+    authority_paths:
+      - ARCHITECTURE.md
+      - config/lanes.yaml
+      - config/state_machine.yaml
+      - data/intake/intake.jsonl
+      - data/capture/capture_log.jsonl
+      - data/capture/promotion_log.jsonl
+      - data/capture/routing_log.jsonl
+      - data/state/artifact_registry.jsonl
+    writes_paths:
+      - data/operator/runs/operator_runs.jsonl
+      - data/operator/state/session_state.json
+    mode: read_only
+    resumable: true
+
+  capture_routing_status:
+    description: Inspect capture, promotion, and routing state from the authoritative ledgers, router config, and active spine directories.
+    intent_ids:
+      - inspect_capture_routing_status
+    tool_chain:
+      - capture_routing_status
+    aliases:
+      - capture routing status
+      - capture status
+      - show capture status
+      - routing status
+      - show routing status
+      - routing state
+      - explain current routing state
+      - promoted recently
+      - what was promoted recently
+      - active lanes
+      - what lanes are active
+      - configured routes
+      - observed routes
+      - routing
+    authority_paths:
+      - data/capture/promotion_log.jsonl
+      - data/capture/routing_log.jsonl
+      - config/spine_router.yaml
+      - config/lanes.yaml
+      - app/hq/capture/promote.py
+      - app/hq/capture/router.py
+      - constraints/spines/content_publishing/incoming
+      - constraints/spines/ai_stability_diagnostic/incoming
+      - constraints/spines/misc/incoming
+    writes_paths:
+      - data/operator/runs/operator_runs.jsonl
+      - data/operator/state/session_state.json
+    mode: read_only
+    resumable: true
+    notes:
+      - The status report is reconstructed from durable ledgers, router config, lane manifests, and spine incoming directories.
+
+  routing_queue_backlog:
+    description: Drill into queue and backlog state for routing destinations from the authoritative ledgers and incoming directories.
+    intent_ids:
+      - inspect_routing_queue_backlog
+    tool_chain:
+      - routing_queue_backlog
+    aliases:
+      - routing queue backlog
+      - queue backlog
+      - show queue backlog
+      - inspect routing queue
+      - inspect queue backlog
+      - backlog
+      - show backlog
+      - show backlog for
+    authority_paths:
+      - data/capture/promotion_log.jsonl
+      - data/capture/routing_log.jsonl
+      - config/spine_router.yaml
+      - config/lanes.yaml
+      - constraints/spines/
+      - app/hq/capture/promote.py
+      - app/hq/capture/router.py
+      - app/hq/governance/transition_gate.py
+    writes_paths:
+      - data/operator/runs/operator_runs.jsonl
+      - data/operator/state/session_state.json
+    mode: read_only
+    resumable: true
+    notes:
+      - The backlog drill-down is reconstructed from durable ledgers plus the live spine incoming directories.
+
+  routing_lineage_drilldown:
+    description: Inspect a single bundle or destination with exact promotion, routing, queue, and downstream lineage evidence.
+    intent_ids:
+      - inspect_routing_lineage_drilldown
+    tool_chain:
+      - routing_lineage_drilldown
+    aliases:
+      - inspect bundle
+      - bundle lineage
+      - show lineage for
+      - show downstream evidence for
+      - inspect destination
+      - show destination status for
+      - drill down on
+    authority_paths:
+      - data/capture/promotion_log.jsonl
+      - data/capture/routing_log.jsonl
+      - data/intake/intake.jsonl
+      - data/artifact_registry.jsonl
+      - artifacts/videos/video_package_registry.jsonl
+      - config/spine_router.yaml
+      - config/lanes.yaml
+      - constraints/spines/
+      - signal_agent/content/lineage_status.py
+      - app/hq/capture/promote.py
+      - app/hq/capture/router.py
+      - app/hq/governance/transition_gate.py
+    writes_paths:
+      - data/operator/runs/operator_runs.jsonl
+      - data/operator/state/session_state.json
+    mode: read_only
+    resumable: true
+    notes:
+      - Bundle mode reconstructs exact queue and ledger evidence first, then reuses the read-only content lineage view for downstream artifact/package evidence.
+
+  explain_repo_structure:
+    description: Explain the repo structure relevant to the internal operator and its future control-surface role.
+    intent_ids:
+      - explain_repo_structure
+    tool_chain:
+      - explain_repo_structure
+    aliases:
+      - explain repo structure
+      - repo structure
+      - repository structure
+    authority_paths:
+      - ARCHITECTURE.md
+      - docs/operator/architecture.md
+      - docs/architecture/SIGNAL_AGENT_PATH2_FOUNDATION.md
+      - signal_agent/operator/
+      - signal_agent/cli/operator_cli.py
+      - config/operator/workflows.yaml
+    writes_paths:
+      - data/operator/runs/operator_runs.jsonl
+      - data/operator/state/session_state.json
+    mode: read_only
+    resumable: true
+
+  list_known_workflows:
+    description: List the known operator workflows and their execution modes.
+    intent_ids:
+      - list_known_workflows
+    tool_chain:
+      - list_workflows
+    aliases:
+      - list workflows
+      - known workflows
+      - available workflows
+    authority_paths:
+      - config/operator/workflows.yaml
+      - config/operator/tools.yaml
+      - config/operator/intents.yaml
+    writes_paths:
+      - data/operator/runs/operator_runs.jsonl
+      - data/operator/state/session_state.json
+    mode: read_only
+    resumable: true
+
+  continue_operator_task:
+    description: Rehydrate the prior operator task context without replaying side effects.
+    intent_ids:
+      - continue_prior_task
+    tool_chain:
+      - continue_operator_task
+    aliases:
+      - continue prior task
+      - continue
+      - resume
+    authority_paths:
+      - data/operator/runs/operator_runs.jsonl
+      - data/operator/state/session_state.json
+    writes_paths:
+      - data/operator/runs/operator_runs.jsonl
+      - data/operator/state/session_state.json
+    mode: read_only
+    resumable: true
+    notes:
+      - Continue is read-only in v0 and rehydrates prior context instead of replaying mutations.
+
+  telemetry_evaluation:
+    description: Placeholder handoff point for future telemetry spine evaluation.
+    intent_ids:
+      - evaluate_telemetry_placeholder
+    tool_chain:
+      - telemetry_placeholder
+    aliases:
+      - telemetry evaluation
+      - telemetry
+      - telemetry workflow placeholder
+    authority_paths:
+      - config/spine_router.yaml
+      - config/lanes.yaml
+      - docs/operator/architecture.md
+      - docs/architecture/SIGNAL_AGENT_PATH2_FOUNDATION.md
+      - signal_agent/leviathan/interaction_signals/
+      - services/clipboard_intake_spine/
+    writes_paths:
+      - data/operator/runs/operator_runs.jsonl
+      - data/operator/state/session_state.json
+    mode: placeholder
+    resumable: true
+    notes:
+      - v0 defines only the structural handoff point and does not execute live telemetry intake.
+
+  signal_observability:
+    description: Placeholder for future signal observability diagnostics over cross-channel intake and routing evidence.
+    intent_ids: []
+    tool_chain:
+      - telemetry_placeholder
+    aliases:
+      - signal observability
+      - observability
+    authority_paths:
+      - config/spine_router.yaml
+      - docs/operator/architecture.md
+      - signal_agent/leviathan/interaction_signals/
+      - data/capture/routing_log.jsonl
+      - data/intake/intake.jsonl
+    writes_paths:
+      - data/operator/runs/operator_runs.jsonl
+      - data/operator/state/session_state.json
+    mode: placeholder
+    resumable: true
+    notes:
+      - Intended future surface for telemetry scoring, signal diagnostics, and cross-channel intake inspection.
+
+  promotion_decision_bridge:
+    description: Placeholder for future promotion, expand, archive, and monitor decision support.
+    intent_ids: []
+    tool_chain:
+      - telemetry_placeholder
+    aliases:
+      - promotion decision bridge
+      - promotion decision
+      - expand archive monitor
+    authority_paths:
+      - app/hq/capture/promote.py
+      - app/hq/capture/router.py
+      - data/capture/promotion_log.jsonl
+      - data/capture/routing_log.jsonl
+      - signal_agent/leviathan/interaction_signals/oil_bridge.py
+      - docs/operator/architecture.md
+    writes_paths:
+      - data/operator/runs/operator_runs.jsonl
+      - data/operator/state/session_state.json
+    mode: placeholder
+    resumable: true
+    notes:
+      - Intended future bridge between signal evidence, OIL interpretation, and governed promotion decisions.
+
+  show_action_surfaces:
+    description: Show which manifests, ledgers, and files matter for a requested operator action or workflow.
+    intent_ids:
+      - show_action_surfaces
+    tool_chain:
+      - show_action_surfaces
+    aliases:
+      - what files matter
+      - what ledgers matter
+      - what manifests matter
+      - what matters for
+    authority_paths:
+      - config/operator/workflows.yaml
+      - config/operator/tools.yaml
+      - data/operator/runs/operator_runs.jsonl
+    writes_paths:
+      - data/operator/runs/operator_runs.jsonl
+      - data/operator/state/session_state.json
+    mode: read_only
+    resumable: true
+
+  record_state_append:
+    description: Append one state record to the canonical artifact registry. First real write-mode workflow.
+    intent_ids:
+      - record_artifact_state
+    tool_chain:
+      - record_state_append
+    aliases:
+      - record state
+      - append artifact state
+    authority_paths:
+      - shared/state_registry.py
+      - data/state/artifact_registry.jsonl
+      - config/state_machine.yaml
+      - config/lanes.yaml
+      - app/hq/governance/transition_gate.py
+    writes_paths:
+      - data/state/artifact_registry.jsonl
+    mode: write
+    resumable: false
+    notes:
+      - First real write-mode workflow. Tests the full governed mutation path.
+    transition_context:
+      current_state: captured
+      next_state: normalized
+      lane_id: volatile_capture
+
+  intake_log_append:
+    description: Append one intake record to data/intake/intake.jsonl. Second write-mode workflow.
+    intent_ids:
+      - append_intake_record
+    tool_chain:
+      - intake_log_append
+    aliases:
+      - append intake
+      - intake log append
+    authority_paths:
+      - app/intake/intake.py
+      - data/intake/intake.jsonl
+      - config/state_machine.yaml
+      - config/lanes.yaml
+      - app/hq/governance/transition_gate.py
+    writes_paths:
+      - data/intake/intake.jsonl
+    mode: write
+    resumable: false
+    notes:
+      - Second write-mode workflow. Proves the governance pattern generalizes to a second lifecycle surface.
+    transition_context:
+      current_state: captured
+      next_state: normalized
+      lane_id: volatile_capture
+
+  session_state_overwrite:
+    description: Overwrite session_state.json with a governed transactional state snapshot. First transactional mutation workflow.
+    intent_ids:
+      - overwrite_session_state
+    tool_chain:
+      - session_state_overwrite
+    aliases: []
+    authority_paths:
+      - data/operator/state/session_state.json
+      - config/state_machine.yaml
+      - config/lanes.yaml
+      - app/hq/governance/transition_gate.py
+    writes_paths:
+      - data/operator/state/session_state.json
+    mode: write
+    resumable: false
+    notes:
+      - First transactional mutation workflow. Proves hash-based boundary evidence under controlled overwrite.
+      - On failure, system halts. Snapshot at data/operator/state/snapshots/{run_id}_pre.json enables manual recovery.
+    transition_context:
+      current_state: captured
+      next_state: normalized
+      lane_id: volatile_capture
+
+  session_state_update:
+    description: Update session_state.json with a governed transactional state snapshot. (Alias for overwrite)
+    intent_ids: []
+    tool_chain:
+      - session_state_overwrite
+    aliases: []
+    authority_paths:
+      - data/operator/state/session_state.json
+      - config/state_machine.yaml
+      - config/lanes.yaml
+      - app/hq/governance/transition_gate.py
+    writes_paths:
+      - data/operator/state/session_state.json
+    mode: write
+    resumable: false
+    notes:
+      - Second step in the compound test.
+    transition_context:
+      current_state: captured
+      next_state: normalized
+      lane_id: volatile_capture
+
+  intake_append_and_stage_session:
+    description: Compound workflow executing intake append followed by session state update sequentially.
+    intent_ids:
+      - execute_compound_intake_and_session
+    workflow_steps:
+      - workflow_id: intake_log_append
+        input_map:
+          requested_target: "$requested_target"
+      - workflow_id: session_state_update
+        input_map:
+          requested_target: "$requested_target"
+    tool_chain: []
+    aliases: []
+    authority_paths: []
+    writes_paths: []
+    mode: write
+    resumable: false
