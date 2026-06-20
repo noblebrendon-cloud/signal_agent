@@ -1,0 +1,154 @@
+version: 1
+# ──────────────────────────────────────────────────────────────────────
+# Operator Tool Definitions
+#
+# Contract semantics:
+#   reads  — paths the tool inspects during execution
+#   writes — paths the tool itself would MUTATE if dispatched
+#
+# Runtime infrastructure writes (operator_runs.jsonl, session_state.json)
+# are NOT listed here because they are written by the runtime, not by tools.
+#
+# Enforcement rule:
+#   A tool with non-empty `writes` may ONLY execute inside a workflow
+#   whose mode is "write". The operator runtime checks this before dispatch.
+# ──────────────────────────────────────────────────────────────────────
+tools:
+  inspect_system_state:
+    description: Read the core state and lane manifests and summarize operator-relevant system state.
+    kind: inspector
+    reads:
+      - ARCHITECTURE.md
+      - config/lanes.yaml
+      - config/state_machine.yaml
+      - data/intake/intake.jsonl
+      - data/capture/capture_log.jsonl
+      - data/capture/promotion_log.jsonl
+      - data/capture/routing_log.jsonl
+      - data/state/artifact_registry.jsonl
+    writes: []
+
+  capture_routing_status:
+    description: Reconstruct capture, promotion, and routing state from the authoritative ledgers and router manifests.
+    kind: status_inspector
+    reads:
+      - data/capture/promotion_log.jsonl
+      - data/capture/routing_log.jsonl
+      - data/capture/raw/
+      - data/capture/promoted/
+      - data/capture/archive/
+      - config/spine_router.yaml
+      - config/lanes.yaml
+      - constraints/spines/
+      - app/hq/capture/promote.py
+      - app/hq/capture/router.py
+    writes: []
+
+  routing_queue_backlog:
+    description: Reconstruct queue/backlog state from the routing ledgers, lane manifests, and spine incoming directories.
+    kind: status_inspector
+    reads:
+      - data/capture/promotion_log.jsonl
+      - data/capture/routing_log.jsonl
+      - config/spine_router.yaml
+      - config/lanes.yaml
+      - constraints/spines/
+      - app/hq/capture/promote.py
+      - app/hq/capture/router.py
+      - app/hq/governance/transition_gate.py
+    writes: []
+
+  routing_lineage_drilldown:
+    description: Inspect one queued bundle or one destination using promotion, routing, queue, and downstream lineage evidence.
+    kind: inspector
+    reads:
+      - data/capture/promotion_log.jsonl
+      - data/capture/routing_log.jsonl
+      - data/intake/intake.jsonl
+      - data/artifact_registry.jsonl
+      - artifacts/videos/video_package_registry.jsonl
+      - config/spine_router.yaml
+      - config/lanes.yaml
+      - constraints/spines/
+      - signal_agent/content/lineage_status.py
+      - app/hq/capture/promote.py
+      - app/hq/capture/router.py
+      - app/hq/governance/transition_gate.py
+    writes: []
+
+  explain_repo_structure:
+    description: Describe the repo-native surfaces that the operator uses and why they matter.
+    kind: inspector
+    reads:
+      - ARCHITECTURE.md
+      - docs/architecture/SIGNAL_AGENT_PATH2_FOUNDATION.md
+      - config/operator/workflows.yaml
+    writes: []
+
+  list_workflows:
+    description: Load and list the bounded workflow registry used by the operator.
+    kind: registry_reader
+    reads:
+      - config/operator/workflows.yaml
+      - config/operator/tools.yaml
+      - config/operator/intents.yaml
+    writes: []
+
+  continue_operator_task:
+    description: Rehydrate prior operator run context from the append-only ledger and run records.
+    kind: ledger_reader
+    reads:
+      - data/operator/runs/operator_runs.jsonl
+      - data/operator/state/session_state.json
+    writes: []
+
+  telemetry_placeholder:
+    description: Return the structural handoff points for later telemetry and signal observability work.
+    kind: placeholder
+    reads:
+      - config/spine_router.yaml
+      - config/lanes.yaml
+      - docs/architecture/SIGNAL_AGENT_PATH2_FOUNDATION.md
+      - signal_agent/leviathan/interaction_signals/oil_bridge.py
+    writes: []
+
+  show_action_surfaces:
+    description: Show which manifests, ledgers, and files are authoritative for a requested operator action.
+    kind: inspector
+    reads:
+      - config/operator/workflows.yaml
+      - config/operator/tools.yaml
+      - data/operator/runs/operator_runs.jsonl
+    writes: []
+
+  record_state_append:
+    description: Append one state record to the canonical artifact registry. First real write-mode tool.
+    kind: mutator
+    reads:
+      - config/state_machine.yaml
+      - config/lanes.yaml
+      - data/state/artifact_registry.jsonl
+    writes:
+      - data/state/artifact_registry.jsonl
+
+  intake_log_append:
+    description: Append one intake record to data/intake/intake.jsonl. Second write-mode tool.
+    kind: mutator
+    reads:
+      - config/state_machine.yaml
+      - config/lanes.yaml
+      - data/intake/intake.jsonl
+    writes:
+      - data/intake/intake.jsonl
+
+  session_state_overwrite:
+    description: Overwrite session_state.json with a governed transactional state snapshot. First transactional mutation tool.
+    kind: transactional_mutator
+    transactional: true
+    mutation_type: overwrite
+    reads:
+      - data/operator/state/session_state.json
+      - config/state_machine.yaml
+      - config/lanes.yaml
+    writes:
+      - data/operator/state/session_state.json
