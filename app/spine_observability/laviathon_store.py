@@ -23,7 +23,7 @@ def append_laviathon_observation(
     *,
     repo_root: Path | None = None,
 ) -> dict:
-    normalized = normalize_observation(observation)
+    normalized = normalize_observation(observation, require_entity_id=True)
     return append_record(
         LAVIATHON_OBSERVATIONS_FILE,
         normalized,

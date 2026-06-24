@@ -16,6 +16,8 @@ def _state_path(root: Path) -> Path:
 def _base_cli_args() -> list[str]:
     return [
         "laviathon-add-observation",
+        "--entity-id",
+        "entity.alpha",
         "--created-at",
         "2026-05-15T12:00:00Z",
         "--source-context",
@@ -51,6 +53,7 @@ def test_laviathon_add_observation_appends_valid_observation(
     assert result == 0
     output = json.loads(capsys.readouterr().out)
     assert output["observation_id"].startswith("lob_")
+    assert output["entity_id"] == "entity.alpha"
     assert output["external_action_allowed"] is False
     assert output["review_status"] == "pending"
     assert output["requires_human_review"] is True
@@ -96,6 +99,31 @@ def test_laviathon_add_observation_rejects_external_action_true(
         cli.main(args)
 
     assert not _state_path(laviathon_cli_root).exists()
+
+
+def test_laviathon_add_observation_requires_entity_id(
+    laviathon_cli_root: Path,
+) -> None:
+    args = _base_cli_args()
+    entity_flag_index = args.index("--entity-id")
+    del args[entity_flag_index : entity_flag_index + 2]
+
+    with pytest.raises(SystemExit):
+        cli.main(args)
+
+    assert not _state_path(laviathon_cli_root).exists()
+
+
+def test_laviathon_add_observation_preserves_source_artifact_id(
+    laviathon_cli_root: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    args = _base_cli_args() + ["--source-artifact-id", "artifact.alpha"]
+
+    assert cli.main(args) == 0
+    output = json.loads(capsys.readouterr().out)
+
+    assert output["source_artifact_id"] == "artifact.alpha"
 
 
 def test_laviathon_public_post_candidate_requires_human_review(

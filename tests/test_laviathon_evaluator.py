@@ -15,6 +15,7 @@ from app.spine_observability.laviathon import (
 
 def _base_observation() -> dict:
     return {
+        "entity_id": "entity.alpha",
         "created_at": "2026-05-14T12:00:00Z",
         "source_context": "stage_1_spine_summary_review",
         "spine_target": "governance",
@@ -35,6 +36,7 @@ def test_valid_observation_normalizes_successfully() -> None:
     assert normalized["schema_version"] == "1.0"
     assert normalized["observation_id"].startswith("lob_")
     assert normalized["created_at"] == "2026-05-14T12:00:00Z"
+    assert normalized["entity_id"] == "entity.alpha"
     assert normalized["spine_target"] == "governance"
     assert normalized["observation_type"] == "critique"
     assert normalized["public_safe"] is False
@@ -43,6 +45,34 @@ def test_valid_observation_normalizes_successfully() -> None:
     assert normalized["external_action_allowed"] is False
     assert LAVIATHON_IDENTITY["not_human"] is True
     assert LAVIATHON_IDENTITY["autonomous"] is False
+
+
+def test_legacy_observation_without_entity_id_still_normalizes_for_reads() -> None:
+    record = _base_observation()
+    del record["entity_id"]
+
+    normalized = normalize_observation(record)
+
+    assert "entity_id" not in normalized
+    assert normalized["observation_id"].startswith("lob_")
+
+
+def test_new_observation_requires_entity_id_when_requested() -> None:
+    record = _base_observation()
+    del record["entity_id"]
+
+    with pytest.raises(ValueError, match="missing_entity_id"):
+        normalize_observation(record, require_entity_id=True)
+
+
+def test_source_artifact_id_is_preserved_when_supplied() -> None:
+    record = _base_observation()
+    record["source_artifact_id"] = "artifact.alpha"
+
+    normalized = normalize_observation(record, require_entity_id=True)
+
+    assert normalized["entity_id"] == "entity.alpha"
+    assert normalized["source_artifact_id"] == "artifact.alpha"
 
 
 def test_missing_required_field_fails() -> None:
@@ -172,4 +202,3 @@ def test_allowed_values_are_narrow() -> None:
         "public_post_candidate",
     )
     assert ALLOWED_REVIEW_STATUSES == ("pending", "approved", "rejected")
-

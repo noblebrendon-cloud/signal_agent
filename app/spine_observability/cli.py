@@ -123,6 +123,8 @@ def build_parser() -> argparse.ArgumentParser:
         "laviathon-add-observation",
         help="Append a validated local-only Laviathon observation",
     )
+    laviathon_add_parser.add_argument("--entity-id", required=True)
+    laviathon_add_parser.add_argument("--source-artifact-id")
     laviathon_add_parser.add_argument("--created-at", required=True)
     laviathon_add_parser.add_argument("--source-context", required=True)
     laviathon_add_parser.add_argument("--spine-target", required=True, choices=ALLOWED_SPINE_TARGETS)
@@ -235,6 +237,7 @@ def run_spine_under_tracked(args: argparse.Namespace) -> int:
 
 def run_laviathon_add_observation(args: argparse.Namespace) -> int:
     observation = {
+        "entity_id": args.entity_id,
         "created_at": args.created_at,
         "source_context": args.source_context,
         "spine_target": args.spine_target,
@@ -245,6 +248,8 @@ def run_laviathon_add_observation(args: argparse.Namespace) -> int:
         "public_safe": args.public_safe,
         "external_action_allowed": args.external_action_allowed,
     }
+    if args.source_artifact_id is not None:
+        observation["source_artifact_id"] = args.source_artifact_id
     if args.requires_human_review is not None:
         observation["requires_human_review"] = args.requires_human_review
     if args.review_status is not None:

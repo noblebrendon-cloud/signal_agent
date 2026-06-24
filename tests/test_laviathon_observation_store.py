@@ -5,6 +5,8 @@ from pathlib import Path
 
 import pytest
 
+from app.retention.jsonl_store import compute_record_hash
+from app.spine_observability.laviathon import normalize_observation
 from app.spine_observability.laviathon_store import (
     LAVIATHON_OBSERVATIONS_FILE,
     append_laviathon_observation,
@@ -15,6 +17,7 @@ from app.spine_observability.laviathon_store import (
 
 def _base_observation() -> dict:
     return {
+        "entity_id": "entity.alpha",
         "created_at": "2026-05-15T12:00:00Z",
         "source_context": "stage_1_spine_summary_review",
         "spine_target": "governance",
@@ -53,6 +56,7 @@ def test_valid_observation_appends_to_isolated_state(laviathon_root: Path) -> No
     assert len(rows) == 1
     assert rows[0] == stored
     assert stored["observation_id"].startswith("lob_")
+    assert stored["entity_id"] == "entity.alpha"
     assert stored["external_action_allowed"] is False
     assert stored["recorded_at"] == "2026-05-15T12:00:00Z"
     assert stored["prev_hash"] is None
@@ -80,6 +84,72 @@ def test_invalid_observation_does_not_append(laviathon_root: Path) -> None:
         append_laviathon_observation(observation)
 
     assert not _state_path(laviathon_root).exists()
+
+
+def test_new_observation_write_requires_entity_id(laviathon_root: Path) -> None:
+    observation = _base_observation()
+    del observation["entity_id"]
+
+    with pytest.raises(ValueError, match="missing_entity_id"):
+        append_laviathon_observation(observation)
+
+    assert not _state_path(laviathon_root).exists()
+
+
+def test_legacy_observation_without_entity_id_remains_readable(laviathon_root: Path) -> None:
+    legacy = _base_observation()
+    del legacy["entity_id"]
+    stored = append_laviathon_observation(_base_observation())
+    legacy_payload = {
+        **legacy,
+        "observation_id": normalize_observation(legacy)["observation_id"],
+        "recorded_at": "2026-05-15T12:05:00Z",
+        "prev_hash": stored["record_hash"],
+    }
+    legacy_payload["record_hash"] = compute_record_hash(legacy_payload)
+    with open(_state_path(laviathon_root), "a", encoding="utf-8") as handle:
+        handle.write(json.dumps(legacy_payload, sort_keys=True) + "\n")
+
+    listed = list_laviathon_observations()
+
+    assert listed[-1] == legacy_payload
+    assert "entity_id" not in listed[-1]
+
+
+def test_legacy_observation_hash_fixture_remains_stable() -> None:
+    legacy = _base_observation()
+    del legacy["entity_id"]
+    normalized = normalize_observation(legacy)
+    payload = {
+        **normalized,
+        "recorded_at": "2026-05-15T12:00:00Z",
+        "prev_hash": None,
+    }
+
+    assert normalized["observation_id"] == "lob_22d83919abce8999"
+    assert compute_record_hash(payload) == (
+        "sha256:a8072150e21abd8d43ede4e16919e75a55c6673f3f5bb48d2b9802b7a428ab75"
+    )
+
+
+def test_new_observation_hash_incorporates_entity_identity() -> None:
+    first = normalize_observation(_base_observation(), require_entity_id=True)
+    second_record = _base_observation()
+    second_record["entity_id"] = "entity.beta"
+    second = normalize_observation(second_record, require_entity_id=True)
+
+    first_hash = compute_record_hash(
+        {**first, "recorded_at": "2026-05-15T12:00:00Z", "prev_hash": None}
+    )
+    second_hash = compute_record_hash(
+        {**second, "recorded_at": "2026-05-15T12:00:00Z", "prev_hash": None}
+    )
+
+    assert first["observation_id"] == "lob_bd72216553078c45"
+    assert second["observation_id"] == "lob_f817c1a1758cc1f2"
+    assert first_hash == "sha256:58d369c0409d8ca5b38998011f8d2a186587584255e056af00ea9152e2ac39c4"
+    assert second_hash == "sha256:e30a9498851843e05b746234bbb0cd695cfb8a3292a68a156f949e061bcc291b"
+    assert first_hash != second_hash
 
 
 def test_external_action_allowed_true_does_not_append(laviathon_root: Path) -> None:

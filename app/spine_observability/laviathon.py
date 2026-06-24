@@ -9,6 +9,7 @@ from app.retention.jsonl_store import stable_json_dumps
 
 
 SCHEMA_VERSION = "1.0"
+MAX_IDENTITY_TEXT_CHARS = 200
 
 ALLOWED_SPINE_TARGETS = (
     "reflective",
@@ -46,6 +47,8 @@ REQUIRED_FIELDS = (
 OPTIONAL_FIELDS = (
     "schema_version",
     "observation_id",
+    "entity_id",
+    "source_artifact_id",
     "requires_human_review",
     "review_status",
     "external_action_allowed",
@@ -66,12 +69,24 @@ LAVIATHON_IDENTITY = {
 }
 
 
-def normalize_observation(record: Mapping[str, Any]) -> dict:
+def normalize_observation(
+    record: Mapping[str, Any],
+    *,
+    require_entity_id: bool = False,
+) -> dict:
     if not isinstance(record, Mapping):
         raise ValueError("invalid_observation_record")
     _reject_human_representation(record)
     _reject_unknown_fields(record)
     _require_keys(record, REQUIRED_FIELDS)
+
+    entity_id = _optional_identity_text("entity_id", record.get("entity_id"))
+    if require_entity_id and entity_id is None:
+        raise ValueError("missing_entity_id")
+    source_artifact_id = _optional_identity_text(
+        "source_artifact_id",
+        record.get("source_artifact_id"),
+    )
 
     normalized = {
         "schema_version": _schema_version(record.get("schema_version", SCHEMA_VERSION)),
@@ -104,6 +119,10 @@ def normalize_observation(record: Mapping[str, Any]) -> dict:
             record.get("external_action_allowed", False)
         ),
     }
+    if entity_id is not None:
+        normalized["entity_id"] = entity_id
+    if source_artifact_id is not None:
+        normalized["source_artifact_id"] = source_artifact_id
     if normalized["observation_type"] == "public_post_candidate":
         if normalized["requires_human_review"] is not True:
             raise ValueError("public_candidate_requires_human_review")
@@ -145,6 +164,15 @@ def observation_id_from_record(record: Mapping[str, Any]) -> str:
             ALLOWED_SPINE_TARGETS,
         ),
     }
+    entity_id = _optional_identity_text("entity_id", record.get("entity_id"))
+    if entity_id is not None:
+        material["entity_id"] = entity_id
+    source_artifact_id = _optional_identity_text(
+        "source_artifact_id",
+        record.get("source_artifact_id"),
+    )
+    if source_artifact_id is not None:
+        material["source_artifact_id"] = source_artifact_id
     return f"lob_{sha256_hex(stable_json_dumps(material))[:16]}"
 
 
@@ -181,6 +209,15 @@ def _required_text(field: str, value: Any) -> str:
     normalized = value.strip()
     if not normalized:
         raise ValueError(f"missing_{field}")
+    return normalized
+
+
+def _optional_identity_text(field: str, value: Any) -> str | None:
+    if value is None:
+        return None
+    normalized = _required_text(field, value)
+    if len(normalized) > MAX_IDENTITY_TEXT_CHARS:
+        raise ValueError(f"{field}_too_long")
     return normalized
 
 
