@@ -10,7 +10,8 @@ from app.retention.identity import (
 )
 
 
-ALLOWED_SOURCES = ("substack", "linkedin", "meta", "youtube", "operator")
+PUBLIC_WEBSITE_SOURCE = "public_website"
+ALLOWED_SOURCES = ("substack", "linkedin", "meta", "youtube", "operator", PUBLIC_WEBSITE_SOURCE)
 CLI_CONSENT_STATUSES = (
     "opted_in",
     "soft_opt_in",
@@ -62,6 +63,10 @@ def build_contact_seed_event(
     normalized_source = validate_source(source)
     normalized_kind = validate_identifier_kind(identifier_kind)
     normalized_consent = validate_cli_consent_status(consent_status)
+    normalized_source_mode = normalize_token(source_mode) or "manual"
+
+    if normalized_source == PUBLIC_WEBSITE_SOURCE:
+        raise ValueError("public_website_requires_confirmation")
 
     id_hash = identifier_hash(normalized_kind, identifier_value)
     contact_id = contact_id_from_identifier(normalized_kind, identifier_value)
@@ -79,7 +84,7 @@ def build_contact_seed_event(
         "event_id": event_id,
         "event_type": normalize_token(event_type),
         "source": normalized_source,
-        "source_mode": normalize_token(source_mode) or "manual",
+        "source_mode": normalized_source_mode,
         "scope": normalize_token(scope),
         "contact_id": contact_id,
         "identifier_kind": normalized_kind,
