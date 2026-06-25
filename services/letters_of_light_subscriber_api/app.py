@@ -12,6 +12,12 @@ from urllib.parse import parse_qs, urlsplit
 from app.letters_of_light import subscribers
 
 
+SERVICE_NAME = "letters_of_light_subscriber_api"
+PUBLIC_API_ENABLED_ENV = "LETTERS_OF_LIGHT_PUBLIC_API_ENABLED"
+PUBLIC_API_ENABLED_VALUE = "enabled"
+PORT_ENV = "PORT"
+DEFAULT_PORT = 8000
+RENDER_HOST = "0.0.0.0"
 ALLOWED_ORIGINS_ENV = "LETTERS_OF_LIGHT_API_ALLOWED_ORIGINS"
 CONFIRMED_STATUS_URL_ENV = "LETTERS_OF_LIGHT_CONFIRMED_STATUS_URL"
 UNSUBSCRIBED_STATUS_URL_ENV = "LETTERS_OF_LIGHT_UNSUBSCRIBED_STATUS_URL"
@@ -55,7 +61,7 @@ class APIConfig:
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None) -> "APIConfig":
-        source = env or os.environ
+        source = os.environ if env is None else env
         subscriber_config = subscribers.resolve_subscriber_config(source)
         retention_root_value = str(source.get(RETENTION_ROOT_ENV) or "").strip()
         if not retention_root_value:
@@ -127,6 +133,33 @@ class InMemoryRateLimiter:
         return True
 
 
+class HealthOnlyAPI:
+    def __init__(self, *, logger: logging.Logger | None = None):
+        self.logger = logger or logging.getLogger(__name__)
+
+    def handle(
+        self,
+        *,
+        method: str,
+        target: str,
+        headers: Mapping[str, str] | None = None,
+        body: bytes = b"",
+        remote_addr: str = "unknown",
+    ) -> APIResponse:
+        parsed = urlsplit(target)
+        route = f"{method.upper()} {parsed.path}"
+        if parsed.path == "/health" and method.upper() == "GET":
+            return _json_response(
+                {
+                    "mode": "launch_disabled",
+                    "service": SERVICE_NAME,
+                    "status": "ok",
+                },
+                route=route,
+            )
+        return _error_response(503, "service_unavailable", route=route, logger=self.logger)
+
+
 class SubscriberAPI:
     def __init__(
         self,
@@ -169,7 +202,15 @@ class SubscriberAPI:
             return self._error(429, "rate_limited", route=route, headers=self._cors_headers(normalized_headers))
 
         if path == "/health" and method.upper() == "GET":
-            return self._json({"status": "ok"}, route=route, headers=self._cors_headers(normalized_headers))
+            return self._json(
+                {
+                    "mode": "public_enabled",
+                    "service": SERVICE_NAME,
+                    "status": "ok",
+                },
+                route=route,
+                headers=self._cors_headers(normalized_headers),
+            )
 
         if path == "/api/letters-of-light/signup" and method.upper() == "POST":
             return self._signup(normalized_headers, body, route=route)
@@ -324,18 +365,23 @@ class SubscriberAPI:
 
 def create_app(
     *,
-    notifier: ConfirmationNotifier,
+    notifier: ConfirmationNotifier | None = None,
     env: Mapping[str, str] | None = None,
     rate_limiter: RateLimiter | None = None,
     logger: logging.Logger | None = None,
-) -> SubscriberAPI:
-    config = APIConfig.from_env(env)
+) -> SubscriberAPI | HealthOnlyAPI:
+    source = os.environ if env is None else env
+    if not _public_api_enabled(source):
+        return HealthOnlyAPI(logger=logger)
+    if notifier is None:
+        raise APIConfigError("api_confirmation_notifier_required")
+    config = APIConfig.from_env(source)
     return SubscriberAPI(config=config, notifier=notifier, rate_limiter=rate_limiter, logger=logger)
 
 
 def create_wsgi_app(
     *,
-    notifier: ConfirmationNotifier,
+    notifier: ConfirmationNotifier | None = None,
     env: Mapping[str, str] | None = None,
     rate_limiter: RateLimiter | None = None,
     logger: logging.Logger | None = None,
@@ -362,6 +408,75 @@ def create_wsgi_app(
         return [response.body]
 
     return _wsgi_app
+
+
+def render_bind(env: Mapping[str, str] | None = None) -> str:
+    source = os.environ if env is None else env
+    raw_port = str(source.get(PORT_ENV) or DEFAULT_PORT).strip()
+    try:
+        port = int(raw_port)
+    except ValueError as exc:
+        raise APIConfigError("api_port_invalid") from exc
+    if port <= 0 or port > 65535:
+        raise APIConfigError("api_port_invalid")
+    return f"{RENDER_HOST}:{port}"
+
+
+def _public_api_enabled(env: Mapping[str, str]) -> bool:
+    return str(env.get(PUBLIC_API_ENABLED_ENV) or "") == PUBLIC_API_ENABLED_VALUE
+
+
+def _json_response(
+    payload: dict,
+    *,
+    route: str,
+    status_code: int = 200,
+    headers: tuple[tuple[str, str], ...] = (),
+) -> APIResponse:
+    body = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return _base_response(
+        status_code,
+        body=body,
+        route=route,
+        headers=(("Content-Type", JSON_CONTENT_TYPE), *headers),
+    )
+
+
+def _error_response(
+    status_code: int,
+    code: str,
+    *,
+    route: str,
+    logger: logging.Logger | None = None,
+    headers: tuple[tuple[str, str], ...] = (),
+) -> APIResponse:
+    _log_error(logger or logging.getLogger(__name__), code=code, route=route, status_code=status_code)
+    return _json_response({"error": code}, status_code=status_code, route=route, headers=headers)
+
+
+def _base_response(
+    status_code: int,
+    *,
+    body: bytes = b"",
+    route: str,
+    headers: tuple[tuple[str, str], ...] = (),
+) -> APIResponse:
+    base_headers = (
+        ("Referrer-Policy", NO_REFERRER),
+        ("Cache-Control", "no-store"),
+    )
+    return APIResponse(status_code=status_code, body=body, headers=(*base_headers, *headers))
+
+
+def _log_error(logger: logging.Logger, *, code: str, route: str, status_code: int) -> None:
+    logger.warning(
+        "letters_of_light_subscriber_api_error",
+        extra={
+            "error_code": code,
+            "route": route,
+            "status_code": status_code,
+        },
+    )
 
 
 def _positive_int(value: str | None, *, default: int, code: str) -> int:
@@ -452,3 +567,6 @@ def _reason_phrase(status_code: int) -> str:
         429: "Too Many Requests",
         503: "Service Unavailable",
     }.get(status_code, "OK")
+
+
+application = create_wsgi_app()

@@ -6,6 +6,7 @@ import os
 import shutil
 import socket
 import tempfile
+from io import BytesIO
 from pathlib import Path
 from urllib.parse import quote, urlsplit
 
@@ -66,6 +67,7 @@ def _env(root: Path) -> dict[str, str]:
         subscriber_api.ALLOWED_ORIGINS_ENV: f"{APP_ORIGIN},https://www.brendonrcoleman.com",
         subscriber_api.CONFIRMED_STATUS_URL_ENV: CONFIRMED_URL,
         subscriber_api.UNSUBSCRIBED_STATUS_URL_ENV: UNSUBSCRIBED_URL,
+        subscriber_api.PUBLIC_API_ENABLED_ENV: subscriber_api.PUBLIC_API_ENABLED_VALUE,
         subscriber_api.MAX_REQUEST_BYTES_ENV: "512",
         subscriber_api.RATE_LIMIT_COUNT_ENV: "100",
         subscriber_api.RATE_LIMIT_WINDOW_ENV: "60",
@@ -100,11 +102,98 @@ def _header(response: subscriber_api.APIResponse, name: str) -> str | None:
     return None
 
 
+def _disabled_env(root: Path) -> dict[str, str]:
+    env = _env(root)
+    env.pop(subscriber_api.PUBLIC_API_ENABLED_ENV)
+    return env
+
+
 def _ledger_rows(root: Path, ledger_name: str) -> list[dict]:
     path = root / "retention_repo" / "data" / "state" / ledger_name
     if not path.exists():
         return []
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+
+
+def test_health_only_mode_starts_without_private_configuration() -> None:
+    service = subscriber_api.create_app(env={})
+
+    response = service.handle(method="GET", target="/health")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "mode": "launch_disabled",
+        "service": "letters_of_light_subscriber_api",
+        "status": "ok",
+    }
+    body = response.body.decode("utf-8")
+    assert "LETTERS_OF_LIGHT" not in body
+    assert "sqlite" not in body.lower()
+
+
+def test_disabled_routes_do_not_touch_private_state_or_network(
+    external_tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake = FakeConfirmationNotifier()
+    env = _disabled_env(external_tmp_path)
+    calls: list[tuple[object, ...]] = []
+
+    def deny_network(*args: object, **kwargs: object) -> None:
+        calls.append(args)
+        raise AssertionError("network call attempted")
+
+    def fail_private_call(*args: object, **kwargs: object) -> None:
+        raise AssertionError("private subscriber state must not be touched")
+
+    monkeypatch.setattr(socket, "create_connection", deny_network)
+    monkeypatch.setattr(subscribers, "request_signup", fail_private_call)
+    monkeypatch.setattr(subscribers, "confirm_signup", fail_private_call)
+    monkeypatch.setattr(subscribers, "unsubscribe", fail_private_call)
+    service = subscriber_api.create_app(notifier=fake, env=env)
+
+    signup = service.handle(
+        method="POST",
+        target="/api/letters-of-light/signup",
+        headers=_headers(),
+        body=_json_body({"email": "disabled@example.com"}),
+    )
+    confirm = service.handle(
+        method="GET",
+        target="/api/letters-of-light/confirm?token=disabled-token-material",
+    )
+    unsubscribe = service.handle(
+        method="GET",
+        target="/api/letters-of-light/unsubscribe?token=disabled-token-material",
+    )
+
+    assert signup.status_code == 503
+    assert confirm.status_code == 503
+    assert unsubscribe.status_code == 503
+    assert signup.json() == confirm.json() == unsubscribe.json() == {"error": "service_unavailable"}
+    assert fake.deliveries == []
+    assert calls == []
+    assert not Path(env[subscribers.core.DATA_ROOT_ENV]).exists()
+    assert not (external_tmp_path / "retention_repo" / "data" / "state").exists()
+
+
+def test_malformed_launch_values_remain_disabled(external_tmp_path: Path) -> None:
+    for value in ("", "false", "true", "1", "enabled ", " ENABLED", "yes", "public"):
+        env = _env(external_tmp_path)
+        env[subscriber_api.PUBLIC_API_ENABLED_ENV] = value
+        service = subscriber_api.create_app(env=env)
+
+        health = service.handle(method="GET", target="/health")
+        signup = service.handle(
+            method="POST",
+            target="/api/letters-of-light/signup",
+            headers=_headers(),
+            body=_json_body({"email": "malformed-launch@example.com"}),
+        )
+
+        assert health.status_code == 200
+        assert health.json()["mode"] == "launch_disabled"
+        assert signup.status_code == 503
 
 
 def test_valid_signup_returns_generic_success_and_invokes_test_notifier_only(external_tmp_path: Path) -> None:
@@ -188,6 +277,15 @@ def test_responses_and_logs_do_not_reveal_private_material(
 def test_missing_or_invalid_configuration_fails_closed(external_tmp_path: Path) -> None:
     with pytest.raises(subscribers.SubscriberCoreError, match="subscriber_data_root_required"):
         subscriber_api.APIConfig.from_env({})
+
+    with pytest.raises(subscriber_api.APIConfigError, match="api_confirmation_notifier_required"):
+        subscriber_api.create_app(env=_env(external_tmp_path))
+
+    with pytest.raises(subscribers.SubscriberCoreError, match="subscriber_data_root_required"):
+        subscriber_api.create_app(
+            notifier=FakeConfirmationNotifier(),
+            env={subscriber_api.PUBLIC_API_ENABLED_ENV: subscriber_api.PUBLIC_API_ENABLED_VALUE},
+        )
 
     missing_retention = _env(external_tmp_path)
     missing_retention.pop(subscriber_api.RETENTION_ROOT_ENV)
@@ -314,7 +412,11 @@ def test_health_endpoint_reveals_no_private_details(external_tmp_path: Path) -> 
 
     body = response.body.decode("utf-8")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
+    assert response.json() == {
+        "mode": "public_enabled",
+        "service": "letters_of_light_subscriber_api",
+        "status": "ok",
+    }
     assert env[subscribers.core.DATA_ROOT_ENV] not in body
     assert env[subscribers.core.SUBSCRIBER_DB_ENV] not in body
     assert env[subscriber_api.RETENTION_ROOT_ENV] not in body
@@ -343,3 +445,68 @@ def test_no_network_calls_occur_during_signup(
     assert response.status_code == 202
     assert len(fake.deliveries) == 1
     assert calls == []
+
+
+def test_disabled_responses_and_logs_are_redacted(
+    external_tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    caplog.set_level(logging.WARNING)
+    env = _disabled_env(external_tmp_path)
+    raw_email = "disabled-redaction@example.com"
+    token = "disabled-plain-token-material"
+    token_hash = subscribers.hash_token(token)
+    service = subscriber_api.create_app(env=env, logger=logging.getLogger("letters_of_light_subscriber_api_tests"))
+
+    responses = [
+        service.handle(
+            method="POST",
+            target="/api/letters-of-light/signup",
+            headers=_headers(),
+            body=_json_body({"email": raw_email}),
+        ),
+        service.handle(method="GET", target=f"/api/letters-of-light/confirm?token={quote(token)}"),
+        service.handle(method="GET", target=f"/api/letters-of-light/unsubscribe?token={quote(token)}"),
+    ]
+
+    combined = "\n".join([*(response.body.decode("utf-8") for response in responses), caplog.text])
+    assert raw_email not in combined
+    assert token not in combined
+    assert token_hash not in combined
+    assert env[subscribers.core.DATA_ROOT_ENV] not in combined
+    assert env[subscribers.core.SUBSCRIBER_DB_ENV] not in combined
+    assert "secret" not in combined.lower()
+    assert "provider" not in combined.lower()
+
+
+def test_wsgi_application_defaults_to_health_only_mode() -> None:
+    wsgi_app = subscriber_api.create_wsgi_app(env={})
+    captured: dict[str, object] = {}
+
+    def start_response(status: str, headers: list[tuple[str, str]]) -> None:
+        captured["status"] = status
+        captured["headers"] = headers
+
+    body = b"".join(
+        wsgi_app(
+            {
+                "REQUEST_METHOD": "GET",
+                "PATH_INFO": "/health",
+                "QUERY_STRING": "",
+                "CONTENT_LENGTH": "0",
+                "wsgi.input": BytesIO(b""),
+                "REMOTE_ADDR": "127.0.0.1",
+            },
+            start_response,
+        )
+    )
+
+    assert captured["status"] == "200 OK"
+    assert json.loads(body.decode("utf-8"))["mode"] == "launch_disabled"
+
+
+def test_render_bind_honors_supplied_local_port() -> None:
+    assert subscriber_api.render_bind({subscriber_api.PORT_ENV: "9123"}) == "0.0.0.0:9123"
+
+    with pytest.raises(subscriber_api.APIConfigError, match="api_port_invalid"):
+        subscriber_api.render_bind({subscriber_api.PORT_ENV: "not-a-port"})
