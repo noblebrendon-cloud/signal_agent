@@ -64,6 +64,10 @@ def build_parser() -> argparse.ArgumentParser:
     show = sub.add_parser("show-opportunity")
     show.add_argument("--opportunity-id")
 
+    gmail = sub.add_parser("ingest-gmail-label")
+    gmail.add_argument("--label", required=True)
+    gmail.add_argument("--limit", type=int)
+
     return parser
 
 
@@ -122,6 +126,8 @@ def _dispatch(service: MediaOpportunityService, args: argparse.Namespace) -> dic
         )
     if args.command == "show-opportunity":
         return service.summary(args.opportunity_id)
+    if args.command == "ingest-gmail-label":
+        return service.ingest_gmail_label(label=args.label, limit=args.limit)
     raise ValueError(f"media_opportunity_unknown_command:{args.command}")
 
 

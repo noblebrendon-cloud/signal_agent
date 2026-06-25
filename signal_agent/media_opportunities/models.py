@@ -201,6 +201,7 @@ class OpportunityRecord:
     published_url: str | None = None
     verification_evidence: tuple[Mapping[str, Any], ...] = ()
     coverage_metadata: Mapping[str, Any] = field(default_factory=dict)
+    source_metadata: Mapping[str, Any] = field(default_factory=dict)
     schema_version: str = SCHEMA_VERSION
 
     @classmethod
@@ -219,6 +220,8 @@ class OpportunityRecord:
         visibility: str = "private",
         next_action: str | None = None,
         notes: str | None = None,
+        source_metadata: Mapping[str, Any] | None = None,
+        source_fingerprint: str | None = None,
     ) -> "OpportunityRecord":
         validate_opportunity_type(opportunity_type)
         validate_relationship(relationship_classification)
@@ -227,11 +230,12 @@ class OpportunityRecord:
         if not body:
             raise ValueError("media_opportunity_original_request_text_required")
         material = {
-            "created_at": created_at,
+            "created_at": None if source_fingerprint else created_at,
             "opportunity_type": opportunity_type,
             "outlet_or_organization": optional(outlet_or_organization),
             "originating_url_or_source_ref": optional(originating_url_or_source_ref),
             "original_request_hash": text_hash(body),
+            "source_fingerprint": optional(source_fingerprint),
             "topic_or_subject": optional(topic_or_subject),
         }
         return cls(
@@ -250,6 +254,7 @@ class OpportunityRecord:
             next_action=optional(next_action) or "Review opportunity and decide whether to qualify.",
             notes=optional(notes),
             artifact_links={},
+            source_metadata=dict(source_metadata or {}),
         )
 
     @classmethod
@@ -274,6 +279,7 @@ class OpportunityRecord:
             published_url=optional(payload.get("published_url")),
             verification_evidence=tuple(dict(item) for item in (payload.get("verification_evidence") or ())),
             coverage_metadata=dict(payload.get("coverage_metadata") or {}),
+            source_metadata=dict(payload.get("source_metadata") or {}),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -297,6 +303,7 @@ class OpportunityRecord:
             "published_url": self.published_url,
             "verification_evidence": [dict(item) for item in self.verification_evidence],
             "coverage_metadata": dict(self.coverage_metadata),
+            "source_metadata": dict(self.source_metadata),
         }
 
 

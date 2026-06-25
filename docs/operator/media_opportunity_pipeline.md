@@ -20,6 +20,22 @@ The command writes private state under `data/state/media_opportunities/` and cre
 
 For an email, paste the message body into `--invitation-text`. For a DM or text message, paste the visible message and describe the channel in `--notes`. For a phone call or spoken conversation, write a faithful summary such as `Phone call summary: ...`. For a podcast invitation, select `--type podcast_or_interview` and include the proposed topic and deadline if known.
 
+## Gmail Label Intake
+
+Create a Gmail label named `Media Opportunity` in Gmail, then apply it manually to any email or thread that might become an interview, podcast, guest essay, review, local reporting, citation, speaking invitation, organizational feature, or similar opportunity.
+
+Run the local read-only intake:
+
+```powershell
+python -m signal_agent.media_opportunities.cli ingest-gmail-label --label "Media Opportunity"
+```
+
+For live Gmail access, set `MEDIA_OPPORTUNITIES_GMAIL_CLIENT_SECRETS` to a local Google OAuth client secrets JSON file. `MEDIA_OPPORTUNITIES_GMAIL_TOKEN_FILE` may point to a token file outside the repository; if unset, the command stores the token under the local OS user config area. The command uses Gmail readonly scope only.
+
+After labeling an email, the command reads labeled messages, creates one private `captured` opportunity per unique Gmail thread or message, writes the same private artifact set as manual intake, and reports created, skipped, manual-review, and error counts. It does not send a reply, archive, delete, relabel, mark read, or otherwise mutate the source email.
+
+Duplicate prevention uses a stable private source fingerprint derived from the Gmail thread ID when available, otherwise the message ID, otherwise a body hash. The fingerprint and hashed metadata are stored in the private ledgers; repeat runs skip already-ingested conversations instead of creating separate opportunity records.
+
 ## State Model
 
 Core states:
@@ -89,3 +105,7 @@ These export only title, outlet, public author, date, type, public URL, short ne
 Private operational records and generated packets live under `data/state/media_opportunities/`, which follows the repo's local state convention. The editable public-safe identity packet lives at `config/media_opportunities/canonical_identity_packet.json`.
 
 No public Media & References page is created by this pipeline. That remains a later manual website task after at least one approved independent reference exists.
+
+## Manual Fallbacks
+
+DMs, calls, texts, and in-person opportunities still use `create-opportunity`. Paste the message text or write a faithful summary, set `--type other` when uncertain, and keep relationship classification as `unknown` until human review supports something stronger. Gmail intake is only a convenience trigger, not an approval path.

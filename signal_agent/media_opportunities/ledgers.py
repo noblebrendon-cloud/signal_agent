@@ -12,6 +12,7 @@ MEDIA_OPPORTUNITY_LEDGER_NAMES = (
     "state_transitions",
     "approval_records",
     "public_reference_exports",
+    "gmail_intake_audit",
 )
 
 

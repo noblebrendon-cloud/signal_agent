@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import replace
 from pathlib import Path
 from typing import Any, Callable, Iterable
@@ -58,6 +59,8 @@ class MediaOpportunityService:
         visibility: str = "private",
         next_action: str | None = None,
         notes: str | None = None,
+        source_metadata: dict[str, Any] | None = None,
+        source_fingerprint: str | None = None,
     ) -> dict[str, Any]:
         record = OpportunityRecord.create(
             created_at=self.clock(),
@@ -72,6 +75,8 @@ class MediaOpportunityService:
             visibility=visibility,
             next_action=next_action,
             notes=notes,
+            source_metadata=source_metadata,
+            source_fingerprint=source_fingerprint,
         )
         if self._record_row(record.opportunity_id) is not None:
             raise MediaOpportunityError(f"media_opportunity_already_exists:{record.opportunity_id}")
@@ -89,6 +94,102 @@ class MediaOpportunityService:
             "clean": True,
             "opportunity": _without_ledger_envelope(row),
             "artifact_root": str(self.artifact_root(record.opportunity_id)),
+        }
+
+    def ingest_gmail_label(self, *, label: str, source: Any | None = None, limit: int | None = None) -> dict[str, Any]:
+        from signal_agent.media_opportunities.gmail import GoogleGmailReadonlySource
+
+        gmail_source = source or GoogleGmailReadonlySource.from_environment()
+        created: list[dict[str, Any]] = []
+        skipped: list[dict[str, Any]] = []
+        errors: list[dict[str, Any]] = []
+        manual_review: list[str] = []
+        messages = gmail_source.messages_for_label(label, limit=limit)
+        seen_fingerprints: set[str] = set()
+        for message in messages:
+            try:
+                intake = gmail_message_to_intake(message, label=label)
+                fingerprint = str(intake["source_fingerprint"])
+                if fingerprint in seen_fingerprints:
+                    skipped.append(
+                        {
+                            "source_fingerprint": fingerprint,
+                            "reason": "duplicate_in_label_scan",
+                            "gmail_source_ref": intake["source_ref"],
+                        }
+                    )
+                    continue
+                seen_fingerprints.add(fingerprint)
+                existing = self._record_by_source_fingerprint(fingerprint)
+                if existing is not None:
+                    skipped.append(
+                        {
+                            "source_fingerprint": fingerprint,
+                            "reason": "already_ingested",
+                            "opportunity_id": existing["opportunity_id"],
+                            "gmail_source_ref": intake["source_ref"],
+                        }
+                    )
+                    manual_review.append(str(existing["opportunity_id"]))
+                    self._append_gmail_audit(label=label, status="skipped_existing", intake=intake, opportunity_id=str(existing["opportunity_id"]))
+                    continue
+                result = self.create_opportunity(
+                    opportunity_type=intake["opportunity_type"],
+                    original_request_text=intake["original_request_text"],
+                    outlet_or_organization=intake.get("outlet_or_organization"),
+                    contact_or_source_name=intake.get("contact_or_source_name"),
+                    originating_url_or_source_ref=intake.get("source_ref"),
+                    topic_or_subject=intake.get("topic_or_subject"),
+                    deadline=intake.get("deadline"),
+                    relationship_classification=intake["relationship_classification"],
+                    visibility="private",
+                    next_action="Human review required: qualify this Gmail-labeled opportunity.",
+                    notes=intake["notes"],
+                    source_metadata=intake["source_metadata"],
+                    source_fingerprint=fingerprint,
+                )
+                opportunity = result["opportunity"]
+                created.append(
+                    {
+                        "opportunity_id": opportunity["opportunity_id"],
+                        "source_fingerprint": fingerprint,
+                        "gmail_source_ref": intake["source_ref"],
+                    }
+                )
+                manual_review.append(str(opportunity["opportunity_id"]))
+                self._append_gmail_audit(
+                    label=label,
+                    status="created",
+                    intake=intake,
+                    opportunity_id=str(opportunity["opportunity_id"]),
+                )
+            except Exception as exc:
+                source_ref = _gmail_source_ref(message)
+                error = {"gmail_source_ref": source_ref, "error": str(exc)}
+                errors.append(error)
+                self._append_gmail_audit(
+                    label=label,
+                    status="error",
+                    intake={
+                        "source_ref": source_ref,
+                        "source_fingerprint": _gmail_source_fingerprint(message),
+                        "source_metadata": gmail_public_source_metadata(message, label=label),
+                    },
+                    opportunity_id=None,
+                    error=str(exc),
+                )
+        return {
+            "clean": not errors,
+            "label": label,
+            "message_count": len(messages),
+            "created_count": len(created),
+            "skipped_count": len(skipped),
+            "manual_review_count": len(sorted(set(manual_review))),
+            "error_count": len(errors),
+            "created": created,
+            "skipped": skipped,
+            "manual_review_required": sorted(set(manual_review)),
+            "errors": errors,
         }
 
     def transition_opportunity(
@@ -319,6 +420,44 @@ class MediaOpportunityService:
                 matched = row
         return matched
 
+    def _record_by_source_fingerprint(self, source_fingerprint: str) -> dict[str, Any] | None:
+        matched = None
+        for row in self.ledgers.read("opportunity_records"):
+            metadata = row.get("source_metadata") if isinstance(row.get("source_metadata"), dict) else {}
+            if metadata.get("source_fingerprint") == source_fingerprint:
+                matched = row
+        return matched
+
+    def _append_gmail_audit(
+        self,
+        *,
+        label: str,
+        status: str,
+        intake: dict[str, Any],
+        opportunity_id: str | None,
+        error: str | None = None,
+    ) -> dict[str, Any]:
+        source_metadata = dict(intake.get("source_metadata") or {})
+        return self.ledgers.append(
+            "gmail_intake_audit",
+            {
+                "record_type": "gmail_media_opportunity_intake_audit",
+                "audit_id": derive_id("gma", label, intake.get("source_fingerprint"), status, self.clock()),
+                "label": label,
+                "status": status,
+                "opportunity_id": opportunity_id,
+                "gmail_source_ref": intake.get("source_ref"),
+                "source_fingerprint": intake.get("source_fingerprint"),
+                "subject_hash": source_metadata.get("subject_hash"),
+                "sender_hash": source_metadata.get("sender_hash"),
+                "message_body_hash": source_metadata.get("message_body_hash"),
+                "thread_id_hash": source_metadata.get("thread_id_hash"),
+                "message_id_hash": source_metadata.get("message_id_hash"),
+                "error": error,
+                **SAFETY_FLAGS,
+            },
+        )
+
     def _write_intake_artifacts(self, record: OpportunityRecord) -> OpportunityRecord:
         root = self.artifact_root(record.opportunity_id)
         root.mkdir(parents=True, exist_ok=True)
@@ -434,6 +573,119 @@ def sanitized_public_reference(record: OpportunityRecord) -> dict[str, Any]:
         "approved_timestamp": coverage.get("approved_timestamp"),
     }
     return {key: payload.get(key) for key in PUBLIC_EXPORT_KEYS}
+
+
+def gmail_message_to_intake(message: dict[str, Any], *, label: str) -> dict[str, Any]:
+    text = _gmail_message_text(message)
+    if not text:
+        raise MediaOpportunityError("gmail_message_text_required")
+    subject = optional(message.get("subject"))
+    sender_name = optional(message.get("sender_name") or _sender_display_name(str(message.get("from") or "")))
+    source_ref = _gmail_source_ref(message)
+    source_fingerprint = _gmail_source_fingerprint(message)
+    inferred_type = infer_opportunity_type(" ".join([subject or "", text]))
+    return {
+        "opportunity_type": inferred_type,
+        "original_request_text": _gmail_private_text(message, text),
+        "outlet_or_organization": extract_outlet(message, text),
+        "contact_or_source_name": sender_name,
+        "source_ref": source_ref,
+        "topic_or_subject": extract_topic(subject, text),
+        "deadline": extract_deadline(text),
+        "relationship_classification": infer_relationship(text),
+        "notes": (
+            f"Created from Gmail label '{label}'. Human qualification required before any response, "
+            "state transition, or public-reference review."
+        ),
+        "source_fingerprint": source_fingerprint,
+        "source_metadata": gmail_public_source_metadata(message, label=label, source_fingerprint=source_fingerprint, text=text),
+    }
+
+
+def infer_opportunity_type(text: str) -> str:
+    lowered = text.lower()
+    patterns = (
+        ("podcast_or_interview", ("podcast", "interview", "guest on", "recording", "episode", "show")),
+        ("guest_essay", ("guest essay", "op-ed", "op ed", "write an essay", "contributed essay", "submission")),
+        ("review", ("review copy", "book review", "review your", "review of", "would like to review")),
+        ("local_reporting", ("local reporter", "local news", "news story", "reporting on", "newspaper")),
+        ("organizational_feature", ("feature you", "member feature", "organization profile", "spotlight")),
+        ("academic_or_writer_citation", ("cite", "citation", "quote your", "reference your work", "bibliography")),
+        ("speaking_invitation", ("speak at", "speaking invitation", "keynote", "panel", "workshop", "sermon", "teach at")),
+    )
+    for opportunity_type, terms in patterns:
+        if any(term in lowered for term in terms):
+            return opportunity_type
+    return "other"
+
+
+def infer_relationship(text: str) -> str:
+    lowered = text.lower()
+    if any(term in lowered for term in ("our client", "sponsored", "paid placement", "affiliate", "partner campaign")):
+        return "affiliated"
+    if any(term in lowered for term in ("your own site", "your post", "repost", "self-published", "announcement from you")):
+        return "self"
+    if any(term in lowered for term in ("independent review", "editorially independent", "independent reporting")):
+        return "independent"
+    return "unknown"
+
+
+def extract_outlet(message: dict[str, Any], text: str) -> str | None:
+    for key in ("outlet", "organization"):
+        value = optional(message.get(key))
+        if value:
+            return value
+    match = re.search(r"\b(?:outlet|organization|publication|podcast)\s*:\s*(.+)", text, flags=re.IGNORECASE)
+    if match:
+        return _clean_metadata_line(match.group(1))
+    return None
+
+
+def extract_topic(subject: str | None, text: str) -> str | None:
+    match = re.search(r"\b(?:topic|subject)\s*:\s*(.+)", text, flags=re.IGNORECASE)
+    if match:
+        return _clean_metadata_line(match.group(1))
+    if subject:
+        cleaned = re.sub(r"^(re|fwd?):\s*", "", subject, flags=re.IGNORECASE).strip()
+        return cleaned or None
+    return None
+
+
+def extract_deadline(text: str) -> str | None:
+    match = re.search(r"\b(?:deadline|due(?:\s+by)?|needed by)\s*:\s*(.+)", text, flags=re.IGNORECASE)
+    if match:
+        return _clean_metadata_line(match.group(1))
+    iso = re.search(r"\b(20\d{2}-\d{2}-\d{2})\b", text)
+    if iso:
+        return iso.group(1)
+    return None
+
+
+def gmail_public_source_metadata(
+    message: dict[str, Any],
+    *,
+    label: str,
+    source_fingerprint: str | None = None,
+    text: str | None = None,
+) -> dict[str, Any]:
+    body = text if text is not None else _gmail_message_text(message)
+    thread_id = optional(message.get("thread_id") or message.get("threadId"))
+    message_id = optional(message.get("message_id") or message.get("id"))
+    subject = optional(message.get("subject"))
+    sender = optional(message.get("from") or message.get("sender"))
+    return {
+        "source_kind": "gmail",
+        "gmail_label": label,
+        "source_fingerprint": source_fingerprint or _gmail_source_fingerprint(message),
+        "gmail_source_ref": _gmail_source_ref(message),
+        "thread_id_hash": text_hash(thread_id or ""),
+        "message_id_hash": text_hash(message_id or ""),
+        "subject_hash": text_hash(subject or ""),
+        "sender_hash": text_hash(sender or ""),
+        "message_body_hash": text_hash(body),
+        "raw_gmail_ids_private": True,
+        "source_email_mutated": False,
+    }
 
 
 def generate_response_draft(record: OpportunityRecord, identity_packet: dict[str, Any] | None = None) -> str:
@@ -581,8 +833,7 @@ def generate_response_draft(record: OpportunityRecord, identity_packet: dict[str
 
 
 def render_opportunity_markdown(record: OpportunityRecord) -> str:
-    return "\n".join(
-        [
+    lines = [
             "# Media Opportunity",
             "",
             f"Opportunity ID: {record.opportunity_id}",
@@ -609,7 +860,10 @@ def render_opportunity_markdown(record: OpportunityRecord) -> str:
             "Private record. Do not publish this file.",
             "",
         ]
-    )
+    if record.source_metadata.get("source_kind") == "gmail":
+        lines.insert(2, "Source: Gmail label intake. Human qualification still required.")
+        lines.insert(3, "")
+    return "\n".join(lines)
 
 
 def render_facts_and_links(identity_packet: dict[str, Any]) -> str:
@@ -711,3 +965,57 @@ def _without_ledger_envelope(row: dict[str, Any]) -> dict[str, Any]:
         for key, value in row.items()
         if key not in {"record_hash", "prev_hash", "sequence", "recorded_at"}
     }
+
+
+def _gmail_message_text(message: dict[str, Any]) -> str:
+    candidates = (
+        message.get("text"),
+        message.get("body_text"),
+        message.get("snippet"),
+        message.get("body"),
+    )
+    for value in candidates:
+        text = normalize_text(value)
+        if text:
+            return text
+    return ""
+
+
+def _gmail_private_text(message: dict[str, Any], text: str) -> str:
+    parts = [
+        "Gmail-derived private intake.",
+        f"Subject: {optional(message.get('subject')) or ''}",
+        f"From: {optional(message.get('from') or message.get('sender')) or ''}",
+        "",
+        text,
+    ]
+    return "\n".join(parts).strip()
+
+
+def _gmail_source_ref(message: dict[str, Any]) -> str:
+    thread_id = optional(message.get("thread_id") or message.get("threadId"))
+    message_id = optional(message.get("message_id") or message.get("id"))
+    if thread_id:
+        return f"gmail:thread:{thread_id}"
+    if message_id:
+        return f"gmail:message:{message_id}"
+    return f"gmail:message-hash:{text_hash(_gmail_message_text(message))}"
+
+
+def _gmail_source_fingerprint(message: dict[str, Any]) -> str:
+    thread_id = optional(message.get("thread_id") or message.get("threadId"))
+    message_id = optional(message.get("message_id") or message.get("id"))
+    stable_ref = thread_id or message_id
+    if stable_ref:
+        return text_hash(f"gmail:{stable_ref}")
+    return text_hash(_gmail_message_text(message))
+
+
+def _sender_display_name(value: str) -> str | None:
+    display = value.split("<", 1)[0].strip().strip('"')
+    return display or None
+
+
+def _clean_metadata_line(value: str) -> str | None:
+    line = value.strip().splitlines()[0].strip()
+    return optional(re.split(r"\s{2,}|\s+[|]\s+", line)[0])
