@@ -1,0 +1,42 @@
+{
+  "about_page": "https://brendonrcoleman.com/about/",
+  "canonical_site": "https://brendonrcoleman.com/",
+  "concise_grounded_bio": "Brendon R. Coleman is a writer, speaker, and practical systems worker whose public home connects Letters of Light, essays, books in development, Scripture-rooted speaking topics, services, projects, and operational artifacts.",
+  "github_profile": "https://github.com/noblebrendon-cloud",
+  "longer_grounded_bio": "Brendon R. Coleman publishes from BrendonRColeman.com. His public work is organized around Letters of Light, public essays, book projects in development, Scripture-rooted speaking paths, practical service routes, projects, and whitepaper-style operational notes on deterministic publishing, runtime governance, and service protocols. The public framing is intentionally conservative: books are described as in development, speaking routes point to current topics and invitation paths, and service pages avoid unsupported claims about clients, credentials, or endorsements.",
+  "portrait_asset_reference": "https://brendonrcoleman.com/assets/images/brendon-r-coleman-portrait.jpg",
+  "prohibited_claims": [
+    "awards",
+    "clients",
+    "follower counts",
+    "media claims",
+    "credentials",
+    "endorsements",
+    "notable language"
+  ],
+  "public_work_links": {
+    "Books": "https://brendonrcoleman.com/books/",
+    "Essays": "https://brendonrcoleman.com/essays/",
+    "Letters": "https://brendonrcoleman.com/letters-of-light/",
+    "Projects": "https://brendonrcoleman.com/mini-sites/",
+    "Services": "https://brendonrcoleman.com/services/",
+    "Speaking": "https://brendonrcoleman.com/speaking/",
+    "Whitepapers": "https://brendonrcoleman.com/whitepapers/"
+  },
+  "schema_version": "canonical_identity_packet_v1",
+  "source_notes": "Grounded from the live homepage and About page on 2026-06-25. Do not add awards, clients, follower counts, media claims, credentials, endorsements, or notable language unless a later independent evidence record supports the claim.",
+  "source_urls": [
+    "https://brendonrcoleman.com/",
+    "https://brendonrcoleman.com/about/"
+  ],
+  "verified_public_profile_urls": [
+    "https://github.com/noblebrendon-cloud",
+    "https://www.facebook.com/brendon.coleman.524",
+    "https://www.instagram.com/thewaywordgent/",
+    "https://www.threads.com/@thewaywordgent",
+    "https://x.com/BrendonRColeman",
+    "https://substack.com/@bcoleman93",
+    "https://www.youtube.com/channel/UCZacy_61PeA3g2CDZWbwCBQ",
+    "https://music.youtube.com/@BrendonRColeman"
+  ]
+}
