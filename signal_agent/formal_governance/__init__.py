@@ -6,6 +6,7 @@ surface without writing to production ledgers.
 """
 
 from .decision import deterministic_transition_id, evaluate_transition
+from .canonical_ledger import append_canonical_ledger_entry
 from .models import (
     ArchitectureNode,
     ArtifactPocket,
@@ -42,7 +43,7 @@ __all__ = [
     "TransitionProposal",
     "UnresolvedTension",
     "VariantPocket",
+    "append_canonical_ledger_entry",
     "deterministic_transition_id",
     "evaluate_transition",
 ]
-
