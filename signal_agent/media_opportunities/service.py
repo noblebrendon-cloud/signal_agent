@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+import time
 from dataclasses import replace
 from pathlib import Path
 from typing import Any, Callable, Iterable
@@ -30,6 +31,10 @@ from signal_agent.transport.schemas import derive_id
 
 class MediaOpportunityError(RuntimeError):
     pass
+
+
+MIN_GMAIL_WATCH_INTERVAL_MINUTES = 15
+DEFAULT_GMAIL_WATCH_INTERVAL_MINUTES = 60
 
 
 class MediaOpportunityService:
@@ -99,12 +104,38 @@ class MediaOpportunityService:
     def ingest_gmail_label(self, *, label: str, source: Any | None = None, limit: int | None = None) -> dict[str, Any]:
         from signal_agent.media_opportunities.gmail import GoogleGmailReadonlySource
 
-        gmail_source = source or GoogleGmailReadonlySource.from_environment()
+        started_at = self.clock()
         created: list[dict[str, Any]] = []
         skipped: list[dict[str, Any]] = []
         errors: list[dict[str, Any]] = []
         manual_review: list[str] = []
-        messages = gmail_source.messages_for_label(label, limit=limit)
+        try:
+            gmail_source = source or GoogleGmailReadonlySource.from_environment()
+            messages = gmail_source.messages_for_label(label, limit=limit)
+        except Exception as exc:
+            configuration_error = _is_gmail_configuration_error(exc)
+            result = {
+                "clean": False,
+                "label": label,
+                "message_count": 0,
+                "created_count": 0,
+                "skipped_count": 0,
+                "manual_review_count": 0,
+                "error_count": 1,
+                "created": [],
+                "skipped": [],
+                "manual_review_required": [],
+                "errors": [{"stage": "gmail_read", "error": str(exc)}],
+                "configuration_error": configuration_error,
+            }
+            self._append_gmail_run_audit(
+                label=label,
+                status="configuration_error" if configuration_error else "read_failed",
+                started_at=started_at,
+                result=result,
+                error=str(exc),
+            )
+            return result
         seen_fingerprints: set[str] = set()
         for message in messages:
             try:
@@ -178,7 +209,7 @@ class MediaOpportunityService:
                     opportunity_id=None,
                     error=str(exc),
                 )
-        return {
+        result = {
             "clean": not errors,
             "label": label,
             "message_count": len(messages),
@@ -190,6 +221,82 @@ class MediaOpportunityService:
             "skipped": skipped,
             "manual_review_required": sorted(set(manual_review)),
             "errors": errors,
+            "configuration_error": False,
+        }
+        self._append_gmail_run_audit(
+            label=label,
+            status="completed" if not errors else "completed_with_errors",
+            started_at=started_at,
+            result=result,
+            error=None,
+        )
+        return result
+
+    def watch_gmail_label(
+        self,
+        *,
+        label: str,
+        interval_minutes: int = DEFAULT_GMAIL_WATCH_INTERVAL_MINUTES,
+        source: Any | None = None,
+        limit: int | None = None,
+        max_cycles: int | None = None,
+        sleep_fn: Callable[[float], None] | None = None,
+        print_fn: Callable[[str], None] | None = None,
+    ) -> dict[str, Any]:
+        if interval_minutes < MIN_GMAIL_WATCH_INTERVAL_MINUTES:
+            raise ValueError(
+                f"media_opportunity_watch_interval_too_short:min_{MIN_GMAIL_WATCH_INTERVAL_MINUTES}_minutes"
+            )
+        if max_cycles is not None and max_cycles < 0:
+            raise ValueError("media_opportunity_watch_max_cycles_invalid")
+
+        sleep = sleep_fn or time.sleep
+        cycles: list[dict[str, Any]] = []
+        interrupted = False
+        configuration_error = False
+        cycle_number = 0
+        while max_cycles is None or cycle_number < max_cycles:
+            try:
+                result = self.ingest_gmail_label(label=label, source=source, limit=limit)
+            except KeyboardInterrupt:
+                interrupted = True
+                break
+            cycle_number += 1
+            line = format_watch_result(self.clock(), result)
+            if print_fn is not None:
+                print_fn(line)
+            cycles.append(
+                {
+                    "cycle": cycle_number,
+                    "timestamp": line.split(" ", 1)[0],
+                    "created": int(result.get("created_count", 0) or 0),
+                    "skipped": int(result.get("skipped_count", 0) or 0),
+                    "manual_review": int(result.get("manual_review_count", 0) or 0),
+                    "errors": int(result.get("error_count", 0) or 0),
+                    "clean": bool(result.get("clean")),
+                    "configuration_error": bool(result.get("configuration_error")),
+                }
+            )
+            if result.get("configuration_error"):
+                configuration_error = True
+                break
+            if max_cycles is not None and cycle_number >= max_cycles:
+                break
+            try:
+                sleep(interval_minutes * 60)
+            except KeyboardInterrupt:
+                interrupted = True
+                break
+        if interrupted:
+            self._append_gmail_watch_audit(label=label, status="stopped_by_operator", cycle_count=cycle_number)
+        return {
+            "clean": not configuration_error,
+            "label": label,
+            "interval_minutes": interval_minutes,
+            "cycle_count": cycle_number,
+            "interrupted": interrupted,
+            "configuration_error": configuration_error,
+            "cycles": cycles,
         }
 
     def transition_opportunity(
@@ -458,6 +565,48 @@ class MediaOpportunityService:
             },
         )
 
+    def _append_gmail_run_audit(
+        self,
+        *,
+        label: str,
+        status: str,
+        started_at: str,
+        result: dict[str, Any],
+        error: str | None,
+    ) -> dict[str, Any]:
+        return self.ledgers.append(
+            "gmail_intake_audit",
+            {
+                "record_type": "gmail_media_opportunity_intake_run",
+                "audit_id": derive_id("gmr", label, started_at, status, self.clock()),
+                "label": label,
+                "status": status,
+                "started_at": started_at,
+                "completed_at": self.clock(),
+                "message_count": int(result.get("message_count", 0) or 0),
+                "created_count": int(result.get("created_count", 0) or 0),
+                "skipped_count": int(result.get("skipped_count", 0) or 0),
+                "manual_review_count": int(result.get("manual_review_count", 0) or 0),
+                "error_count": int(result.get("error_count", 0) or 0),
+                "configuration_error": bool(result.get("configuration_error")),
+                "error": error,
+                **SAFETY_FLAGS,
+            },
+        )
+
+    def _append_gmail_watch_audit(self, *, label: str, status: str, cycle_count: int) -> dict[str, Any]:
+        return self.ledgers.append(
+            "gmail_intake_audit",
+            {
+                "record_type": "gmail_media_opportunity_watch",
+                "audit_id": derive_id("gmw", label, status, cycle_count, self.clock()),
+                "label": label,
+                "status": status,
+                "cycle_count": cycle_count,
+                **SAFETY_FLAGS,
+            },
+        )
+
     def _write_intake_artifacts(self, record: OpportunityRecord) -> OpportunityRecord:
         root = self.artifact_root(record.opportunity_id)
         root.mkdir(parents=True, exist_ok=True)
@@ -573,6 +722,16 @@ def sanitized_public_reference(record: OpportunityRecord) -> dict[str, Any]:
         "approved_timestamp": coverage.get("approved_timestamp"),
     }
     return {key: payload.get(key) for key in PUBLIC_EXPORT_KEYS}
+
+
+def format_watch_result(timestamp: str, result: dict[str, Any]) -> str:
+    return (
+        f"{timestamp} "
+        f"created={int(result.get('created_count', 0) or 0)} "
+        f"skipped={int(result.get('skipped_count', 0) or 0)} "
+        f"manual_review={int(result.get('manual_review_count', 0) or 0)} "
+        f"errors={int(result.get('error_count', 0) or 0)}"
+    )
 
 
 def gmail_message_to_intake(message: dict[str, Any], *, label: str) -> dict[str, Any]:
@@ -1019,3 +1178,16 @@ def _sender_display_name(value: str) -> str | None:
 def _clean_metadata_line(value: str) -> str | None:
     line = value.strip().splitlines()[0].strip()
     return optional(re.split(r"\s{2,}|\s+[|]\s+", line)[0])
+
+
+def _is_gmail_configuration_error(exc: BaseException) -> bool:
+    detail = str(exc)
+    markers = (
+        "MEDIA_OPPORTUNITIES_GMAIL_CLIENT_SECRETS",
+        "MEDIA_OPPORTUNITIES_GMAIL_TOKEN_FILE",
+        "gmail_label_not_found",
+        "requires google-api-python-client",
+        "client secrets",
+        "token",
+    )
+    return any(marker in detail for marker in markers)

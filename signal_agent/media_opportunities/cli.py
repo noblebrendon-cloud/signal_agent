@@ -68,6 +68,11 @@ def build_parser() -> argparse.ArgumentParser:
     gmail.add_argument("--label", required=True)
     gmail.add_argument("--limit", type=int)
 
+    watch = sub.add_parser("watch-gmail-label")
+    watch.add_argument("--label", required=True)
+    watch.add_argument("--interval-minutes", type=int, default=60)
+    watch.add_argument("--limit", type=int)
+
     return parser
 
 
@@ -79,6 +84,8 @@ def main(argv: list[str] | None = None) -> int:
     except (MediaOpportunityError, ValueError, OSError) as exc:
         _print_json({"clean": False, "error": str(exc), "command": args.command})
         return 1
+    if args.command == "watch-gmail-label":
+        return 0 if payload.get("clean") is True else 1
     _print_json(payload)
     return 0 if payload.get("clean") is True else 1
 
@@ -128,6 +135,13 @@ def _dispatch(service: MediaOpportunityService, args: argparse.Namespace) -> dic
         return service.summary(args.opportunity_id)
     if args.command == "ingest-gmail-label":
         return service.ingest_gmail_label(label=args.label, limit=args.limit)
+    if args.command == "watch-gmail-label":
+        return service.watch_gmail_label(
+            label=args.label,
+            interval_minutes=args.interval_minutes,
+            limit=args.limit,
+            print_fn=lambda line: print(line, flush=True),
+        )
     raise ValueError(f"media_opportunity_unknown_command:{args.command}")
 
 

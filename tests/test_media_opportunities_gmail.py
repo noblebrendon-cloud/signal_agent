@@ -84,7 +84,11 @@ def test_repeated_ingestion_does_not_duplicate_records(service: MediaOpportunity
     assert second["created_count"] == 0
     assert second["skipped_count"] == 1
     assert len(service.opportunities()) == 1
-    assert len(service.ledgers.read("gmail_intake_audit")) == 2
+    audit_rows = service.ledgers.read("gmail_intake_audit")
+    statuses = [row["status"] for row in audit_rows]
+    assert statuses.count("created") == 1
+    assert statuses.count("skipped_existing") == 1
+    assert statuses.count("completed") == 2
 
 
 def test_missing_ambiguous_metadata_remains_unset_or_other(service: MediaOpportunityService) -> None:

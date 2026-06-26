@@ -20,9 +20,9 @@ The command writes private state under `data/state/media_opportunities/` and cre
 
 For an email, paste the message body into `--invitation-text`. For a DM or text message, paste the visible message and describe the channel in `--notes`. For a phone call or spoken conversation, write a faithful summary such as `Phone call summary: ...`. For a podcast invitation, select `--type podcast_or_interview` and include the proposed topic and deadline if known.
 
-## Gmail Label Intake
+## Manual One-Run Gmail Intake
 
-Create a Gmail label named `Media Opportunity` in Gmail, then apply it manually to any email or thread that might become an interview, podcast, guest essay, review, local reporting, citation, speaking invitation, organizational feature, or similar opportunity.
+Create a Gmail label named `Media Opportunity` in Gmail. In Gmail, use the Labels area to create a new label with that exact name, then apply it manually to any email or thread that might become an interview, podcast, guest essay, review, local reporting, citation, speaking invitation, organizational feature, or similar opportunity.
 
 Run the local read-only intake:
 
@@ -35,6 +35,67 @@ For live Gmail access, set `MEDIA_OPPORTUNITIES_GMAIL_CLIENT_SECRETS` to a local
 After labeling an email, the command reads labeled messages, creates one private `captured` opportunity per unique Gmail thread or message, writes the same private artifact set as manual intake, and reports created, skipped, manual-review, and error counts. It does not send a reply, archive, delete, relabel, mark read, or otherwise mutate the source email.
 
 Duplicate prevention uses a stable private source fingerprint derived from the Gmail thread ID when available, otherwise the message ID, otherwise a body hash. The fingerprint and hashed metadata are stored in the private ledgers; repeat runs skip already-ingested conversations instead of creating separate opportunity records.
+
+## Optional Local Watcher
+
+For development or a supervised local session, run:
+
+```powershell
+python -m signal_agent.media_opportunities.cli watch-gmail-label --label "Media Opportunity" --interval-minutes 60
+```
+
+The watcher reuses the same one-run Gmail intake path every cycle. It prints a compact timestamped line with created, skipped, manual-review, and error counts after each run. Intervals below 15 minutes are rejected. Press `Ctrl+C` to stop it cleanly; the source Gmail messages and labels are not changed.
+
+The watcher is optional. Do not use it as the preferred Windows production path, because a permanently open console is easier to lose or interrupt than an hourly one-run scheduled task.
+
+## Windows Task Scheduler
+
+Preferred production operation is an hourly Windows Task Scheduler action that runs the one-run helper:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "E:\signal_agent\scripts\run_media_opportunity_gmail_intake.ps1"
+```
+
+Expected Task Scheduler action:
+
+- Program/script: `powershell.exe`
+- Arguments: `-NoProfile -ExecutionPolicy Bypass -File "E:\signal_agent\scripts\run_media_opportunity_gmail_intake.ps1"`
+- Schedule: hourly one-run execution
+
+The helper resolves the repository root from its own script location, invokes:
+
+```powershell
+python -m signal_agent.media_opportunities.cli ingest-gmail-label --label "Media Opportunity"
+```
+
+It preserves the Python exit code and prints only concise timestamped counts suitable for Task Scheduler history. It does not print raw email bodies, full sender addresses, credentials, tokens, or private opportunity content.
+
+To disable the scheduled task safely, disable or delete the Task Scheduler entry. Do not remove Gmail labels from source messages as a substitute for disabling automation, and do not edit private ledgers by hand.
+
+## Automation Boundary
+
+Automated:
+
+- Find Gmail messages carrying the selected label.
+- Read message or thread context through the readonly Gmail adapter.
+- Create or skip private `captured` opportunity records.
+- Write private artifacts and append private audit rows.
+- Report created, skipped, manual-review, and error counts.
+
+Manual by design:
+
+- Apply the Gmail label.
+- Qualify whether the opportunity is real and appropriate.
+- Edit and send any reply outside this system.
+- Move records beyond `captured`.
+- Verify independence and approve any public-reference export.
+- Update public website, Media & References pages, social profiles, DNS, or GitHub Pages.
+
+## Privacy And Recovery
+
+Email-derived sender names, addresses, message bodies, source references, and strategy notes remain in private state under `data/state/media_opportunities/`. Sanitized public-reference exports never include raw Gmail IDs, raw email bodies, full sender addresses, private notes, or draft strategy. Gmail read failures are appended to the private `gmail_intake_audit` ledger without creating partial opportunity records.
+
+If Gmail credentials or reads fail, check the latest Task Scheduler output or watcher line, then inspect the private audit ledger locally. Confirm that `MEDIA_OPPORTUNITIES_GMAIL_CLIENT_SECRETS` points to a valid OAuth client secrets JSON file and that `MEDIA_OPPORTUNITIES_GMAIL_TOKEN_FILE`, if set, points outside the repository. After fixing credentials or network access, re-run the one-run command; duplicate prevention will skip already-ingested conversations.
 
 ## State Model
 
