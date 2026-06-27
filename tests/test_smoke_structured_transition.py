@@ -9,6 +9,10 @@ from pydantic import BaseModel
 
 from signal_agent.laviathon.schemas import TransitionProposal
 from signal_agent.structured_generation import FakeStructuredGenerator
+from signal_agent.structured_generation.policy import (
+    GenerationBudgetPolicy,
+    ManualLiveGenerationAuthorization,
+)
 from tools import smoke_structured_transition as smoke
 
 
@@ -32,14 +36,20 @@ class RecordingGenerator:
         self.prompt: str | None = None
         self.schema: type[BaseModel] | None = None
 
-    def generate(self, prompt: str, schema: type[BaseModel]):
+    def generate(
+        self,
+        prompt: str,
+        schema: type[BaseModel],
+        **kwargs: object,
+    ):
         self.prompt = prompt
         self.schema = schema
+        self.kwargs = kwargs
         return self._generator.generate(prompt, schema)
 
 
 class FailingGenerator:
-    def generate(self, prompt: str, schema: type[BaseModel]):
+    def generate(self, prompt: str, schema: type[BaseModel], **_kwargs: object):
         del prompt, schema
         raise RuntimeError("provider failed with api_key=sk-test-secret")
 
@@ -78,6 +88,8 @@ def test_smoke_harness_requests_transition_proposal_schema() -> None:
     assert exit_code == 0
     assert generator.schema is TransitionProposal
     assert generator.prompt is not None
+    assert isinstance(generator.kwargs["authorization"], ManualLiveGenerationAuthorization)
+    assert isinstance(generator.kwargs["budget_policy"], GenerationBudgetPolicy)
     assert payload["status"] == "validated"
 
 
@@ -89,6 +101,8 @@ def test_fake_generator_produces_json_safe_validated_output() -> None:
     assert payload["proposal"]["entity_id"] == smoke.SMOKE_ENTITY_ID
     assert payload["proposal"]["evidence_ids"] == list(smoke.SMOKE_EVIDENCE_IDS)
     assert payload["generation_receipt"]["schema_name"] == "TransitionProposal"
+    assert "maximum_output_tokens" in payload["generation_receipt"]
+    assert "cost_status" in payload["generation_receipt"]
 
 
 def test_fake_generator_failure_produces_safe_failure_payload() -> None:

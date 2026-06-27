@@ -2,14 +2,19 @@ from __future__ import annotations
 
 from .contracts import StructuredGenerationError, StructuredGenerator
 from .outlines_adapter import OutlinesStructuredGenerator
+from .policy import GenerationBudgetPolicy
 from .provider_config import ProviderConfig, load_provider_config
 
 
-def create_structured_generator(config: ProviderConfig | None = None) -> StructuredGenerator:
+def create_structured_generator(
+    config: ProviderConfig | None = None,
+    *,
+    budget_policy: GenerationBudgetPolicy | None = None,
+) -> StructuredGenerator:
     cfg = config or load_provider_config()
     if not cfg.explicitly_configured:
         raise StructuredGenerationError(
             "No structured-generation provider is explicitly configured. "
             "Use FakeStructuredGenerator in tests."
         )
-    return OutlinesStructuredGenerator.from_config(cfg)
+    return OutlinesStructuredGenerator.from_config(cfg, budget_policy=budget_policy)

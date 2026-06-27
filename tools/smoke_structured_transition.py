@@ -13,6 +13,10 @@ if str(REPO_ROOT) not in sys.path:
 
 from signal_agent.laviathon.schemas import TransitionProposal
 from signal_agent.structured_generation.factory import create_structured_generator
+from signal_agent.structured_generation.policy import (
+    GenerationBudgetPolicy,
+    ManualLiveGenerationAuthorization,
+)
 
 
 SMOKE_ENTITY_ID = "smoke-entity-001"
@@ -55,9 +59,21 @@ def build_smoke_prompt() -> str:
     )
 
 
-def run_smoke_test(generator: Any) -> tuple[int, dict[str, object]]:
+def run_smoke_test(
+    generator: Any,
+    *,
+    authorization: ManualLiveGenerationAuthorization | None = None,
+    budget_policy: GenerationBudgetPolicy | None = None,
+) -> tuple[int, dict[str, object]]:
     try:
-        result = generator.generate(build_smoke_prompt(), TransitionProposal)
+        active_authorization = authorization or ManualLiveGenerationAuthorization.manual_smoke()
+        active_policy = budget_policy or GenerationBudgetPolicy.from_environment()
+        result = generator.generate(
+            build_smoke_prompt(),
+            TransitionProposal,
+            authorization=active_authorization,
+            budget_policy=active_policy,
+        )
         proposal = result.value
         _validate_synthetic_proposal(proposal)
         return (
@@ -65,12 +81,7 @@ def run_smoke_test(generator: Any) -> tuple[int, dict[str, object]]:
             {
                 "status": "validated",
                 "proposal": proposal.model_dump(mode="json"),
-                "generation_receipt": {
-                    "provider": result.receipt.provider,
-                    "model": result.receipt.model,
-                    "schema_name": result.receipt.schema_name,
-                    "created_at": result.receipt.timestamp.isoformat(),
-                },
+                "generation_receipt": _receipt_payload(result.receipt),
             },
         )
     except Exception as exc:  # noqa: BLE001 - smoke harness must fail safely for provider errors.
@@ -79,12 +90,17 @@ def run_smoke_test(generator: Any) -> tuple[int, dict[str, object]]:
 
 def main() -> int:
     try:
-        generator = create_structured_generator()
+        budget_policy = GenerationBudgetPolicy.from_environment()
+        generator = create_structured_generator(budget_policy=budget_policy)
     except Exception as exc:  # noqa: BLE001 - print a safe failure payload, never a traceback.
         _print_payload(_failure_payload(exc))
         return 1
 
-    exit_code, payload = run_smoke_test(generator)
+    exit_code, payload = run_smoke_test(
+        generator,
+        authorization=ManualLiveGenerationAuthorization.manual_smoke(),
+        budget_policy=budget_policy,
+    )
     _print_payload(payload)
     return exit_code
 
@@ -109,6 +125,12 @@ def _failure_payload(exc: Exception) -> dict[str, object]:
         "error_type": type(exc).__name__,
         "message": _safe_message(exc),
     }
+
+
+def _receipt_payload(receipt: Any) -> dict[str, object]:
+    payload = receipt.model_dump(mode="json")
+    payload["created_at"] = payload.pop("timestamp")
+    return payload
 
 
 def _safe_message(exc: Exception) -> str:

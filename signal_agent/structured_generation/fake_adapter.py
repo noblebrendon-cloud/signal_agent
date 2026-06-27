@@ -27,7 +27,11 @@ class FakeStructuredGenerator:
         self,
         prompt: str,
         schema: type[T],
+        *,
+        authorization: object | None = None,
+        budget_policy: object | None = None,
     ) -> StructuredResult[T]:
+        del authorization, budget_policy
         if not prompt:
             raise StructuredGenerationError("Prompt must be non-empty.")
 

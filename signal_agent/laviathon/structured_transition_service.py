@@ -42,6 +42,7 @@ def generate_and_propose_transition(
     ledger_path: Path,
     timestamp: str | None = None,
 ) -> StructuredTransitionResult:
+    _preflight_context_for_generation(context)
     prompt = build_transition_prompt(context=context)
     generated = generator.generate(prompt, TransitionProposal)
     proposal = generated.value
@@ -65,6 +66,10 @@ def generate_and_propose_transition(
         proposal_event=transition_result.proposed_event,
         deterministic_disposition=transition_result.decision,
     )
+
+
+def _preflight_context_for_generation(context: TransitionGenerationContext) -> None:
+    _bounded_evidence(context.evidence)
 
 
 def build_transition_prompt(
@@ -195,7 +200,9 @@ def _bounded_text(field: str, value: str, max_chars: int) -> str:
     normalized = " ".join(value.strip().split())
     if not normalized:
         raise StructuredTransitionServiceError(f"missing_{field}")
-    return normalized[:max_chars]
+    if len(normalized) > max_chars:
+        raise StructuredTransitionServiceError(f"{field}_too_long")
+    return normalized
 
 
 def _bounded_optional_text(field: str, value: str, max_chars: int) -> str:

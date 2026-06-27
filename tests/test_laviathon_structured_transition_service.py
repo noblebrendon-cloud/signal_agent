@@ -23,7 +23,12 @@ class RecordingGenerator:
         self.prompt: str | None = None
         self.schema: type[TransitionProposal] | None = None
 
-    def generate(self, prompt: str, schema: type[TransitionProposal]):
+    def generate(
+        self,
+        prompt: str,
+        schema: type[TransitionProposal],
+        **_kwargs: object,
+    ):
         self.prompt = prompt
         self.schema = schema
         return self._fake.generate(prompt, schema)
@@ -66,6 +71,19 @@ def _context() -> TransitionGenerationContext:
         source_observation_ids=("evidence.alpha",),
         association_methods=("explicit_entity_id",),
         source_artifact_ids=("artifact.alpha",),
+    )
+
+
+def _context_with_evidence(evidence: tuple[TransitionEvidence, ...]) -> TransitionGenerationContext:
+    return TransitionGenerationContext(
+        entity_id="entity.alpha",
+        current_state="captured",
+        evidence=evidence,
+        context_timestamp="2026-06-23T00:00:00Z",
+        source_event_ids=tuple(f"event.{index}" for index, _item in enumerate(evidence)),
+        source_observation_ids=tuple(item.evidence_id for item in evidence),
+        association_methods=tuple("explicit_entity_id" for _item in evidence),
+        source_artifact_ids=tuple("" for _item in evidence),
     )
 
 
@@ -176,3 +194,48 @@ def test_service_makes_no_network_calls(monkeypatch: pytest.MonkeyPatch, tmp_pat
 
     assert result.generation_receipt.provider == "fake"
     assert result.deterministic_disposition.decision is DecisionOutcome.MANUAL_REVIEW_REQUIRED
+
+
+def test_service_rejects_excess_evidence_before_generator_invocation(tmp_path: Path) -> None:
+    generator = RecordingGenerator(_proposal())
+    evidence = tuple(
+        TransitionEvidence(
+            evidence_id=f"evidence.{index}",
+            summary="bounded evidence",
+            observed_at="2026-06-23T00:00:00Z",
+            association_method="explicit_entity_id",
+        )
+        for index in range(21)
+    )
+
+    with pytest.raises(ValueError, match="too_many_evidence_items"):
+        generate_and_propose_transition(
+            generator=generator,
+            context=_context_with_evidence(evidence),
+            ledger_path=tmp_path / "ledger.jsonl",
+            timestamp="2026-06-23T00:00:00Z",
+        )
+
+    assert generator.prompt is None
+
+
+def test_service_rejects_excess_evidence_summary_before_generator_invocation(tmp_path: Path) -> None:
+    generator = RecordingGenerator(_proposal())
+    evidence = (
+        TransitionEvidence(
+            evidence_id="evidence.alpha",
+            summary="x" * 501,
+            observed_at="2026-06-23T00:00:00Z",
+            association_method="explicit_entity_id",
+        ),
+    )
+
+    with pytest.raises(ValueError, match="evidence_summary_too_long"):
+        generate_and_propose_transition(
+            generator=generator,
+            context=_context_with_evidence(evidence),
+            ledger_path=tmp_path / "ledger.jsonl",
+            timestamp="2026-06-23T00:00:00Z",
+        )
+
+    assert generator.prompt is None

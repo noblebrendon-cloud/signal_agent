@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 from signal_agent.structured_generation import FakeStructuredGenerator, StructuredGenerationError
 from signal_agent.structured_generation.outlines_adapter import OutlinesStructuredGenerator
+from signal_agent.structured_generation.policy import ManualLiveGenerationAuthorization
 
 
 class ExampleResponse(BaseModel):
@@ -41,7 +42,11 @@ def test_invalid_json_provider_output_fails_closed() -> None:
     )
 
     with pytest.raises(StructuredGenerationError):
-        generator.generate("return an example response", ExampleResponse)
+        generator.generate(
+            "return an example response",
+            ExampleResponse,
+            authorization=ManualLiveGenerationAuthorization.manual_smoke(),
+        )
 
 
 def test_unsupported_provider_output_type_fails_closed() -> None:
@@ -52,4 +57,8 @@ def test_unsupported_provider_output_type_fails_closed() -> None:
     )
 
     with pytest.raises(StructuredGenerationError):
-        generator.generate("return an example response", ExampleResponse)
+        generator.generate(
+            "return an example response",
+            ExampleResponse,
+            authorization=ManualLiveGenerationAuthorization.manual_smoke(),
+        )
