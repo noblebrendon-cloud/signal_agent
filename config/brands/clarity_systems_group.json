@@ -1,0 +1,211 @@
+{
+  "brand_id": "clarity_systems_group",
+  "version": "1",
+  "display_name": "Clarity Systems Group",
+  "status": "internal_only",
+  "description": "Business/legal operating identity for technical release announcements, case-study framing, and evidence-first capability notes.",
+  "primary_domain": "",
+  "website_route_prefix": "",
+  "release_tone": "technical, direct, evidence-first",
+  "default_caption_style": "concise professional framing with source references and no unsupported service claims",
+  "release_templates": [
+    {
+      "template_id": "company_release_announcement",
+      "display_name": "Company Release Announcement",
+      "output_type": "brief"
+    },
+    {
+      "template_id": "public_case_study_note",
+      "display_name": "Public Case Study Note",
+      "output_type": "case_study"
+    },
+    {
+      "template_id": "professional_social_draft",
+      "display_name": "Professional Social Draft",
+      "output_type": "social"
+    }
+  ],
+  "allowed_output_types": [
+    "brief",
+    "case_study",
+    "social",
+    "project_render"
+  ],
+  "required_review_fields": [
+    {
+      "field": "source_summary",
+      "label": "Source Summary",
+      "description": "Summarize the public source basis for the release draft."
+    },
+    {
+      "field": "claim_boundaries",
+      "label": "Claim Boundaries",
+      "description": "List unsupported claims that must stay out of public copy."
+    }
+  ],
+  "available_release_targets": {
+    "site": false,
+    "youtube": false,
+    "facebook": false,
+    "instagram": false,
+    "x": false,
+    "linkedin": false,
+    "threads": false,
+    "substack": false
+  },
+  "destination_surfaces": {
+    "csg_site": {
+      "surface_ref": "csg_site",
+      "display_name": "CSG site",
+      "platform": "site",
+      "status": "provisioning_required",
+      "public_url": "",
+      "platform_account_id": "",
+      "adapter_ref": "",
+      "adapter_exists": false,
+      "credential_state": "none",
+      "credentials_exist": false,
+      "manual_publication_possible": false,
+      "direct_system_publication_allowed": false,
+      "content_constraints": [
+        "professional release announcement",
+        "capability or case-study note"
+      ],
+      "next_operator_action": "Verify a real domain and public URL before treating this as a live destination.",
+      "notes": [
+        "Candidate surface only; no public URL, account, OAuth state, or direct publishing permission is configured."
+      ]
+    },
+    "csg_linkedin": {
+      "surface_ref": "csg_linkedin",
+      "display_name": "CSG LinkedIn",
+      "platform": "linkedin",
+      "status": "provisioning_required",
+      "public_url": "",
+      "platform_account_id": "",
+      "adapter_ref": "",
+      "adapter_exists": false,
+      "credential_state": "none",
+      "credentials_exist": false,
+      "manual_publication_possible": false,
+      "direct_system_publication_allowed": false,
+      "content_constraints": [
+        "professional post",
+        "document-style note"
+      ],
+      "next_operator_action": "Verify a real organization account before treating this as a live destination.",
+      "notes": [
+        "Candidate surface only; no public URL, account, OAuth state, or direct publishing permission is configured."
+      ]
+    },
+    "csg_facebook": {
+      "surface_ref": "csg_facebook",
+      "display_name": "CSG Facebook",
+      "platform": "facebook",
+      "status": "provisioning_required",
+      "public_url": "",
+      "platform_account_id": "",
+      "adapter_ref": "",
+      "adapter_exists": false,
+      "credential_state": "none",
+      "credentials_exist": false,
+      "manual_publication_possible": false,
+      "direct_system_publication_allowed": false,
+      "content_constraints": [
+        "longer text post",
+        "link post"
+      ],
+      "next_operator_action": "Verify a real page or account before treating this as a live destination.",
+      "notes": [
+        "Candidate surface only; no public URL, account, OAuth state, or direct publishing permission is configured."
+      ]
+    },
+    "csg_x": {
+      "surface_ref": "csg_x",
+      "display_name": "CSG X",
+      "platform": "x",
+      "status": "provisioning_required",
+      "public_url": "",
+      "platform_account_id": "",
+      "adapter_ref": "",
+      "adapter_exists": false,
+      "credential_state": "none",
+      "credentials_exist": false,
+      "manual_publication_possible": false,
+      "direct_system_publication_allowed": false,
+      "content_constraints": [
+        "short-form post",
+        "short thread"
+      ],
+      "next_operator_action": "Verify a real account before treating this as a live destination.",
+      "notes": [
+        "Candidate surface only; no public URL, account, OAuth state, or direct publishing permission is configured."
+      ]
+    },
+    "csg_threads": {
+      "surface_ref": "csg_threads",
+      "display_name": "CSG Threads",
+      "platform": "threads",
+      "status": "provisioning_required",
+      "public_url": "",
+      "platform_account_id": "",
+      "adapter_ref": "",
+      "adapter_exists": false,
+      "credential_state": "none",
+      "credentials_exist": false,
+      "manual_publication_possible": false,
+      "direct_system_publication_allowed": false,
+      "content_constraints": [
+        "short-form conversational post",
+        "short conversational thread"
+      ],
+      "next_operator_action": "Verify a real account before treating this as a live destination.",
+      "notes": [
+        "Candidate surface only; no public URL, account, OAuth state, or direct publishing permission is configured."
+      ]
+    }
+  },
+  "credential_profile_key": "clarity_systems_group",
+  "visual": {
+    "accent_color": "#38434a",
+    "background_color": "#f6f7f2",
+    "logo_label": "CSG"
+  },
+  "theme_defaults": {
+    "default_theme": "release_evidence",
+    "fallback_title": "Untitled Clarity Systems Group Draft"
+  },
+  "source_evidence_requirements": {
+    "requires_sources": true,
+    "requires_public_record_links": true,
+    "requires_evidence_summary": true
+  },
+  "approval_rules": {
+    "public_release_requires_review": true,
+    "allow_public_publish": false,
+    "requires_source_evidence_gate": true
+  },
+  "business_identity": {
+    "identity_type": "business_legal_operating_identity",
+    "public_service_offering_claims_configured": false
+  },
+  "brand_identity": {
+    "identity_type": "business_legal_operating_identity",
+    "display_name": "Clarity Systems Group",
+    "public_service_offering_claims_configured": false,
+    "public_domain_configured": false,
+    "public_contact_configured": false
+  },
+  "public_destination_voice": {
+    "voice": "professional technical release framing",
+    "constraints": [
+      "do not imply paid services without approved business material",
+      "do not claim adoption, downloads, market traction, or third-party validation",
+      "keep source, release, archive, and DOI distinctions explicit"
+    ]
+  },
+  "approved_publication_surfaces": [],
+  "moderation_risk_boundary": "No public release is authorized from this brand profile until canonical public surfaces and review rules are configured.",
+  "created_at": "2026-06-29T00:00:00+00:00",
+  "updated_at": "2026-06-29T00:00:00+00:00"
+}

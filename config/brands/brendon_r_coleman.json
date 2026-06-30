@@ -1,0 +1,179 @@
+{
+  "brand_id": "brendon_r_coleman",
+  "version": "1",
+  "display_name": "Brendon R. Coleman",
+  "status": "active",
+  "description": "Public personal synthesis, essays, build-in-public notes, and longform video.",
+  "primary_domain": "brendonrcoleman.com",
+  "website_route_prefix": "/",
+  "release_tone": "personal, direct, explanatory",
+  "default_caption_style": "plainspoken synthesis with clear context and a practical takeaway",
+  "release_templates": [
+    {
+      "template_id": "personal_essay",
+      "display_name": "Personal Essay",
+      "output_type": "essay"
+    },
+    {
+      "template_id": "video_essay",
+      "display_name": "Video Essay",
+      "output_type": "video"
+    },
+    {
+      "template_id": "build_in_public",
+      "display_name": "Build in Public Update",
+      "output_type": "social"
+    }
+  ],
+  "allowed_output_types": [
+    "essay",
+    "video",
+    "social",
+    "project_render"
+  ],
+  "required_review_fields": [],
+  "available_release_targets": {
+    "site": true,
+    "youtube": true,
+    "facebook": false,
+    "instagram": false,
+    "x": true,
+    "linkedin": false,
+    "threads": false,
+    "substack": false
+  },
+  "destination_surfaces": {
+    "site": {
+      "surface_ref": "site",
+      "display_name": "Personal site",
+      "platform": "site",
+      "status": "publish_enabled",
+      "public_url": "https://brendonrcoleman.com",
+      "platform_account_id": "",
+      "adapter_ref": "release_site",
+      "adapter_exists": true,
+      "credential_state": "not_required",
+      "credentials_exist": false,
+      "manual_publication_possible": true,
+      "direct_system_publication_allowed": true,
+      "content_constraints": [
+        "canonical personal essay",
+        "reviewed public site article"
+      ],
+      "next_operator_action": "Use the existing approval and release gates before any site publication.",
+      "notes": [
+        "Existing site behavior is unchanged."
+      ]
+    },
+    "x": {
+      "surface_ref": "x",
+      "display_name": "X",
+      "platform": "x",
+      "status": "configured_manual_publish",
+      "public_url": "",
+      "platform_account_id": "",
+      "adapter_ref": "",
+      "adapter_exists": false,
+      "credential_state": "none",
+      "credentials_exist": false,
+      "manual_publication_possible": true,
+      "direct_system_publication_allowed": false,
+      "content_constraints": [
+        "short-form post",
+        "short thread"
+      ],
+      "next_operator_action": "Keep as manual-publication draft output until a verified adapter and explicit authorization exist.",
+      "notes": [
+        "Existing X planning behavior is unchanged; no direct platform posting is configured."
+      ]
+    },
+    "facebook": {
+      "surface_ref": "facebook",
+      "display_name": "Facebook",
+      "platform": "facebook",
+      "status": "configured_manual_publish",
+      "public_url": "",
+      "platform_account_id": "",
+      "adapter_ref": "",
+      "adapter_exists": false,
+      "credential_state": "none",
+      "credentials_exist": false,
+      "manual_publication_possible": true,
+      "direct_system_publication_allowed": false,
+      "content_constraints": [
+        "longer text post",
+        "link post"
+      ],
+      "next_operator_action": "Review draft manually; do not treat the configured surface as approval or publication authority.",
+      "notes": [
+        "No OAuth state, platform account ID, or direct publishing permission is configured."
+      ]
+    },
+    "linkedin": {
+      "surface_ref": "linkedin",
+      "display_name": "LinkedIn",
+      "platform": "linkedin",
+      "status": "configured_manual_publish",
+      "public_url": "",
+      "platform_account_id": "",
+      "adapter_ref": "",
+      "adapter_exists": false,
+      "credential_state": "none",
+      "credentials_exist": false,
+      "manual_publication_possible": true,
+      "direct_system_publication_allowed": false,
+      "content_constraints": [
+        "professional post",
+        "document-style note"
+      ],
+      "next_operator_action": "Review draft manually; add verified account details only after explicit operator approval.",
+      "notes": [
+        "No OAuth state, platform account ID, or direct publishing permission is configured."
+      ]
+    },
+    "threads": {
+      "surface_ref": "threads",
+      "display_name": "Threads",
+      "platform": "threads",
+      "status": "configured_manual_publish",
+      "public_url": "",
+      "platform_account_id": "",
+      "adapter_ref": "",
+      "adapter_exists": false,
+      "credential_state": "none",
+      "credentials_exist": false,
+      "manual_publication_possible": true,
+      "direct_system_publication_allowed": false,
+      "content_constraints": [
+        "short-form conversational post",
+        "short conversational thread"
+      ],
+      "next_operator_action": "Review draft manually; add verified account details only after explicit operator approval.",
+      "notes": [
+        "No OAuth state, platform account ID, or direct publishing permission is configured."
+      ]
+    }
+  },
+  "credential_profile_key": "brendon_r_coleman",
+  "visual": {
+    "accent_color": "#22577a",
+    "background_color": "#f6f7f2",
+    "logo_label": "BRC"
+  },
+  "theme_defaults": {
+    "default_theme": "synthesis",
+    "fallback_title": "Untitled Brendon R. Coleman Project"
+  },
+  "source_evidence_requirements": {
+    "requires_sources": false,
+    "requires_public_record_links": false,
+    "requires_evidence_summary": false
+  },
+  "approval_rules": {
+    "public_release_requires_review": true,
+    "allow_public_publish": true
+  },
+  "moderation_risk_boundary": "Do not blur personal voice with civic or devotional release language.",
+  "created_at": "2026-06-20T00:00:00+00:00",
+  "updated_at": "2026-06-20T00:00:00+00:00"
+}
