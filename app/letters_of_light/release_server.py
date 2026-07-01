@@ -25,6 +25,12 @@ from app.letters_of_light.release import (
 )
 from app.letters_of_light.release_site import publish_release_site
 from app.letters_of_light.publishers.youtube import publish_youtube
+from app.letters_of_light.wtpu_publication_dashboard import (
+    handle_wtpu_publication_api,
+    is_wtpu_publication_path,
+    render_wtpu_publication_dashboard_page,
+    wtpu_method_not_allowed_payload,
+)
 
 
 DEFAULT_HOST = "127.0.0.1"
@@ -507,10 +513,20 @@ class ReleaseRequestHandler(BaseHTTPRequestHandler):
         super().log_message(fmt, *args)
 
     def do_GET(self) -> None:
-        path = urlparse(self.path).path
+        parsed = urlparse(self.path)
+        path = parsed.path
 
         if path == "/":
             self._send_html(_render_page())
+            return
+
+        if path == "/wtpu-publication":
+            self._send_html(render_wtpu_publication_dashboard_page())
+            return
+
+        if path.startswith("/api/wtpu-publication"):
+            payload, status = handle_wtpu_publication_api(path, parsed.query)
+            self._send_json(payload, status)
             return
 
         if path == "/api/letters":
@@ -521,6 +537,13 @@ class ReleaseRequestHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         path = urlparse(self.path).path
+        if is_wtpu_publication_path(path):
+            self._send_json(
+                wtpu_method_not_allowed_payload("POST"),
+                HTTPStatus.METHOD_NOT_ALLOWED,
+            )
+            return
+
         body, error = self._read_body()
         if error:
             self._send_json({"error": error}, HTTPStatus.BAD_REQUEST)
@@ -550,6 +573,25 @@ class ReleaseRequestHandler(BaseHTTPRequestHandler):
             return
 
         self._send_json({"ok": True, "result": result, "letters": _letters_payload()})
+
+    def do_PUT(self) -> None:
+        self._handle_unsupported_wtpu_method("PUT")
+
+    def do_PATCH(self) -> None:
+        self._handle_unsupported_wtpu_method("PATCH")
+
+    def do_DELETE(self) -> None:
+        self._handle_unsupported_wtpu_method("DELETE")
+
+    def _handle_unsupported_wtpu_method(self, method: str) -> None:
+        path = urlparse(self.path).path
+        if is_wtpu_publication_path(path):
+            self._send_json(
+                wtpu_method_not_allowed_payload(method),
+                HTTPStatus.METHOD_NOT_ALLOWED,
+            )
+            return
+        self.send_error(HTTPStatus.NOT_IMPLEMENTED)
 
     def _read_body(self) -> Tuple[Dict[str, Any], Optional[str]]:
         length = int(self.headers.get("Content-Length", "0") or "0")
