@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import threading
 from http.client import HTTPConnection
 from pathlib import Path
@@ -47,18 +48,32 @@ def test_wtpu_dashboard_routes_are_get_only_and_do_not_mutate_ledger(tmp_state: 
     server, thread = _serve()
     paths = [
         "/wtpu-publication",
+        "/wtpu-publication?section=public_record",
+        "/wtpu-publication/sections/public_record",
+        f"/wtpu-publication/issues/{ids['issue_id']}",
+        f"/wtpu-publication/essays/{ids['essay_id']}",
+        f"/wtpu-publication/source-packets/{ids['source_packet_id']}",
+        f"/wtpu-publication/corrections/essay/{ids['essay_id']}",
+        f"/wtpu-publication/archive-readiness/{ids['issue_id']}",
         "/api/wtpu-publication/dashboard",
+        "/api/wtpu-publication/dashboard?section=public_record",
         "/api/wtpu-publication/sections",
         "/api/wtpu-publication/sections/public_record",
         "/api/wtpu-publication/issues",
+        "/api/wtpu-publication/issues?section=public_record&issue_status=draft&jurisdiction=Indiana&scope=state",
         f"/api/wtpu-publication/issues/{ids['issue_id']}",
         "/api/wtpu-publication/essays",
+        "/api/wtpu-publication/essays?essay_status=canonical",
         f"/api/wtpu-publication/essays/{ids['essay_id']}",
+        "/api/wtpu-publication/source-packets",
         f"/api/wtpu-publication/source-packets/{ids['source_packet_id']}",
         f"/api/wtpu-publication/adaptations/{ids['adaptation_id']}",
+        "/api/wtpu-publication/corrections",
         f"/api/wtpu-publication/corrections/{ids['correction_id']}",
+        f"/api/wtpu-publication/corrections/essay/{ids['essay_id']}",
         "/api/wtpu-publication/archive-readiness",
         f"/api/wtpu-publication/archive-readiness?issue_id={ids['issue_id']}",
+        f"/api/wtpu-publication/archive-readiness/{ids['issue_id']}",
         f"/api/wtpu-publication/history/essay/{ids['essay_id']}",
         f"/api/wtpu-publication/history/correction/{ids['essay_id']}",
     ]
@@ -77,13 +92,15 @@ def test_wtpu_dashboard_routes_are_get_only_and_do_not_mutate_ledger(tmp_state: 
                     "export": False,
                     "approve": False,
                 }
+            else:
+                _assert_only_local_wtpu_links(_text)
             assert _ledger_snapshot(tmp_state) == before
 
         for method in ("POST", "PUT", "PATCH", "DELETE"):
             status, _text, payload = _request(
                 server,
                 method,
-                "/api/wtpu-publication/dashboard",
+                f"/wtpu-publication/issues/{ids['issue_id']}",
                 body={"attempt": "mutate"},
             )
             assert status == 405
@@ -111,13 +128,20 @@ def test_dashboard_html_has_no_write_or_external_publication_controls(tmp_state:
     assert "file:///src.minutes.pdf" in html
     assert "Editorial status is not release status" in html
     assert "Nothing in this dashboard grants publication authority" in html
+    assert f'href="/wtpu-publication/issues/{ids["issue_id"]}"' in html
+    assert f'href="/wtpu-publication/essays/{ids["essay_id"]}"' in html
+    assert f'href="/wtpu-publication/source-packets/{ids["source_packet_id"]}"' in html
+    _assert_only_local_wtpu_links(html)
     assert "<form" not in lower
     assert "<button" not in lower
     assert "data-action" not in lower
-    assert "href=" not in lower
     assert "/api/approve" not in lower
     assert "/api/export" not in lower
     assert "/api/publish" not in lower
+    assert "href=\"file:" not in lower
+    assert "href=\"http:" not in lower
+    assert "href=\"https:" not in lower
+    assert "href=\"mailto:" not in lower
     assert "publish youtube" not in lower
     assert "oauth" not in lower
     assert "open platform" not in lower
@@ -178,6 +202,129 @@ def test_source_hash_blockers_corrections_and_brand_isolation_render(tmp_state: 
     assert _ledger_snapshot(tmp_state) == before
 
 
+def test_phase2_filters_validate_and_return_expected_rows(tmp_state: Path) -> None:
+    ids = _populate_wtpu_fixture(tmp_state)
+    before = _ledger_snapshot(tmp_state)
+    server, thread = _serve()
+
+    try:
+        filter_cases = [
+            ("/api/wtpu-publication/issues?section=public_record", "issues"),
+            ("/api/wtpu-publication/issues?issue_status=draft", "issues"),
+            ("/api/wtpu-publication/issues?jurisdiction=Indiana", "issues"),
+            ("/api/wtpu-publication/issues?scope=state", "issues"),
+            ("/api/wtpu-publication/essays?essay_status=corrected", "essays"),
+        ]
+        for path, key in filter_cases:
+            status, _text, payload = _request(server, "GET", path)
+            assert status == 200
+            assert payload["count"] == 1
+            assert payload[key][0]["issue_id"] == ids["issue_id"]
+            assert payload["read_only"] is True
+            assert payload["mutation_allowed"] is False
+            assert _ledger_snapshot(tmp_state) == before
+
+        empty_status, _empty_text, empty_payload = _request(
+            server,
+            "GET",
+            "/api/wtpu-publication/issues?jurisdiction=Ohio",
+        )
+        assert empty_status == 200
+        assert empty_payload["count"] == 0
+        assert empty_payload["empty_result"] is True
+        assert empty_payload["active_filters"]["jurisdiction"] == "Ohio"
+        assert _ledger_snapshot(tmp_state) == before
+
+        empty_scope_status, _scope_text, empty_scope_payload = _request(
+            server,
+            "GET",
+            "/api/wtpu-publication/issues?scope=municipal",
+        )
+        assert empty_scope_status == 200
+        assert empty_scope_payload["count"] == 0
+        assert empty_scope_payload["empty_result"] is True
+        assert empty_scope_payload["active_filters"]["scope"] == "municipal"
+        assert _ledger_snapshot(tmp_state) == before
+
+        invalid_paths = [
+            "/api/wtpu-publication/issues?section=not_a_section",
+            "/api/wtpu-publication/essays?essay_status=not_a_lifecycle",
+            "/api/wtpu-publication/issues?issue_status=not_a_status",
+            "/api/wtpu-publication/issues?source_type=meeting_minutes",
+        ]
+        for path in invalid_paths:
+            status, _text, payload = _request(server, "GET", path)
+            assert status == 400
+            assert payload["error"] == "wtpu_filter_invalid"
+            assert payload["read_only"] is True
+            assert payload["mutation_allowed"] is False
+            assert _ledger_snapshot(tmp_state) == before
+    finally:
+        _stop(server, thread)
+
+
+def test_phase2_detail_navigation_and_projection_content(tmp_state: Path) -> None:
+    ids = _populate_wtpu_fixture(tmp_state)
+    before = _ledger_snapshot(tmp_state)
+    server, thread = _serve()
+
+    try:
+        issue_status, issue_html, _ = _request(server, "GET", f"/wtpu-publication/issues/{ids['issue_id']}")
+        essay_status, essay_html, _ = _request(server, "GET", f"/wtpu-publication/essays/{ids['essay_id']}")
+        packet_status, packet_html, _ = _request(
+            server,
+            "GET",
+            f"/wtpu-publication/source-packets/{ids['source_packet_id']}",
+        )
+        correction_status, correction_html, _ = _request(
+            server,
+            "GET",
+            f"/wtpu-publication/corrections/essay/{ids['essay_id']}",
+        )
+        archive_status, archive_html, _ = _request(
+            server,
+            "GET",
+            f"/wtpu-publication/archive-readiness/{ids['issue_id']}",
+        )
+    finally:
+        _stop(server, thread)
+
+    assert issue_status == 200
+    assert "Editorial status is not release status" in issue_html
+    assert f'href="/wtpu-publication/essays/{ids["essay_id"]}"' in issue_html
+    assert f'href="/wtpu-publication/source-packets/{ids["source_packet_id"]}"' in issue_html
+    assert "Campaign links are descriptive lineage only" in issue_html
+    _assert_only_local_wtpu_links(issue_html)
+
+    assert essay_status == 200
+    assert "Evidence Summary" in essay_html
+    assert "Interpretation Summary" in essay_html
+    assert ids["essay_hash"] in essay_html
+    assert "public_record_fact" in essay_html
+    assert f'href="/wtpu-publication/source-packets/{ids["source_packet_id"]}"' in essay_html
+    _assert_only_local_wtpu_links(essay_html)
+
+    assert packet_status == 200
+    assert "Plain Text Locator" in packet_html
+    assert "file:///src.minutes.pdf" in packet_html
+    assert ids["source_hash"] in packet_html
+    assert "Fixture source snapshot." in packet_html
+    assert f'href="/wtpu-publication/essays/{ids["essay_id"]}"' in packet_html
+    _assert_only_local_wtpu_links(packet_html)
+
+    assert correction_status == 200
+    assert "Correction history is preserved and not overwritten" in correction_html
+    assert correction_html.index("correction_pending") < correction_html.index("corrected")
+    _assert_only_local_wtpu_links(correction_html)
+
+    assert archive_status == 200
+    assert "Archive readiness is internal record quality only" in archive_html
+    assert "canonical_essay_not_approved" in archive_html
+    assert f'href="/wtpu-publication/essays/{ids["essay_id"]}"' in archive_html
+    _assert_only_local_wtpu_links(archive_html)
+    assert _ledger_snapshot(tmp_state) == before
+
+
 def test_missing_wtpu_records_return_planned_errors_without_mutation(tmp_state: Path) -> None:
     _populate_wtpu_fixture(tmp_state)
     before = _ledger_snapshot(tmp_state)
@@ -187,7 +334,10 @@ def test_missing_wtpu_records_return_planned_errors_without_mutation(tmp_state: 
         cases = {
             "/api/wtpu-publication/issues/issue_missing": "wtpu_record_missing",
             "/api/wtpu-publication/sections/not_a_section": "wtpu_record_missing",
+            "/api/wtpu-publication/essays/essay_missing": "wtpu_record_missing",
             "/api/wtpu-publication/source-packets/packet_missing": "wtpu_record_missing",
+            "/api/wtpu-publication/corrections/essay/essay_missing": "wtpu_record_missing",
+            "/api/wtpu-publication/archive-readiness/issue_missing": "wtpu_record_missing",
             "/api/wtpu-publication/history/not-a-type/record": "wtpu_request_invalid",
         }
         for path, error_code in cases.items():
@@ -352,6 +502,13 @@ def _request(
         return response.status, raw, payload
     finally:
         conn.close()
+
+
+def _assert_only_local_wtpu_links(html: str) -> None:
+    hrefs = re.findall(r'href="([^"]+)"', html)
+    assert hrefs
+    assert all(href.startswith("/wtpu-publication") for href in hrefs)
+    assert all(not href.startswith(("http:", "https:", "file:", "mailto:")) for href in hrefs)
 
 
 def _ledger_snapshot(root: Path) -> bytes | None:

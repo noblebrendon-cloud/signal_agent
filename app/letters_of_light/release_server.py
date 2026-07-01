@@ -520,8 +520,9 @@ class ReleaseRequestHandler(BaseHTTPRequestHandler):
             self._send_html(_render_page())
             return
 
-        if path == "/wtpu-publication":
-            self._send_html(render_wtpu_publication_dashboard_page())
+        if path == "/wtpu-publication" or path.startswith("/wtpu-publication/"):
+            html, status = render_wtpu_publication_dashboard_page(path, parsed.query)
+            self._send_html(html, status)
             return
 
         if path.startswith("/api/wtpu-publication"):
