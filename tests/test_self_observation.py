@@ -20,6 +20,7 @@ ALLOWED_ANALYTICS_FILES = {
     "metrics.py",
     "report_builder.py",
     "review_loop.py",
+    "review_state.py",
     "self_observation.py",
     "subsystem_detection.py",
 }
