@@ -18,13 +18,14 @@ ANALYTICS_PKG = Path(__file__).resolve().parents[1] / "signal_agent" / "analytic
 ALLOWED_ANALYTICS_FILES = {
     "__init__.py",
     "metrics.py",
+    "proposal_intake.py",
     "report_builder.py",
     "review_loop.py",
     "review_state.py",
     "self_observation.py",
     "subsystem_detection.py",
 }
-ALLOWED_ANALYTICS_WRITER_FILES = {"report_builder.py", "review_loop.py"}
+ALLOWED_ANALYTICS_WRITER_FILES = {"proposal_intake.py", "report_builder.py", "review_loop.py"}
 
 
 def _write_jsonl(path: Path, rows: list[dict | str]) -> None:
