@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+from collections.abc import Mapping
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -432,6 +433,212 @@ def make_lifecycle_metadata(validation: dict[str, Any], final_state: str | None 
     }
 
 
+_DUPLICATE_REASONS = {"duplicate_record_detected", "duplicate_transition_detected"}
+_STATE_INTEGRITY_REASONS = {
+    "invalid_current_state",
+    "invalid_next_state",
+    "state_missing_or_invalid",
+    "state_missing_or_invalid_non_mutating",
+}
+_MISSING_PREREQUISITE_REASONS = {
+    "input_reference_present",
+    "source_path_present",
+    "candidate_cluster_members_present",
+    "bundle_identity_present",
+    "bundle_reference_present",
+    "router_ruleset_hash_present",
+    "durable_identity_present",
+    "final_path_present",
+    "route_key_present",
+    "hash_present",
+    "sha256_present",
+}
+_OPERATOR_ERROR_TERMS = ("contract", "mapping", "unsupported")
+_PROVIDER_FAILURE_REASONS = {
+    "provider_failure",
+    "provider_error",
+    "provider_unavailable",
+    "model_unavailable",
+    "model_error",
+}
+
+
+def _clean_signal(value: Any) -> str | None:
+    text = str(value or "").strip()
+    return text or None
+
+
+def _signal_key(signal: str) -> str:
+    return signal.split(":", 1)[0].strip()
+
+
+def _denial_signals(validation: Mapping[str, Any], policy_result: Any) -> list[str]:
+    signals: list[str] = []
+    reason = _clean_signal(validation.get("reason"))
+    if reason:
+        signals.append(reason)
+        signals.extend(part.strip() for part in reason.split(",") if part.strip())
+    if isinstance(policy_result, Mapping):
+        failures = policy_result.get("failures")
+        if isinstance(failures, list):
+            signals.extend(
+                text
+                for item in failures
+                if (text := _clean_signal(item)) is not None
+            )
+    seen: set[str] = set()
+    unique: list[str] = []
+    for signal in signals:
+        if signal not in seen:
+            unique.append(signal)
+            seen.add(signal)
+    return unique
+
+
+def _policy_rule_id(validation: Mapping[str, Any], policy_result: Any) -> str | None:
+    for value in (
+        validation.get("policy_rule_id"),
+        validation.get("policy_id"),
+        policy_result.get("policy_rule_id") if isinstance(policy_result, Mapping) else None,
+        policy_result.get("policy_id") if isinstance(policy_result, Mapping) else None,
+    ):
+        text = _clean_signal(value)
+        if text:
+            return text
+    return None
+
+
+def _denial_subtype(signal: str) -> str:
+    return _signal_key(signal)
+
+
+def _classify_transition_denial(
+    validation: Mapping[str, Any],
+    context: Mapping[str, Any],
+    *,
+    event_type: str,
+) -> dict[str, Any]:
+    policy_result = validation.get("policy_result")
+    source_module = _clean_signal(context.get("module"))
+    source_operation = _clean_signal(context.get("operation"))
+    base = {
+        "source_operation": source_operation,
+        "source_module": source_module,
+        "state_from": validation.get("current_state"),
+        "state_to": validation.get("next_state"),
+        "policy_rule_id": _policy_rule_id(validation, policy_result),
+    }
+
+    if validation.get("allowed") is True:
+        return {
+            **base,
+            "denial_reason": None,
+            "denial_category": None,
+            "denial_subtype": None,
+        }
+
+    signals = _denial_signals(validation, policy_result)
+    primary_reason = _clean_signal(validation.get("reason")) or (signals[0] if signals else None)
+
+    for signal in signals:
+        if _signal_key(signal) in _DUPLICATE_REASONS:
+            return {
+                **base,
+                "denial_reason": primary_reason or signal,
+                "denial_category": "duplicate_protection",
+                "denial_subtype": _denial_subtype(signal),
+            }
+
+    for signal in signals:
+        if _signal_key(signal) in _STATE_INTEGRITY_REASONS:
+            return {
+                **base,
+                "denial_reason": primary_reason or signal,
+                "denial_category": "state_integrity",
+                "denial_subtype": _denial_subtype(signal),
+            }
+
+    for signal in signals:
+        if _signal_key(signal) == "forbidden_transition":
+            return {
+                **base,
+                "denial_reason": primary_reason or signal,
+                "denial_category": "forbidden_transition",
+                "denial_subtype": "forbidden_transition",
+            }
+
+    for signal in signals:
+        if _signal_key(signal) == "transition_not_defined":
+            return {
+                **base,
+                "denial_reason": primary_reason or signal,
+                "denial_category": "undefined_transition",
+                "denial_subtype": "transition_not_defined",
+            }
+
+    for signal in signals:
+        if _signal_key(signal) in _MISSING_PREREQUISITE_REASONS:
+            return {
+                **base,
+                "denial_reason": primary_reason or signal,
+                "denial_category": "missing_prerequisite",
+                "denial_subtype": _denial_subtype(signal),
+            }
+
+    for signal in signals:
+        signal_key = _signal_key(signal)
+        if signal_key in _PROVIDER_FAILURE_REASONS or (
+            "provider" in signal_key and any(term in signal_key for term in ("failure", "error", "unavailable"))
+        ):
+            return {
+                **base,
+                "denial_reason": primary_reason or signal,
+                "denial_category": "provider_failure",
+                "denial_subtype": _denial_subtype(signal),
+            }
+
+    for signal in signals:
+        signal_key = _signal_key(signal)
+        if any(term in signal_key for term in _OPERATOR_ERROR_TERMS):
+            return {
+                **base,
+                "denial_reason": primary_reason or signal,
+                "denial_category": "operator_error",
+                "denial_subtype": _denial_subtype(signal),
+            }
+
+    if source_module == "app.governor.activation_governor" and not primary_reason:
+        return {
+            **base,
+            "denial_reason": "activation_event_without_denial_reason",
+            "denial_category": "unknown",
+            "denial_subtype": "activation_event_without_denial_reason",
+        }
+
+    if isinstance(policy_result, Mapping) and policy_result.get("allowed") is False:
+        return {
+            **base,
+            "denial_reason": primary_reason or "policy_rejected",
+            "denial_category": "policy_rejection",
+            "denial_subtype": _denial_subtype(primary_reason or "policy_rejected"),
+        }
+
+    if primary_reason:
+        return {
+            **base,
+            "denial_reason": primary_reason,
+            "denial_category": "unknown",
+            "denial_subtype": _denial_subtype(primary_reason),
+        }
+
+    return {
+        **base,
+        "denial_reason": "unknown_denial",
+        "denial_category": "unknown",
+        "denial_subtype": "unknown_denial",
+    }
+
+
 def emit_transition_event(
     validation: dict[str, Any],
     *,
@@ -456,6 +663,7 @@ def emit_transition_event(
         "status": "allowed" if validation.get("allowed") else "rejected",
         "reason": validation.get("reason"),
     }
+    payload.update(_classify_transition_denial(validation, context, event_type=event_type))
     module_name = context.get("module")
     operation = context.get("operation")
     if module_name:
