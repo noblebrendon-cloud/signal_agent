@@ -128,6 +128,7 @@ from app.letters_of_light.production_derivative_promotion import (
     GovernedDraftPromotionIntegrityError,
     GovernedDraftPromotionRequest,
     GovernedDraftPromotionValidationError,
+    governed_draft_production_derivative_status,
     promote_governed_draft_to_production_derivative,
     validate_governed_draft_production_derivative_candidate,
 )
@@ -3314,6 +3315,12 @@ def _render_page() -> str:
               </div>
               <div class="status" id="production-derivative-status">Open or select a governed draft, then enter source hash, promotion intent, and operator reference.</div>
             </div>
+            <div class="production-derivative-status-panel" id="production-derivative-status-panel">
+              <h4>Production Derivative Status</h4>
+              <div class="governed-disclosure" id="production-derivative-status-authority-notice">Promotion created a separate production derivative. This status view does not approve, release, export, schedule, publish, or grant platform authority.</div>
+              <div class="governed-brief-context" id="production-derivative-status-context"></div>
+              <div class="status" id="production-derivative-status-state">Open or select a governed draft to inspect production derivative status.</div>
+            </div>
           </div>
           <div id="source-preview"></div>
           <div class="voice-sources">
@@ -3568,6 +3575,8 @@ def _render_page() -> str:
     const productionDerivativeValidateBtn = document.getElementById("production-derivative-validate");
     const productionDerivativeCreateBtn = document.getElementById("production-derivative-create");
     const productionDerivativeStatus = document.getElementById("production-derivative-status");
+    const productionDerivativeStatusContext = document.getElementById("production-derivative-status-context");
+    const productionDerivativeStatusState = document.getElementById("production-derivative-status-state");
     const sourcePreviewEl = document.getElementById("source-preview");
     const clipListEl = document.getElementById("clip-list");
     const compositionAspect = document.getElementById("composition-aspect");
@@ -3669,6 +3678,10 @@ def _render_page() -> str:
     let productionDerivativeInFlight = false;
     let productionDerivativeApplyInFlight = false;
     let productionDerivativeApplied = null;
+    let productionDerivativeStatusPayload = null;
+    let productionDerivativeStatusKeyValue = "";
+    let productionDerivativeStatusInFlight = false;
+    let productionDerivativeStatusError = "";
 
     function stateClass(value) {
       return "state-" + String(value || "unseen").replace(/[^a-z0-9_]+/gi, "_").toLowerCase();
@@ -4003,6 +4016,40 @@ def _render_page() -> str:
       if (render) renderGovernedDraftPanel();
     }
 
+    function productionDerivativeStatusKey() {
+      const source = productionDerivativeSourceLetter();
+      return [activeProjectId(), source ? source.letter_id : ""].join("::");
+    }
+
+    function invalidateProductionDerivativeStatus(render = true) {
+      productionDerivativeStatusPayload = null;
+      productionDerivativeStatusKeyValue = "";
+      productionDerivativeStatusError = "";
+      productionDerivativeStatusInFlight = false;
+      if (render) renderGovernedDraftPanel();
+    }
+
+    async function loadProductionDerivativeStatus(source) {
+      const key = productionDerivativeStatusKey();
+      if (!activeProjectId() || !source || !source.letter_id || productionDerivativeStatusInFlight) return;
+      productionDerivativeStatusInFlight = true;
+      productionDerivativeStatusError = "";
+      renderProductionDerivativeStatusPanel();
+      try {
+        productionDerivativeStatusPayload = await api(
+          `/api/projects/${encodeURIComponent(activeProjectId())}/governed-drafts/${encodeURIComponent(source.letter_id)}/production-derivative-status`
+        );
+        productionDerivativeStatusKeyValue = key;
+      } catch (error) {
+        productionDerivativeStatusPayload = null;
+        productionDerivativeStatusKeyValue = "";
+        productionDerivativeStatusError = error.message;
+      } finally {
+        productionDerivativeStatusInFlight = false;
+        renderGovernedDraftPanel();
+      }
+    }
+
     function outlinePreviewKey() {
       const parent = governedParentLetterContext();
       return [
@@ -4034,6 +4081,7 @@ def _render_page() -> str:
       outlinePreviewError = "";
       invalidateProseCandidate(false);
       invalidateProductionDerivative(false);
+      invalidateProductionDerivativeStatus(false);
       renderGovernedDraftPanel();
     }
 
@@ -4047,6 +4095,7 @@ def _render_page() -> str:
       outlinePreviewError = "";
       invalidateProseCandidate(false);
       invalidateProductionDerivative(false);
+      invalidateProductionDerivativeStatus(false);
       renderGovernedDraftPanel();
     }
 
@@ -4642,6 +4691,69 @@ def _render_page() -> str:
       }
     }
 
+    function productionDerivativeStatusRows(status) {
+      if (!status || !status.promotion_found) {
+        return `
+          <div class="readiness-row"><span>Source governed draft</span><span>${escapeHtml(status ? status.source_letter_id || "" : "")}</span></div>
+          <div class="readiness-row"><span>Promotion</span><span>none</span></div>
+          <div class="readiness-row"><span>Target production derivative</span><span>not created</span></div>
+        `;
+      }
+      const promotion = status.promotion || {};
+      const target = status.target || {};
+      const job = status.creation_job || {};
+      const pipeline = status.pipeline || {};
+      return `
+        <div class="readiness-row"><span>Promotion ID</span><span>${escapeHtml(promotion.promotion_id || "")}</span></div>
+        <div class="readiness-row"><span>Source governed draft</span><span>${escapeHtml(status.source_letter_id || "")}</span></div>
+        <div class="readiness-row"><span>Source body hash</span><span>${escapeHtml(promotion.source_body_hash || "")}</span></div>
+        <div class="readiness-row"><span>Promotion intent</span><span>${escapeHtml(promotion.promotion_intent_ref || "")}</span></div>
+        <div class="readiness-row"><span>Destination brand</span><span>${escapeHtml(promotion.destination_brand_id || "")}</span></div>
+        <div class="readiness-row"><span>Separate target</span><span>${escapeHtml(target.letter_id || "")}</span></div>
+        <div class="readiness-row"><span>Target lifecycle</span><span>${escapeHtml(target.lifecycle_state || "")}</span></div>
+        <div class="readiness-row"><span>Creation job</span><span>${escapeHtml(job.job_id || "")}</span></div>
+        <div class="readiness-row"><span>Job status</span><span>${escapeHtml(job.status || "")}</span></div>
+        <div class="readiness-row"><span>Pipeline state</span><span>${escapeHtml(pipeline.state || "")}</span></div>
+        <div class="readiness-row"><span>Evaluation / registration</span><span>${escapeHtml(pipeline.evaluation_state || "")} / ${escapeHtml(pipeline.registration_state || "")}</span></div>
+        <div class="readiness-row"><span>Release record</span><span>${escapeHtml(target.has_release_record ? "exists" : "none")}</span></div>
+        <div class="readiness-row"><span>Release eligible</span><span>${escapeHtml(target.release_eligible ? "yes" : "no")}</span></div>
+      `;
+    }
+
+    function renderProductionDerivativeStatusPanel() {
+      if (!activeProject) {
+        productionDerivativeStatusContext.innerHTML = "";
+        productionDerivativeStatusState.textContent = "Select a project before inspecting production derivative status.";
+        return;
+      }
+      const source = productionDerivativeSourceLetter();
+      if (!source || !source.letter_id) {
+        productionDerivativeStatusContext.innerHTML = "";
+        productionDerivativeStatusState.textContent = "Open or select a governed draft to inspect production derivative status.";
+        return;
+      }
+      const key = productionDerivativeStatusKey();
+      const fresh = productionDerivativeStatusPayload && productionDerivativeStatusKeyValue === key;
+      if (!fresh && !productionDerivativeStatusInFlight) {
+        loadProductionDerivativeStatus(source);
+      }
+      if (productionDerivativeStatusInFlight) {
+        productionDerivativeStatusContext.innerHTML = productionDerivativeStatusRows(productionDerivativeStatusPayload || {source_letter_id: source.letter_id, promotion_found: false});
+        productionDerivativeStatusState.textContent = "Reading production derivative status";
+        return;
+      }
+      if (productionDerivativeStatusError) {
+        productionDerivativeStatusContext.innerHTML = productionDerivativeStatusRows({source_letter_id: source.letter_id, promotion_found: false});
+        productionDerivativeStatusState.textContent = productionDerivativeStatusError;
+        return;
+      }
+      const status = fresh ? productionDerivativeStatusPayload : {source_letter_id: source.letter_id, promotion_found: false};
+      productionDerivativeStatusContext.innerHTML = productionDerivativeStatusRows(status);
+      productionDerivativeStatusState.textContent = status.promotion_found
+        ? "Production derivative status loaded."
+        : "No production derivative has been created from this governed draft.";
+    }
+
     function renderOutlinePreviewPanel() {
       if (!activeProject) {
         outlinePreviewContext.innerHTML = "";
@@ -4709,6 +4821,7 @@ def _render_page() -> str:
         renderOutlinePreviewPanel();
         renderProseCandidatePanel();
         renderProductionDerivativePanel();
+        renderProductionDerivativeStatusPanel();
         return;
       }
       governedBriefContext.innerHTML = governedContextRows();
@@ -4750,6 +4863,7 @@ def _render_page() -> str:
       renderOutlinePreviewPanel();
       renderProseCandidatePanel();
       renderProductionDerivativePanel();
+      renderProductionDerivativeStatusPanel();
     }
 
     function passageOrderKey(passage) {
@@ -5994,6 +6108,7 @@ def _render_page() -> str:
         );
         await loadAll();
         productionDerivativeApplied = result;
+        invalidateProductionDerivativeStatus(false);
         const label = result.validation_state === "already_promoted" ? "Existing production derivative" : "Created production derivative";
         productionDerivativeStatus.textContent = `${label}: ${result.target_letter_id || ""}`;
         workspaceStatusEl.textContent = productionDerivativeStatus.textContent;
@@ -6341,6 +6456,13 @@ class ReleaseRequestHandler(BaseHTTPRequestHandler):
                 if len(parts) == 5 and parts[3] == "governed-drafts" and parts[4] == "context":
                     self._handle_governed_draft_context(parts[2], parse_qs(parsed.query))
                     return
+                if (
+                    len(parts) == 6
+                    and parts[3] == "governed-drafts"
+                    and parts[5] == "production-derivative-status"
+                ):
+                    self._handle_production_derivative_status(parts[2], parts[4])
+                    return
                 if len(parts) == 3:
                     self._send_json(project_payload(parts[2]))
                     return
@@ -6414,6 +6536,29 @@ class ReleaseRequestHandler(BaseHTTPRequestHandler):
                 HTTPStatus.NOT_FOUND,
             )
         except (ValueError, TypeError) as exc:
+            self._send_json(
+                {"ok": False, "status": "validation_error", "error": str(exc)},
+                HTTPStatus.BAD_REQUEST,
+            )
+        except Exception as exc:
+            self._send_json(
+                {"ok": False, "status": "validation_error", "error": str(exc)},
+                HTTPStatus.BAD_REQUEST,
+            )
+
+    def _handle_production_derivative_status(self, project_id: str, source_letter_id: str) -> None:
+        try:
+            payload = governed_draft_production_derivative_status(
+                project_id=project_id,
+                source_letter_id=source_letter_id,
+            )
+            self._send_json(payload)
+        except FileNotFoundError as exc:
+            self._send_json(
+                {"ok": False, "status": "validation_error", "error": str(exc)},
+                HTTPStatus.NOT_FOUND,
+            )
+        except (GovernedDraftPromotionIntegrityError, ValueError, TypeError) as exc:
             self._send_json(
                 {"ok": False, "status": "validation_error", "error": str(exc)},
                 HTTPStatus.BAD_REQUEST,

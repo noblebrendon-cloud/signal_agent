@@ -598,6 +598,21 @@ def _production_derivative_apply_path(fixture: dict[str, Any]) -> str:
     )
 
 
+def _production_derivative_status_path(fixture: dict[str, Any]) -> str:
+    return (
+        f"/api/projects/{fixture['project']['project_id']}/governed-drafts/"
+        f"{fixture['source_letter_id']}/production-derivative-status"
+    )
+
+
+def _state_file_snapshot(root: Path) -> list[str]:
+    return sorted(
+        str(path.relative_to(root))
+        for path in root.rglob("*")
+        if path.is_file()
+    )
+
+
 def _letter_payload(tmp_state: Path, letter_id: str) -> dict:
     return json.loads(
         (
@@ -634,6 +649,7 @@ def test_ui_html_includes_governed_draft_panel_and_blocks_empty_action() -> None
     assert "Production Derivative" in panel
     assert "Validate Production Derivative" in panel
     assert "Create Production Derivative" in panel
+    assert "Production Derivative Status" in panel
     assert "Actionable" in html
     assert "Needs Attention" in html
     assert "/governed-drafts/proposals" in html
@@ -645,11 +661,13 @@ def test_ui_html_includes_governed_draft_panel_and_blocks_empty_action() -> None
     assert "/governed-drafts/prose-apply" in html
     assert "/production-derivative-candidate" in html
     assert "/production-derivative-apply" in html
+    assert "/production-derivative-status" in html
     assert "This opens an editable Project Studio draft." in panel
     assert "This creates an editable scaffold-only child draft." in panel
     assert "This generates a draft candidate for review." in panel
     assert "This creates a separate production derivative for normal pipeline processing." in panel
     assert "It does not approve, release, export, schedule, publish, or grant platform authority." in panel
+    assert "Promotion created a separate production derivative. This status view does not approve, release, export, schedule, publish, or grant platform authority." in panel
     assert "not independent fact verification" in panel
     assert "Check Proposal before opening; source passages are still required." in html
     assert 'id="governed-open-draft" type="button" disabled' in panel
@@ -718,6 +736,31 @@ def test_ui_production_derivative_panel_has_no_release_or_platform_controls() ->
     assert "/api/export" not in panel
     assert "/api/publish" not in panel
     assert "promote-render" not in panel
+
+
+def test_ui_production_derivative_status_panel_is_passive_read_only() -> None:
+    html = _render_page()
+    panel = html.split('id="production-derivative-status-panel"', 1)[1].split('id="source-preview"', 1)[0]
+
+    assert "Production Derivative Status" in panel
+    assert "Promotion created a separate production derivative. This status view does not approve, release, export, schedule, publish, or grant platform authority." in panel
+    assert "<button" not in panel
+    assert "<input" not in panel
+    assert "<textarea" not in panel
+    assert "/production-derivative-status" in html
+    assert "loadProductionDerivativeStatus" in html
+    for forbidden in (
+        "Approve",
+        "Export",
+        "Schedule",
+        "Publish",
+        "OAuth",
+        "Queue",
+        "Adapter",
+        "Platform",
+        "Release Candidate",
+    ):
+        assert f">{forbidden}<" not in panel
 
 
 def test_ui_stale_outline_preview_wording_and_acceptance_state() -> None:
@@ -839,6 +882,35 @@ def test_production_derivative_candidate_requires_own_signing_key_without_fallba
     assert PRODUCTION_DERIVATIVE_PROMOTION_INDEX_KEY not in project
 
 
+def test_production_derivative_status_route_returns_no_promotion_without_mutation(
+    tmp_state: Path,
+) -> None:
+    fixture = _production_derivative_source_fixture(tmp_state)
+    source_before = fixture["source_path"].read_text(encoding="utf-8")
+    project_before = _project_file_payload(fixture["project"]["project_id"])
+    files_before = _state_file_snapshot(tmp_state)
+    server, thread = _serve()
+
+    try:
+        status, payload = _get_json(server, _production_derivative_status_path(fixture))
+    finally:
+        server.shutdown()
+        thread.join(timeout=5)
+        server.server_close()
+
+    assert status == 200
+    assert payload == {
+        "source_letter_id": fixture["source_letter_id"],
+        "project_id": fixture["project"]["project_id"],
+        "promotion_found": False,
+        "authority_notice": "No production derivative has been created from this governed draft.",
+    }
+    assert fixture["source_path"].read_text(encoding="utf-8") == source_before
+    assert _project_file_payload(fixture["project"]["project_id"]) == project_before
+    assert _state_file_snapshot(tmp_state) == files_before
+    assert creation_manager.list_creation_jobs() == []
+
+
 def test_production_derivative_apply_route_creates_target_and_retries_idempotently(
     tmp_state: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -900,6 +972,86 @@ def test_production_derivative_apply_route_creates_target_and_retries_idempotent
 
     project = project_payload(fixture["project"]["project_id"])
     assert project[PRODUCTION_DERIVATIVE_PROMOTION_INDEX_KEY][first["promotion_id"]]["target_letter_id"] == first["target_letter_id"]
+
+
+def test_production_derivative_status_route_reports_existing_receipt_target_and_job_read_only(
+    tmp_state: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake_pipeline = _fake_production_derivative_pipeline(tmp_state)
+    monkeypatch.setattr(creation_manager, "run_pipeline", fake_pipeline)
+    monkeypatch.setenv("GOVERNED_PRODUCTION_DERIVATIVE_PROMOTION_SIGNING_KEY", "route-promotion-key")
+    fixture = _production_derivative_source_fixture(tmp_state)
+    source_before = fixture["source_path"].read_text(encoding="utf-8")
+    server, thread = _serve()
+
+    try:
+        _, candidate = _post_json(
+            server,
+            _production_derivative_candidate_path(fixture),
+            _production_derivative_candidate_body(fixture),
+        )
+        apply_status, applied = _post_json(
+            server,
+            _production_derivative_apply_path(fixture),
+            {
+                "candidate_envelope": candidate["candidate_envelope"],
+                "expected_source_body_hash": candidate["source_body_hash"],
+                "promotion_intent_ref": "production-derivative:intent:route",
+                "operator_ref": "operator.route",
+            },
+        )
+        finished = creation_manager.wait_for_creation_job(applied["creation_job_id"], timeout=5)
+        files_before = _state_file_snapshot(tmp_state)
+        status, payload = _get_json(server, _production_derivative_status_path(fixture))
+        files_after = _state_file_snapshot(tmp_state)
+    finally:
+        server.shutdown()
+        thread.join(timeout=5)
+        server.server_close()
+
+    assert apply_status == 201
+    assert finished is not None
+    assert status == 200
+    assert files_after == files_before
+    assert fixture["source_path"].read_text(encoding="utf-8") == source_before
+    assert payload["promotion_found"] is True
+    assert payload["source_letter_id"] == fixture["source_letter_id"]
+    assert payload["project_id"] == fixture["project"]["project_id"]
+    assert payload["promotion"]["promotion_id"] == applied["promotion_id"]
+    assert payload["promotion"]["promotion_intent_ref"] == "production-derivative:intent:route"
+    assert payload["promotion"]["operator_ref"] == "operator.route"
+    assert payload["promotion"]["destination_brand_id"] == "brendon_r_coleman"
+    assert payload["promotion"]["source_body_hash"] == source_letter_body_hash(fixture["source_text"])
+    assert payload["target"]["letter_id"] == applied["target_letter_id"]
+    assert payload["target"]["parent_letter_id"] == fixture["source_letter_id"]
+    assert payload["target"]["letter_id"] != payload["source_letter_id"]
+    assert payload["target"]["lifecycle_state"] == "draft"
+    assert payload["target"]["release_eligible"] is False
+    assert payload["target"]["has_release_record"] is False
+    assert payload["creation_job"]["job_id"] == applied["creation_job_id"]
+    assert payload["creation_job"]["status"] == "succeeded"
+    assert payload["pipeline"]["state"] == "draft"
+    assert payload["pipeline"]["evaluation_state"] == ""
+    assert payload["pipeline"]["registration_state"] == "draft"
+    assert payload["authority_notice"] == "Promotion created a separate production derivative. This status view does not approve, release, export, schedule, publish, or grant platform authority."
+
+    combined = json.dumps(payload, sort_keys=True)
+    forbidden_fragments = (
+        "candidate_envelope",
+        "signing_key",
+        "route-promotion-key",
+        "token",
+        "credential",
+        "oauth_secret",
+        str(tmp_state),
+        "http://",
+        "https://",
+        "approved_at",
+        "release_state",
+    )
+    for forbidden in forbidden_fragments:
+        assert forbidden not in combined
 
 
 def test_production_derivative_apply_rejects_operator_mismatch_and_empty_operator(

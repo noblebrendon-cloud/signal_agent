@@ -12,6 +12,13 @@ from signal_agent.formal_governance.hashing import short_hash, stable_hash
 
 PRODUCTION_DERIVATIVE_PROMOTION_METADATA_KEY = "production_derivative_promotion"
 PRODUCTION_DERIVATIVE_PROMOTION_INDEX_KEY = "production_derivative_promotions"
+PRODUCTION_DERIVATIVE_STATUS_AUTHORITY_NOTICE = (
+    "Promotion created a separate production derivative. This status view does not approve, "
+    "release, export, schedule, publish, or grant platform authority."
+)
+PRODUCTION_DERIVATIVE_STATUS_NO_PROMOTION_NOTICE = (
+    "No production derivative has been created from this governed draft."
+)
 
 
 class GovernedDraftPromotionError(Exception):
@@ -254,6 +261,57 @@ def promote_governed_draft_to_production_derivative(
         promotion_receipt=receipt_with_job,
         project=project_studio.project_payload(request.destination_project_id),
     )
+
+
+def governed_draft_production_derivative_status(
+    *,
+    project_id: str,
+    source_letter_id: str,
+) -> Dict[str, Any]:
+    _required_text(project_id, "project_id")
+    _require_id(source_letter_id, "source_letter_id")
+    project = project_studio._read_project(project_id)
+    source = _read_json(_letter_dir(source_letter_id) / "letter.json")
+    if not source:
+        raise FileNotFoundError(f"Source Letter not found: {source_letter_id}")
+
+    entries = _promotion_entries_for_source(project, source_letter_id)
+    if not entries:
+        return {
+            "source_letter_id": source_letter_id,
+            "project_id": project_id,
+            "promotion_found": False,
+            "authority_notice": PRODUCTION_DERIVATIVE_STATUS_NO_PROMOTION_NOTICE,
+        }
+
+    entry = _latest_promotion_entry(entries)
+    receipt = _mapping(entry.get("promotion_receipt")) or dict(entry)
+    target_letter_id = str(
+        entry.get("target_letter_id")
+        or entry.get("letter_id")
+        or receipt.get("target_letter_id")
+        or ""
+    )
+    target = _read_json(_letter_dir(target_letter_id) / "letter.json") if target_letter_id else {}
+    target_metadata = _mapping(target.get("metadata"))
+    target_receipt = _mapping(target_metadata.get(PRODUCTION_DERIVATIVE_PROMOTION_METADATA_KEY))
+    if target_receipt:
+        receipt = {**receipt, **target_receipt}
+    job_id = str(entry.get("job_id") or entry.get("creation_job_id") or receipt.get("creation_job_id") or "")
+    job = creation_manager.get_creation_job(job_id) if job_id else None
+    release_record = _read_json(_letter_dir(target_letter_id) / "release.json") if target_letter_id else {}
+
+    return {
+        "source_letter_id": source_letter_id,
+        "project_id": project_id,
+        "promotion_found": True,
+        "promotion_count": len(entries),
+        "promotion": _promotion_status_payload(entry, receipt),
+        "target": _target_status_payload(target_letter_id, target, target_metadata, has_release_record=bool(release_record)),
+        "creation_job": _creation_job_status_payload(job_id, job),
+        "pipeline": _pipeline_status_payload(target, target_metadata, job),
+        "authority_notice": PRODUCTION_DERIVATIVE_STATUS_AUTHORITY_NOTICE,
+    }
 
 
 def _validated_source(
@@ -629,6 +687,123 @@ def _project_output_entry(
         "source_asset_ids": list(receipt.get("source_asset_ids") or []),
         "created_at": str(receipt.get("requested_at") or ""),
     }
+
+
+def _promotion_entries_for_source(project: Mapping[str, Any], source_letter_id: str) -> List[Dict[str, Any]]:
+    index = project.get(PRODUCTION_DERIVATIVE_PROMOTION_INDEX_KEY)
+    if index is None:
+        return []
+    if not isinstance(index, Mapping):
+        raise GovernedDraftPromotionIntegrityError("production_derivative_promotions_index_malformed")
+    entries: List[Dict[str, Any]] = []
+    for entry in index.values():
+        if not isinstance(entry, Mapping):
+            continue
+        receipt = _mapping(entry.get("promotion_receipt"))
+        if str(entry.get("source_letter_id") or receipt.get("source_letter_id") or "") != source_letter_id:
+            continue
+        entries.append(dict(entry))
+    return entries
+
+
+def _latest_promotion_entry(entries: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def sort_key(entry: Mapping[str, Any]) -> tuple[str, str, str]:
+        receipt = _mapping(entry.get("promotion_receipt"))
+        return (
+            str(entry.get("validated_at") or receipt.get("validated_at") or ""),
+            str(entry.get("requested_at") or receipt.get("requested_at") or ""),
+            str(entry.get("promotion_id") or receipt.get("promotion_id") or ""),
+        )
+
+    return dict(sorted(entries, key=sort_key)[-1])
+
+
+def _promotion_status_payload(entry: Mapping[str, Any], receipt: Mapping[str, Any]) -> Dict[str, Any]:
+    return {
+        "promotion_id": str(entry.get("promotion_id") or receipt.get("promotion_id") or ""),
+        "promotion_intent_ref": str(entry.get("promotion_intent_ref") or receipt.get("promotion_intent_ref") or ""),
+        "operator_ref": str(receipt.get("operator_ref") or ""),
+        "destination_brand_id": str(entry.get("destination_brand_id") or receipt.get("destination_brand_id") or ""),
+        "source_body_hash": str(entry.get("source_body_hash") or receipt.get("source_body_hash") or ""),
+        "validated_at": str(entry.get("validated_at") or receipt.get("validated_at") or ""),
+        "created_at": str(entry.get("requested_at") or receipt.get("requested_at") or ""),
+    }
+
+
+def _target_status_payload(
+    target_letter_id: str,
+    target: Mapping[str, Any],
+    metadata: Mapping[str, Any],
+    *,
+    has_release_record: bool,
+) -> Dict[str, Any]:
+    return {
+        "letter_id": target_letter_id,
+        "parent_letter_id": str(target.get("parent_letter_id") or metadata.get("parent_letter_id") or ""),
+        "lifecycle_state": str(target.get("lifecycle_state") or metadata.get("lifecycle_state") or ""),
+        "release_eligible": bool(metadata.get("release_eligible") or target.get("release_eligible") or False),
+        "has_release_record": bool(has_release_record),
+        "separate_from_source": True,
+    }
+
+
+def _creation_job_status_payload(job_id: str, job: Optional[Mapping[str, Any]]) -> Dict[str, Any]:
+    payload = {
+        "job_id": job_id,
+        "status": "",
+        "created_at": "",
+        "updated_at": "",
+    }
+    if not job:
+        return payload
+    payload.update(
+        {
+            "status": str(job.get("status") or ""),
+            "created_at": str(job.get("created_at") or ""),
+            "updated_at": str(job.get("updated_at") or ""),
+        }
+    )
+    error_summary = _safe_error_summary(job.get("error"))
+    if error_summary:
+        payload["error_summary"] = error_summary
+    return payload
+
+
+def _pipeline_status_payload(
+    target: Mapping[str, Any],
+    metadata: Mapping[str, Any],
+    job: Optional[Mapping[str, Any]],
+) -> Dict[str, Any]:
+    evaluation = _mapping(target.get("evaluation"))
+    lifecycle_state = str(target.get("lifecycle_state") or metadata.get("lifecycle_state") or "")
+    job_state = str((job or {}).get("current_stage") or (job or {}).get("status") or "")
+    return {
+        "state": job_state or lifecycle_state,
+        "media_state": _media_state(target),
+        "evaluation_state": str(evaluation.get("decision") or metadata.get("evaluation_state") or ""),
+        "registration_state": "registered" if lifecycle_state == "registered" else lifecycle_state,
+    }
+
+
+def _media_state(target: Mapping[str, Any]) -> str:
+    if target.get("video_path"):
+        return "video_available"
+    if target.get("visual_path"):
+        return "visual_available"
+    if target.get("music_path"):
+        return "music_available"
+    if target.get("audio_path"):
+        return "audio_available"
+    return ""
+
+
+def _safe_error_summary(value: Any) -> str:
+    text = str(value or "").strip()
+    if not text:
+        return ""
+    first_line = text.splitlines()[0]
+    first_line = re.sub(r"[A-Za-z]:\\[^\s]+", "[path]", first_line)
+    return first_line[:240]
 
 
 def _reject_source_release_authority(source_dir: Any, source: Mapping[str, Any], metadata: Mapping[str, Any]) -> None:
