@@ -6,6 +6,7 @@ import pytest
 from pydantic import BaseModel
 
 from signal_agent.structured_generation import FakeStructuredGenerator, StructuredGenerationError
+from signal_agent.structured_generation import manual_activation
 from signal_agent.structured_generation.outlines_adapter import (
     OutlinesStructuredGenerator,
     _openai_no_retry_kwargs,
@@ -42,6 +43,27 @@ class RecordingOutlinesModel:
 
 def _manual_auth() -> ManualLiveGenerationAuthorization:
     return ManualLiveGenerationAuthorization.manual_smoke()
+
+
+def test_manual_generation_context_assembles_governed_activation(monkeypatch) -> None:
+    generator = FakeStructuredGenerator(ExampleResponse(name="alpha", score=7))
+    budget = GenerationBudgetPolicy(max_output_tokens=64)
+    monkeypatch.setattr(
+        manual_activation.GenerationBudgetPolicy,
+        "from_environment",
+        lambda: budget,
+    )
+    monkeypatch.setattr(
+        manual_activation,
+        "create_structured_generator",
+        lambda *, budget_policy: generator,
+    )
+
+    context = manual_activation.resolve_manual_generation_context()
+
+    assert context.generator is generator
+    assert context.budget_policy is budget
+    assert context.authorization.origin == "manual_smoke"
 
 
 def test_fake_generation_still_works_without_live_authorization() -> None:

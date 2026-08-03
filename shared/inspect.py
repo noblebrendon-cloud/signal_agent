@@ -128,6 +128,21 @@ def artifact_truth(
     }
 
 
+def health_status(
+    registry_path: Optional[Path] = None,
+    event_log_path: Optional[Path] = None,
+    checkpoint_path: Optional[Path] = None,
+) -> Dict[str, Any]:
+    """Return the canonical system health report through the inspection API."""
+    from shared.health import system_health_report
+
+    return system_health_report(
+        registry_path=registry_path,
+        event_log_path=event_log_path,
+        checkpoint_path=checkpoint_path,
+    )
+
+
 def recent_events(
     artifact_id: str,
     limit: int = 10,

@@ -26,6 +26,7 @@ Result statuses:
 """
 from __future__ import annotations
 
+import hashlib
 import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -50,6 +51,15 @@ def route_bundle(*args: Any, **kwargs: Any) -> Dict[str, Any]:  # type: ignore[r
     """Thin wrapper importable at module load time so tests can patch it."""
     from app.hq.capture.router import route_bundle as _route_bundle
     return _route_bundle(*args, **kwargs)
+
+
+def _router_ruleset_hash() -> str:
+    """Return the hash identity used by the canonical spine router."""
+    ruleset_path = _get_root() / "config" / "spine_router.yaml"
+    try:
+        return hashlib.sha256(ruleset_path.read_bytes()).hexdigest()[:12]
+    except OSError:
+        return ""
 
 
 def process_promotion_events(
@@ -135,6 +145,10 @@ def process_promotion_events(
             artifact_id=artifact_id,
             expected_state="promoted",
             target_state="routed",
+            transition_context={
+                "bundle_path": bundle_path_str,
+                "router_ruleset_hash": _router_ruleset_hash(),
+            },
         )
         authority_result = preconditions["authority"]
         lifecycle_valid = authority_result["authoritative_source"] != "lifecycle_rules"

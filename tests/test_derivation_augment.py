@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 from unittest import mock
 import pytest
 
@@ -6,6 +7,22 @@ from signal_agent.media.derivation_augment import (
     gemini_enhance_derivation,
     build_derivation_augment_prompt,
 )
+
+
+@pytest.fixture(autouse=True)
+def _isolate_governed_inference_cache(tmp_path, monkeypatch):
+    import signal_agent.media.derivation_augment as derivation_augment
+
+    policy_source = (
+        Path(__file__).resolve().parents[1]
+        / "config"
+        / "policies"
+        / "inference_cache_policy.yaml"
+    )
+    policy_target = tmp_path / "config" / "policies" / "inference_cache_policy.yaml"
+    policy_target.parent.mkdir(parents=True, exist_ok=True)
+    policy_target.write_bytes(policy_source.read_bytes())
+    monkeypatch.setattr(derivation_augment, "REPO_ROOT", tmp_path)
 
 
 def test_build_derivation_augment_prompt():
@@ -78,6 +95,35 @@ def test_gemini_enhance_derivation_success_json():
         assert result["audience_hooks"] == ["Hook 1", "Hook 2"]
         assert result["semantic_topics"] == ["leadership", "innovation"]
         assert result["voice_drift_score"] == 0.42
+
+
+def test_semantic_cache_hit_skips_a_second_provider_call():
+    response = json.dumps({
+        "thematic_summary": "A stable cached theme.",
+        "audience_hooks": ["Hook"],
+        "semantic_topics": ["cache"],
+        "voice_drift_score": 0.1,
+        "voice_notes": [],
+        "repurposing_risks": [],
+    })
+    with mock.patch(
+        "signal_agent.media.derivation_augment._call_gemini_google_genai",
+        return_value=response,
+    ) as mock_call:
+        first = gemini_enhance_derivation(
+            transcript_text="cache-specific transcript",
+            semantic_segments=[],
+            topic_labels=["cache"],
+        )
+        second = gemini_enhance_derivation(
+            transcript_text="cache-specific transcript",
+            semantic_segments=[],
+            topic_labels=["cache"],
+        )
+
+    assert first["used_fallback"] is False
+    assert second["cache_status"] == "semantic_hit"
+    assert mock_call.call_count == 1
 
 
 def test_fallback_on_missing_api_key():

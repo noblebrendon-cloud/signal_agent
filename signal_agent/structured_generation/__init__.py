@@ -9,6 +9,7 @@ from .contracts import (
 )
 from .fake_adapter import FakeStructuredGenerator
 from .factory import create_structured_generator
+from .manual_activation import ManualGenerationContext, resolve_manual_generation_context
 from .policy import (
     GenerationBudgetError,
     GenerationBudgetPolicy,
@@ -27,6 +28,7 @@ __all__ = [
     "GenerationReceipt",
     "GenerationUsageMetadata",
     "LiveGenerationAuthorizationError",
+    "ManualGenerationContext",
     "ManualLiveGenerationAuthorization",
     "ProviderConfig",
     "ProviderName",
@@ -35,4 +37,5 @@ __all__ = [
     "StructuredResult",
     "create_structured_generator",
     "load_provider_config",
+    "resolve_manual_generation_context",
 ]

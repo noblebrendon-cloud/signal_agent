@@ -97,11 +97,16 @@ def extract_json(response: str) -> dict:
             return {}
         raise ValueError(f"Invalid or non-dict JSON received from SignalAgent: {e}") from e
 
-def run_wtpu_channel(thought: str, constraint_pack_path: str = None) -> WTPUOutput:
+def run_wtpu_channel(
+    thought: str,
+    constraint_pack_path: str | None = None,
+    *,
+    agent: SignalAgent | None = None,
+) -> WTPUOutput:
     """Run the WTPU channel transformation pipeline."""
     logger.info(f"Running WTPU channel for thought: {thought}")
     
-    agent = SignalAgent()
+    active_agent = agent or SignalAgent()
     prompt_envelope = PromptEnvelope.from_parts(
         static_prefix_parts=(PROMPT_TEMPLATE.strip(),),
         dynamic_suffix_parts=(
@@ -112,7 +117,7 @@ def run_wtpu_channel(thought: str, constraint_pack_path: str = None) -> WTPUOutp
     if not constraint_pack_path:
         constraint_pack_path = str(REPO_ROOT / "constraints" / "packs" / "domain" / "wtpu_pack.yaml")
         
-    response = agent.generate(
+    response = active_agent.generate(
         constraint_pack_path=constraint_pack_path,
         prompt_envelope=prompt_envelope,
         inference_context=InferenceRequestContext(

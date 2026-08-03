@@ -171,10 +171,15 @@ def test_no_leakage(tmp_path: Path) -> None:
     observed_intent = None
     original_dispatch = runtime._dispatch_tool
     
-    def mock_dispatch(tool_id, sub_plan, run_id):
+    def mock_dispatch(tool_id, sub_plan, run_id, *, context_bundle=None):
         nonlocal observed_intent
         observed_intent = sub_plan.intent
-        return original_dispatch(tool_id, sub_plan, run_id)
+        return original_dispatch(
+            tool_id,
+            sub_plan,
+            run_id,
+            context_bundle=context_bundle,
+        )
         
     with patch.object(runtime, '_dispatch_tool', side_effect=mock_dispatch):
         runtime.execute(plan)

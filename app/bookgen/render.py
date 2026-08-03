@@ -46,9 +46,13 @@ def render_from_spec(spec: Dict[str, Any], templates_dir: Path, out_dir: Path) -
     cover_front_path = out_dir / "cover_front.txt"
     letter_path = out_dir / "letter_one_sentence.txt"
 
-    env.get_template("book.md.j2").stream(**ctx).dump(book_md_path)
-    env.get_template("cover_front.txt.j2").stream(**ctx).dump(cover_front_path)
-    env.get_template("letter_one_sentence.txt.j2").stream(**ctx).dump(letter_path)
+    env.get_template("book.md.j2").stream(**ctx).dump(str(book_md_path), encoding="utf-8")
+    env.get_template("cover_front.txt.j2").stream(**ctx).dump(
+        str(cover_front_path), encoding="utf-8"
+    )
+    env.get_template("letter_one_sentence.txt.j2").stream(**ctx).dump(
+        str(letter_path), encoding="utf-8"
+    )
 
     return RenderOutputs(
         out_dir=out_dir,

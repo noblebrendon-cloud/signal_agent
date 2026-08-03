@@ -182,6 +182,23 @@ class TestIterUnprocessed(unittest.TestCase):
 
 class TestProcessPromotionEvents(unittest.TestCase):
 
+    @staticmethod
+    def _write_promoted_registry(root: Path, artifact_id: str, bundle_path: Path) -> None:
+        registry = root / "data" / "state" / "artifact_registry.jsonl"
+        registry.parent.mkdir(parents=True, exist_ok=True)
+        registry.write_text(
+            json.dumps(
+                {
+                    "artifact_id": artifact_id,
+                    "state": "promoted",
+                    "path": str(bundle_path),
+                    "updated_at": "2026-03-20T06:00:00Z",
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
     def test_dry_run_returns_summaries_without_routing(self):
         from shared.reactions import process_promotion_events
 
@@ -224,6 +241,7 @@ class TestProcessPromotionEvents(unittest.TestCase):
                 "---\nlifecycle_state: promoted\n---\n\nContent capture hashing\n",
                 encoding="utf-8",
             )
+            self._write_promoted_registry(Path(d), "art1", bundle)
             _write_event(log, "PromotionSucceeded", "art1",
                           {"bundle_path": str(bundle)})
 
@@ -234,7 +252,11 @@ class TestProcessPromotionEvents(unittest.TestCase):
                 return {"status": "ok"}
 
             # Patch the actual import location (lazy import inside reactions.py).
-            with patch("app.hq.capture.router.route_bundle", side_effect=fake_route):
+            registry = Path(d) / "data" / "state" / "artifact_registry.jsonl"
+            with patch(
+                "shared.state_registry._default_registry_path",
+                return_value=registry,
+            ), patch("app.hq.capture.router.route_bundle", side_effect=fake_route):
                 results = process_promotion_events(
                     event_log_path=log,
                     checkpoint_path=ckpt,
@@ -250,14 +272,25 @@ class TestProcessPromotionEvents(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             log = Path(d) / "events.jsonl"
             ckpt = Path(d) / "checkpoint.json"
+            authoritative_bundle = Path(d) / "authoritative_bundle.md"
+            authoritative_bundle.write_text(
+                "---\nlifecycle_state: promoted\n---\n",
+                encoding="utf-8",
+            )
+            self._write_promoted_registry(Path(d), "art1", authoritative_bundle)
             _write_event(log, "PromotionSucceeded", "art1",
                           {"bundle_path": "/nonexistent/bundle.md"})
 
-            results = process_promotion_events(
-                event_log_path=log,
-                checkpoint_path=ckpt,
-                dry_run=False,
-            )
+            registry = Path(d) / "data" / "state" / "artifact_registry.jsonl"
+            with patch(
+                "shared.state_registry._default_registry_path",
+                return_value=registry,
+            ):
+                results = process_promotion_events(
+                    event_log_path=log,
+                    checkpoint_path=ckpt,
+                    dry_run=False,
+                )
 
             self.assertEqual(len(results), 1)
             self.assertEqual(results[0]["status"], "fail")

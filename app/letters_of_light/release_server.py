@@ -146,10 +146,8 @@ from signal_agent.governed_publishing import (
     replay_governed_publishing_events,
 )
 from signal_agent.structured_generation import (
-    GenerationBudgetPolicy,
-    ManualLiveGenerationAuthorization,
     StructuredGenerationError,
-    create_structured_generator,
+    resolve_manual_generation_context,
 )
 
 
@@ -987,11 +985,10 @@ def _source_grounded_prose_candidate_request(
 
 def _resolve_source_grounded_prose_provider() -> tuple[Any, Any, Any]:
     try:
-        budget_policy = GenerationBudgetPolicy.from_environment()
-        generator = create_structured_generator(budget_policy=budget_policy)
+        context = resolve_manual_generation_context()
     except StructuredGenerationError as exc:
         raise SourceGroundedProseProviderAuthorizationError("structured_generation_provider_not_authorized") from exc
-    return generator, ManualLiveGenerationAuthorization.manual_smoke(), budget_policy
+    return context.generator, context.authorization, context.budget_policy
 
 
 def _source_grounded_candidate_signer() -> CandidateEnvelopeSigner:
