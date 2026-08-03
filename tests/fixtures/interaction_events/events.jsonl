@@ -1,0 +1,7 @@
+{"event_id":"evt-001","actor_id":"actor-alpha","thread_id":"thread-red","timestamp":"2026-07-01T09:15:00-04:00","text":"Discussed AI governance controls.","meta":{"display_name":"Avery Stone","company":"Northstar AI Governance","position":"AI Governance Architect"}}
+{"event_id":"evt-002","actor_id":"actor-beta","thread_id":"thread-blue","timestamp":"2026-07-01T14:30:00+01:00","text":"Mapped knowledge graph provenance.","meta":{"display_name":"Jordan Lee","company":"Atlas Knowledge Systems","position":"Knowledge Graph Lead"}}
+
+{"event_id":"evt-003","actor_id":"actor-alpha","thread_id":"thread-red","timestamp":"2026-07-02T10:00:00-04:00","text":"Reviewed responsible AI constraints.","meta":{"display_name":"Avery Stone","company":"Northstar Responsible Systems","position":"Responsible AI Advisor"}}
+{"event_id":"evt-004","actor_id":"actor-gamma","thread_id":"thread-green","timestamp":"2026-07-02T19:45:00+05:30","text":"","meta":{"display_name":"Casey Morgan","company":"Common Thread Content Infrastructure","position":"Content Operations Engineer"}}
+{"event_id":"evt-005","actor_id":"actor-delta","thread_id":"thread-yellow","timestamp":"2026-07-03T14:30:00Z","text":"Outlined local-first deployment."}
+{"event_id":"evt-006","actor_id":"actor-epsilon","thread_id":"thread-blue","timestamp":"2026-07-04T08:00:00-07:00","text":"Compared platform safeguards.","meta":{"display_name":"Rowan Pine","company":"Local First Labs","position":"Local-First Software Builder"}}
