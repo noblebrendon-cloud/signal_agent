@@ -11,9 +11,10 @@ model. An `EvidenceSource` may represent any bounded source, but it can enter
 - `signal_agent.relationship_record.v1` records; and
 - `signal_agent.unresolved_relationship_matches.v1` reporting.
 
-Sources that do not produce relationships are outside this pipeline. This
-milestone adds no additional importer, source registry, discovery mechanism,
-network access, publishing, messaging, campaign authorization, or UI.
+Sources that do not produce relationships are outside this pipeline. Milestone 2
+adds one bounded offline interaction-event adapter and no source registry,
+discovery mechanism, network access, publishing, messaging, campaign
+authorization, or UI.
 
 ## Governed Flow
 
@@ -64,7 +65,7 @@ frozen descriptor containing its ID, hash, source SHA-256, persisted relative
 path, schema identity, and immutable non-secret protection metadata. The runner
 may hash the persisted receipt bytes but does not parse adapter-specific fields.
 
-LinkedIn remains the reference adapter. Its CSV rules, preamble/header handling,
+LinkedIn remains the compatibility reference adapter. Its CSV rules, preamble/header handling,
 physical-line provenance, date parsing, email HMAC, key-verifier lifecycle,
 LinkedIn URL canonicalization, receipt body, and exact candidate detection stay
 under `signal_agent/corpus_import/linkedin/`.
@@ -73,6 +74,12 @@ The adapter retains its existing atomic import-plan implementation internally:
 parsing and record construction may occur while the opaque prepared value is
 built, but no normalized batch is exposed until `normalize(prepared,
 preserved)` receives the explicit preservation result.
+
+`interaction_event_export.v1` is the second portability witness. It owns strict
+JSONL validation, physical-line provenance, offset-aware timestamp
+normalization, HMAC actor identifiers, hashed event/thread identifiers, exact
+source preservation, and unresolved within-source metadata conflicts under
+`signal_agent/corpus_import/interaction_events/`.
 
 ## Deterministic Boundaries
 
@@ -98,7 +105,7 @@ receipt migration and explicit compatibility rebaseline.
 
 ## Compatibility Witness
 
-The exhaustive machine-readable witness is
+The exhaustive LinkedIn machine-readable witness is
 `tests/fixtures/linkedin_connections/compatibility_witness_v1.json`. Its audit
 capture used `E:\signal_agent`, the fixed `2026-08-02T12:00:00Z` clock, and key
 ID `acceptance-test-key-v1`.
@@ -129,6 +136,12 @@ rel_d41c3f5e6eef5b1a8423
 The witness itself is authoritative for all ten reference artifact byte sizes,
 exact-byte hashes, media types, schema identities, and content templates.
 
+The second-source witness is
+`tests/fixtures/interaction_events/compatibility_witness_v1.json`. It pins ten
+exact artifact sizes and SHA-256 hashes under a fixed clock and test key ID. Its
+receipt intentionally excludes an absolute observed source path, so two
+independent runs are byte-identical across run roots.
+
 ## Dependency Graph
 
 Before extraction:
@@ -157,6 +170,11 @@ corpus_import.linkedin.adapter
 relationship_signals.relationship_pipeline
   -> evidence_sources protocols, models, and canonical helpers
   -> injected interfaces only
+
+relationship_signals.interaction_event_pipeline  [interaction-event composition root]
+  -> corpus_import.interaction_events.adapter
+  -> the same concrete analyzer / resolver / packet / manifest builders
+  -> relationship_signals.relationship_pipeline
 ```
 
 Prohibited dependencies:
@@ -166,7 +184,8 @@ Prohibited dependencies:
 - The generic relationship runner must not import a concrete adapter or concrete
   downstream implementation.
 - Concrete downstream stages must not import a concrete source adapter.
-- Only the LinkedIn composition root may import both sides.
+- Only a source-specific composition root may import its adapter and the
+  concrete downstream implementations.
 
 ## Extension Point
 
