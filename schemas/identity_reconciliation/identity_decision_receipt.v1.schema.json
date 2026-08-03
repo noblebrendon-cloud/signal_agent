@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://signal-agent.local/schemas/identity_decision_receipt.v1.schema.json",
+  "title": "Governed identity review decision receipt",
+  "type": "object",
+  "required": [
+    "schema_version", "decision_id", "candidate", "evidence_bundle", "decision",
+    "decided_at", "review_authority", "authority_limitations", "rationale",
+    "comparison_policy", "evidence_references", "prior_decision_receipt",
+    "transition", "projection_authorized", "receipt_hash"
+  ],
+  "properties": {
+    "schema_version": {"const": "signal_agent.identity_decision_receipt.v1"},
+    "decision_id": {"type": "string", "pattern": "^idd_[0-9a-f]{20}$"},
+    "candidate": {"type": "object"},
+    "evidence_bundle": {"type": "object"},
+    "decision": {"enum": ["approved", "rejected", "deferred"]},
+    "decided_at": {"type": "string", "minLength": 1},
+    "review_authority": {"type": "object"},
+    "authority_limitations": {"type": "object"},
+    "rationale": {"type": "object"},
+    "comparison_policy": {"type": "object"},
+    "evidence_references": {"type": "array", "minItems": 2, "items": {"type": "string"}},
+    "prior_decision_receipt": {"type": ["object", "null"]},
+    "transition": {"type": "object"},
+    "projection_authorized": {"type": "boolean"},
+    "receipt_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+  },
+  "additionalProperties": false
+}

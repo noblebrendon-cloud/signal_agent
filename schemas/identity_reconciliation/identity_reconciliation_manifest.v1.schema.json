@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://signal-agent.local/schemas/identity_reconciliation_manifest.v1.schema.json",
+  "title": "Detached identity reconciliation manifest",
+  "type": "object",
+  "required": [
+    "schema_version", "manifest_id", "operation", "created_at", "completion_state",
+    "inputs", "artifacts", "counts", "safety_flags", "canonicalization", "manifest_hash"
+  ],
+  "properties": {
+    "schema_version": {"const": "signal_agent.identity_reconciliation_manifest.v1"},
+    "manifest_id": {"type": "string", "pattern": "^irm_[0-9a-f]{20}$"},
+    "operation": {"enum": ["candidate_generation", "projection_created", "projection_status_recorded"]},
+    "created_at": {"type": "string", "minLength": 1},
+    "completion_state": {"const": "completed"},
+    "inputs": {"type": "object"},
+    "artifacts": {"type": "array", "items": {"type": "object"}},
+    "counts": {"type": "object"},
+    "safety_flags": {"type": "object"},
+    "canonicalization": {"type": "object"},
+    "manifest_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+  },
+  "additionalProperties": false
+}

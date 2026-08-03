@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://signal-agent.local/schemas/identity_evidence_bundle.v1.schema.json",
+  "title": "Governed cross-source identity evidence bundle",
+  "type": "object",
+  "required": [
+    "schema_version", "evidence_bundle_id", "generated_at", "comparison_policy",
+    "left_identity_reference", "right_identity_reference", "comparison_signals",
+    "conflict_evidence", "missing_evidence", "protection_compatibility",
+    "prohibited_comparison_classes", "privacy", "bundle_hash"
+  ],
+  "properties": {
+    "schema_version": {"const": "signal_agent.identity_evidence_bundle.v1"},
+    "evidence_bundle_id": {"type": "string", "pattern": "^ieb_[0-9a-f]{20}$"},
+    "generated_at": {"type": "string", "minLength": 1},
+    "comparison_policy": {"type": "object"},
+    "left_identity_reference": {"type": "object"},
+    "right_identity_reference": {"type": "object"},
+    "comparison_signals": {"type": "array", "minItems": 3, "items": {"type": "object"}},
+    "conflict_evidence": {"type": "array", "items": {"type": "object"}},
+    "missing_evidence": {"type": "array", "items": {"type": "object"}},
+    "protection_compatibility": {"type": "object"},
+    "prohibited_comparison_classes": {"type": "array", "items": {"type": "string"}},
+    "privacy": {"type": "object"},
+    "bundle_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://signal-agent.local/schemas/identity_candidate.v1.schema.json",
+  "title": "Non-authoritative cross-source identity candidate",
+  "type": "object",
+  "required": [
+    "schema_version", "candidate_id", "generated_at", "status",
+    "candidate_classification", "left_identity_reference", "right_identity_reference",
+    "evidence_bundle", "comparison_policy", "rationale_codes", "conflict_evidence_count",
+    "missing_evidence_count", "human_review_required", "automatic_merge_performed",
+    "projection_authorized", "privacy", "candidate_hash"
+  ],
+  "properties": {
+    "schema_version": {"const": "signal_agent.identity_candidate.v1"},
+    "candidate_id": {"type": "string", "pattern": "^idc_[0-9a-f]{20}$"},
+    "generated_at": {"type": "string", "minLength": 1},
+    "status": {"enum": ["proposed", "conflicting"]},
+    "candidate_classification": {"enum": ["strong_attribute_candidate", "conflicting_attribute_candidate"]},
+    "left_identity_reference": {"type": "object"},
+    "right_identity_reference": {"type": "object"},
+    "evidence_bundle": {"type": "object"},
+    "comparison_policy": {"type": "object"},
+    "rationale_codes": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "conflict_evidence_count": {"type": "integer", "minimum": 0},
+    "missing_evidence_count": {"type": "integer", "minimum": 0},
+    "human_review_required": {"const": true},
+    "automatic_merge_performed": {"const": false},
+    "projection_authorized": {"const": false},
+    "privacy": {"type": "object"},
+    "candidate_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+  },
+  "additionalProperties": false
+}

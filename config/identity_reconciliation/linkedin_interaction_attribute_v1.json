@@ -1,0 +1,52 @@
+{
+  "schema_version": "signal_agent.identity_comparison_policy.v1",
+  "policy_id": "linkedin_interaction_attribute_v1",
+  "policy_version": "1.0.0",
+  "source_pair": [
+    "linkedin_connections_csv",
+    "interaction_event_export.v1"
+  ],
+  "normalization": {
+    "rule_id": "nfkc_trim_collapse_whitespace_casefold.v1",
+    "unicode": "NFKC",
+    "trim": true,
+    "collapse_internal_whitespace": true,
+    "casefold": true,
+    "punctuation_transform": false,
+    "fuzzy_matching": false
+  },
+  "name_representations": [
+    "display_name_exact",
+    "first_last_to_display_name_exact"
+  ],
+  "candidate_rule": {
+    "required_signals": [
+      "name_exact",
+      "organization_exact",
+      "position_exact"
+    ],
+    "weak_evidence_creates_candidate": false,
+    "source_conflict_status": "conflicting",
+    "conflicting_candidate_approval_allowed": false
+  },
+  "review_authority": {
+    "authority_type": "human_attestation",
+    "attestation_version": "identity_review_authority_attestation.v1",
+    "permitted_reviewer_roles": [
+      "identity_reconciliation_reviewer"
+    ]
+  },
+  "prohibited_inputs": [
+    "clear_email",
+    "clear_linkedin_url",
+    "clear_actor_id",
+    "clear_event_id",
+    "clear_thread_id",
+    "raw_interaction_text",
+    "cross_domain_hmac_equality",
+    "profile_hash_to_actor_hash",
+    "text_or_behavioral_similarity",
+    "nickname_or_alias_substitution",
+    "phonetic_or_fuzzy_matching"
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://signal-agent.local/schemas/reconciled_identity_projection.v1.schema.json",
+  "title": "Reversible reconciled identity projection",
+  "type": "object",
+  "required": [
+    "schema_version", "projection_id", "projection_lineage_id", "status", "created_at",
+    "candidate", "member_references", "evidence_bundle", "approval_decision_receipt",
+    "comparison_policy", "prior_projection", "assertion_scope", "source_records_mutated",
+    "projection_hash"
+  ],
+  "properties": {
+    "schema_version": {"const": "signal_agent.reconciled_identity_projection.v1"},
+    "projection_id": {"type": "string", "pattern": "^rip_[0-9a-f]{20}$"},
+    "projection_lineage_id": {"type": "string", "pattern": "^ril_[0-9a-f]{20}$"},
+    "status": {"const": "active"},
+    "created_at": {"type": "string", "minLength": 1},
+    "candidate": {"type": "object"},
+    "member_references": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "object"}},
+    "evidence_bundle": {"type": "object"},
+    "approval_decision_receipt": {"type": "object"},
+    "comparison_policy": {"type": "object"},
+    "prior_projection": {"type": ["object", "null"]},
+    "assertion_scope": {"const": "authorized_reconciled_view_not_established_identity"},
+    "source_records_mutated": {"const": false},
+    "projection_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://signal-agent.local/schemas/projection_status_receipt.v1.schema.json",
+  "title": "Immutable reconciled projection status receipt",
+  "type": "object",
+  "required": [
+    "schema_version", "status_receipt_id", "projection", "superseding_decision_receipt",
+    "effective_status", "created_at", "receipt_hash"
+  ],
+  "properties": {
+    "schema_version": {"const": "signal_agent.projection_status_receipt.v1"},
+    "status_receipt_id": {"type": "string", "pattern": "^ips_[0-9a-f]{20}$"},
+    "projection": {"type": "object"},
+    "superseding_decision_receipt": {"type": "object"},
+    "effective_status": {"enum": ["withdrawn", "review_required"]},
+    "created_at": {"type": "string", "minLength": 1},
+    "receipt_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+  },
+  "additionalProperties": false
+}
