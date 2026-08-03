@@ -13,6 +13,9 @@ def test_communication_architecture_project_compiles_to_render_spec(tmp_path: Pa
     spec = compile_project(project_path)
 
     assert spec["meta"]["title"] == "The Architecture of Influence"
+    assert spec["meta"]["author"] == "Brendon R Coleman"
+    assert spec["meta"]["copyright_holder"] == "Brendon R Coleman"
+    assert spec["front_matter"]["cover_image"].endswith("arch-of-infl.png")
     assert len(spec["chapters"]) == 16
     assert spec["chapters"][11]["title"] == "AI and the Industrialization of Persuasion"
     assert spec["chapters"][11]["part"] == "III - The Collapse of Modern Discourse"
@@ -52,6 +55,10 @@ def test_communication_architecture_project_compiles_to_render_spec(tmp_path: Pa
     assert outputs.cover_front_txt.exists()
     assert outputs.letter_one_sentence_txt.exists()
     assert rendered.count("{#chapter-") == 16
+    assert "Cover Blurb" not in rendered
+    assert "mr" + "col" not in rendered
+    assert "Brendon R Coleman" in rendered
+    assert "Copyright © 2026 Brendon R Coleman." in rendered
     assert "# AI and the Industrialization of Persuasion {#chapter-12}" in rendered
     assert "Ai And The Industrialization" not in rendered
     assert "DRAFT CHAPTER PLACEHOLDER" not in rendered

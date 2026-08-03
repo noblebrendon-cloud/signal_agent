@@ -66,11 +66,38 @@ def preserve_source_zip(
 ) -> PreservationResult:
     """Copy the source into 00_original with exclusive creation and hash verification."""
 
+    return preserve_source_file(
+        source,
+        run_root,
+        expected_sha256=expected_sha256,
+        expected_stat=expected_stat,
+        preserved_filename=PRESERVED_FILENAME,
+        hash_record_filename=HASH_RECORD_FILENAME,
+        chunk_size=chunk_size,
+    )
+
+
+def preserve_source_file(
+    source: Path,
+    run_root: Path,
+    *,
+    expected_sha256: str,
+    expected_stat: os.stat_result,
+    preserved_filename: str,
+    hash_record_filename: str,
+    chunk_size: int = 1024 * 1024,
+) -> PreservationResult:
+    """Copy one source file into ``00_original`` without replacing any path."""
+
     source = _resolved_for_comparison(Path(source))
     run_root = _resolved_for_comparison(Path(run_root))
     original_dir = run_root / "00_original"
-    preserved_path = original_dir / PRESERVED_FILENAME
-    hash_record_path = original_dir / HASH_RECORD_FILENAME
+    if Path(preserved_filename).name != preserved_filename or not preserved_filename:
+        raise PreservationError("Preserved filename must be one safe path component.")
+    if Path(hash_record_filename).name != hash_record_filename or not hash_record_filename:
+        raise PreservationError("Hash-record filename must be one safe path component.")
+    preserved_path = original_dir / preserved_filename
+    hash_record_path = original_dir / hash_record_filename
 
     if source == preserved_path:
         raise PreservationError("Source and preserved destination resolve to the same path.")
@@ -124,7 +151,7 @@ def preserve_source_zip(
 
         _write_text_exclusive(
             hash_record_path,
-            f"{preserved_sha256}  {PRESERVED_FILENAME}\n",
+            f"{preserved_sha256}  {preserved_filename}\n",
         )
     except Exception:
         if not hash_record_path.exists():

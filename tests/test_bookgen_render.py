@@ -16,6 +16,7 @@ def test_render_from_spec_smoke(tmp_path: Path) -> None:
             "copyright_holder": "Signal Agent",
         },
         "front_matter": {
+            "cover_blurb": "Back-cover only.",
             "preface": "Render smoke test.",
         },
         "chapters": [
@@ -52,6 +53,8 @@ def test_render_from_spec_smoke(tmp_path: Path) -> None:
     assert outputs.book_md.exists()
     assert outputs.cover_front_txt.exists()
     assert outputs.letter_one_sentence_txt.exists()
+    assert "Cover Blurb" not in rendered
+    assert "Back-cover only." not in rendered
     assert "# Hybrid Chapter {#chapter-1}" in rendered
     assert "## Scene" in rendered
     assert "## Carry Forward" in rendered
@@ -61,7 +64,7 @@ def test_typeset_metadata_does_not_trigger_pandoc_title_page() -> None:
     spec = {
         "meta": {
             "title": "The Architecture of Influence",
-            "author": "mrcol",
+            "author": "Brendon R Coleman",
             "year": "2026",
         }
     }
@@ -69,7 +72,7 @@ def test_typeset_metadata_does_not_trigger_pandoc_title_page() -> None:
     metadata = build_layout_metadata(spec, profile={})
 
     assert metadata["title-meta"] == "The Architecture of Influence"
-    assert metadata["author-meta"] == "mrcol"
+    assert metadata["author-meta"] == "Brendon R Coleman"
     assert metadata["date-meta"] == "2026"
     assert "title" not in metadata
     assert "author" not in metadata

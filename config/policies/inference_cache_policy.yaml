@@ -1,0 +1,16 @@
+version: 1
+policy_id: inference_cache_policy
+status: active
+
+enable_prefix_cache_readiness: true
+enable_semantic_cache: true
+semantic_similarity_threshold: 0.985
+cache_ttl: 86400
+max_cache_entry_size: 262144
+
+allowed_workflows_for_reuse:
+  - source_video_derivation_augment
+
+disallowed_workflows_for_reuse: []
+
+exclude_write_mode_workflows_from_semantic_reuse: true

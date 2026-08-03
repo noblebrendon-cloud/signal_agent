@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "drift-audit"
+dynamic = ["version"]
+description = "Offline, deterministic AI-drift log auditor for the Laviathon diagnostic suite."
+readme = "signal_agent/leviathan/diagnostic/drift_audit/README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+keywords = ["drift", "audit", "ai-governance", "laviathon", "offline"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+# Core dependency: Jinja2 is already in requirements.lock; ≥3 is safe.
+# Structured-generation contracts use Pydantic v2.
+dependencies = [
+    "Jinja2>=3.1",
+    "pydantic>=2,<3",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=9",
+]
+
+[project.scripts]
+drift-audit = "signal_agent.laviathon.cli.drift_audit_cli:main"
+signal-operator = "signal_agent.cli.operator_cli:main"
+campaign = "signal_agent.cli.campaign_cli:main"
+wtpu = "signal_agent.cli.wtpu_cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["signal_agent*"]
+
+[tool.setuptools.package-data]
+"signal_agent.leviathan.diagnostic.drift_audit" = ["README.md", "_version.py"]
+"signal_agent.leviathan.diagnostic.stability_snapshot" = ["invariant_v1.json"]
+
+[tool.setuptools.dynamic]
+version = {attr = "signal_agent.leviathan.diagnostic.drift_audit._version.__version__"}

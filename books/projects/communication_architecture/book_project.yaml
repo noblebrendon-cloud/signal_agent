@@ -1,9 +1,9 @@
 slug: communication_architecture
 title: The Architecture of Influence
 subtitle: Communication, Legitimacy, and Coherence Under Pressure
-author: mrcol
+author: Brendon R Coleman
 year: '2026'
-copyright_holder: mrcol
+copyright_holder: Brendon R Coleman
 description: >-
   A book about how communication, persuasion, platforms, AI, and institutions
   shape human judgment under pressure, and why legitimacy, agency, and
@@ -13,6 +13,7 @@ purpose: >-
   deterministic orchestration, discourse legitimacy, coherence, and human
   agency under acceleration.
 front_matter:
+  cover_image: books/projects/communication_architecture/assets/arch-of-infl.png
   cover_blurb: |-
     People often assume communication fails because people lack information.
     The Architecture of Influence argues that communication fails because the
@@ -32,7 +33,7 @@ front_matter:
     The Architecture of Influence
     Communication, Legitimacy, and Coherence Under Pressure
 
-    Copyright (c) 2026 mrcol.
+    Copyright © 2026 Brendon R Coleman.
     All rights reserved.
   preface: |-
     This book exists because the usual story about communication failure is too

@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://signal-agent.local/schemas/signal_packet.v1.schema.json",
+  "title": "Governed relationship signal packet",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "packet_id",
+    "packet_hash",
+    "status",
+    "source",
+    "artifact_references",
+    "taxonomy",
+    "deterministic_classification",
+    "inferred_results",
+    "related_work",
+    "privacy",
+    "routing",
+    "safety_flags"
+  ],
+  "properties": {
+    "schema_version": {"const": "signal_agent.relationship_signal_packet.v1"},
+    "packet_id": {"type": "string", "minLength": 1},
+    "packet_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "status": {"const": "pending_human_approval"},
+    "source": {"type": "object"},
+    "artifact_references": {"type": "object"},
+    "taxonomy": {"type": "object"},
+    "deterministic_classification": {"type": "object"},
+    "inferred_results": {"type": "object"},
+    "related_work": {
+      "type": "object",
+      "required": ["search_scope", "scope_complete", "result_characterization", "results"],
+      "properties": {
+        "search_scope": {"const": "content_library_teaching_atoms_only"},
+        "scope_complete": {"const": false},
+        "result_characterization": {"const": "non_exhaustive_related_work_context"},
+        "results": {"type": "array"}
+      }
+    },
+    "privacy": {"type": "object"},
+    "routing": {"type": "object"},
+    "safety_flags": {"type": "object"}
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://signal-agent.local/schemas/relationship_record.v1.schema.json",
+  "title": "Governed LinkedIn relationship record",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "relationship_record_id",
+    "source_provenance",
+    "person",
+    "professional_context",
+    "relationship",
+    "identifiers",
+    "deterministic_classification",
+    "data_quality_issues",
+    "privacy"
+  ],
+  "properties": {
+    "schema_version": {"const": "signal_agent.relationship_record.v1"},
+    "relationship_record_id": {"type": "string", "minLength": 1},
+    "source_provenance": {
+      "type": "object",
+      "required": [
+        "source_sha256",
+        "source_receipt_id",
+        "record_number",
+        "line_start",
+        "line_end",
+        "raw_row_sha256",
+        "evidence_ref"
+      ]
+    },
+    "person": {"type": "object"},
+    "professional_context": {"type": "object"},
+    "relationship": {"type": "object"},
+    "identifiers": {"type": "array", "items": {"type": "object"}},
+    "deterministic_classification": {"type": "object"},
+    "data_quality_issues": {"type": "array", "items": {"type": "string"}},
+    "privacy": {"type": "object"}
+  },
+  "additionalProperties": false
+}

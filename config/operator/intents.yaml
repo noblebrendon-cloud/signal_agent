@@ -1,0 +1,158 @@
+version: 1
+intents:
+  inspect_system_state:
+    description: Inspect current repo-native system state and authoritative ledgers.
+    default_workflow: inspect_system_state
+    match_phrases:
+      - inspect system state
+      - system state
+      - inspect current state
+      - operator state
+      - status
+    examples:
+      - inspect system state
+      - show me the current system state
+
+  inspect_capture_routing_status:
+    description: Reconstruct capture, promotion, and routing state from the repo's ledgers and routing manifests.
+    default_workflow: capture_routing_status
+    match_phrases:
+      - inspect capture status
+      - show capture status
+      - show routing status
+      - routing status
+      - routing state
+      - explain current routing state
+      - what was promoted recently
+      - promoted recently
+      - what lanes are active
+      - active lanes
+      - configured routes
+      - observed routes
+    examples:
+      - show routing status
+      - what was promoted recently
+
+  inspect_routing_queue_backlog:
+    description: Inspect routing queue and backlog state for all destinations or for one lane/destination target.
+    default_workflow: routing_queue_backlog
+    match_phrases:
+      - show queue backlog
+      - inspect routing queue
+      - inspect queue backlog
+      - show backlog
+      - show backlog for
+    examples:
+      - show queue backlog
+      - inspect routing queue
+      - show backlog for misc_review
+      - show backlog for content_publishing
+
+  inspect_routing_lineage_drilldown:
+    description: Inspect one queued bundle or one routing destination in exact item-level detail.
+    default_workflow: routing_lineage_drilldown
+    match_phrases:
+      - inspect bundle
+      - show lineage for
+      - show downstream evidence for
+      - why is
+      - inspect destination
+      - show destination status for
+      - drill down on
+    examples:
+      - inspect bundle bundle_20260314_abc123def456.md
+      - show lineage for queued bundle bundle_20260314_abc123def456.md
+      - inspect destination social_field_theory
+      - drill down on misc_review
+
+  explain_repo_structure:
+    description: Explain which repo surfaces matter to the operator.
+    default_workflow: explain_repo_structure
+    match_phrases:
+      - explain repo structure
+      - repo structure
+      - repository structure
+      - operator structure
+    examples:
+      - explain repo structure relevant to the operator
+
+  list_known_workflows:
+    description: List the known bounded operator workflows.
+    default_workflow: list_known_workflows
+    match_phrases:
+      - list workflows
+      - known workflows
+      - available workflows
+    examples:
+      - list known workflows
+
+  run_named_workflow:
+    description: Explicitly run a named workflow from the operator registry.
+    default_workflow: null
+    match_phrases:
+      - run workflow
+      - execute workflow
+      - start workflow
+    examples:
+      - run workflow inspect_system_state
+      - run workflow telemetry_evaluation
+
+  continue_prior_task:
+    description: Continue or inspect the prior bounded operator task context.
+    default_workflow: continue_operator_task
+    match_phrases:
+      - continue
+      - resume
+      - continue prior task
+    examples:
+      - continue prior task
+
+  evaluate_telemetry_placeholder:
+    description: Evaluate a telemetry-ready placeholder workflow without executing live telemetry.
+    default_workflow: telemetry_evaluation
+    match_phrases:
+      - telemetry
+      - observability
+      - promotion decision
+      - oil
+    examples:
+      - evaluate the telemetry workflow placeholder
+
+  show_action_surfaces:
+    description: Show which files, ledgers, manifests, and registries matter for a requested action.
+    default_workflow: show_action_surfaces
+    match_phrases:
+      - what files matter
+      - what ledgers matter
+      - what manifests matter
+      - what matters for
+    examples:
+      - show what files matter for telemetry evaluation
+
+  record_artifact_state:
+    description: Append one state record to the canonical artifact registry.
+    default_workflow: record_state_append
+    match_phrases: []
+    examples:
+      - record state normalized for artifact_abc123
+
+  append_intake_record:
+    description: Append one intake record to data/intake/intake.jsonl.
+    default_workflow: intake_log_append
+    match_phrases: []
+    examples:
+      - append intake record for source_file.md
+
+  overwrite_session_state:
+    description: Overwrite session_state.json with a governed transactional mutation.
+    default_workflow: session_state_overwrite
+    match_phrases: []
+    examples:
+      - overwrite session state for operator run
+
+  execute_compound_intake_and_session:
+    description: Compound sequential combination of appending intake and staging session state.
+    default_workflow: intake_append_and_stage_session
+    match_phrases: []
+    examples:
+      - append intake and stage session artifact_123

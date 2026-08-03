@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
@@ -20,7 +20,7 @@ def load_spec(spec_path: Path) -> Dict[str, Any]:
     with spec_path.open("r", encoding="utf-8") as f:
         data = yaml.safe_load(f)
     if not isinstance(data, dict):
-        raise ValueError("Spec file must be a YAML mapping/object at the top level.")
+        raise ValueError("Spec file must be a YAML mapping/object.")
     return data
 
 
@@ -46,13 +46,9 @@ def render_from_spec(spec: Dict[str, Any], templates_dir: Path, out_dir: Path) -
     cover_front_path = out_dir / "cover_front.txt"
     letter_path = out_dir / "letter_one_sentence.txt"
 
-    book_tpl = env.get_template("book.md.j2")
-    cover_tpl = env.get_template("cover_front.txt.j2")
-    letter_tpl = env.get_template("letter_one_sentence.txt.j2")
-
-    book_md_path.write_text(book_tpl.render(**ctx).strip() + "\n", encoding="utf-8")
-    cover_front_path.write_text(cover_tpl.render(**ctx).strip() + "\n", encoding="utf-8")
-    letter_path.write_text(letter_tpl.render(**ctx).strip() + "\n", encoding="utf-8")
+    env.get_template("book.md.j2").stream(**ctx).dump(book_md_path)
+    env.get_template("cover_front.txt.j2").stream(**ctx).dump(cover_front_path)
+    env.get_template("letter_one_sentence.txt.j2").stream(**ctx).dump(letter_path)
 
     return RenderOutputs(
         out_dir=out_dir,

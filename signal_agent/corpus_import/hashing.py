@@ -1,29 +1,27 @@
 from __future__ import annotations
 
-import hashlib
-import json
 from pathlib import Path
 from typing import Any
 
-
-DEFAULT_CHUNK_SIZE = 1024 * 1024
+from signal_agent.evidence_sources.canonical import (
+    DEFAULT_CHUNK_SIZE,
+    canonical_json as _canonical_json,
+    sha256_canonical_json as _sha256_canonical_json,
+    sha256_file as _sha256_file,
+)
 
 
 def sha256_file(path: Path, *, chunk_size: int = DEFAULT_CHUNK_SIZE) -> str:
     """Return the lowercase SHA-256 hex digest for a file without modifying it."""
 
-    digest = hashlib.sha256()
-    with Path(path).open("rb") as handle:
-        for chunk in iter(lambda: handle.read(chunk_size), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
+    return _sha256_file(path, chunk_size=chunk_size)
 
 
 def canonical_json(payload: Any) -> str:
     """Serialize data in the repository's stable JSON form."""
 
-    return json.dumps(payload, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+    return _canonical_json(payload)
 
 
 def sha256_canonical_json(payload: Any) -> str:
-    return hashlib.sha256(canonical_json(payload).encode("utf-8")).hexdigest()
+    return _sha256_canonical_json(payload)

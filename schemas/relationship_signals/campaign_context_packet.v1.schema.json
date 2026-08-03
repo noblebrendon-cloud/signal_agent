@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://signal-agent.local/schemas/campaign_context_packet.v1.schema.json",
+  "title": "Non-authorized campaign context packet",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "packet_id",
+    "packet_hash",
+    "status",
+    "source_signal_packet",
+    "context_readiness",
+    "aggregate_cluster",
+    "related_work",
+    "counts",
+    "authorization",
+    "routing",
+    "privacy",
+    "safety_flags"
+  ],
+  "properties": {
+    "schema_version": {"const": "signal_agent.campaign_context_packet.v1"},
+    "packet_id": {"type": "string", "minLength": 1},
+    "packet_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "status": {"const": "pending_human_approval"},
+    "source_signal_packet": {"type": "object"},
+    "context_readiness": {
+      "enum": ["pending_human_review", "insufficient_evidence"]
+    },
+    "aggregate_cluster": {"type": "object"},
+    "related_work": {"type": "object"},
+    "counts": {"type": "object"},
+    "authorization": {
+      "type": "object",
+      "required": ["authorized", "authorization_scope", "approval_id", "human_approval_required"],
+      "properties": {
+        "authorized": {"const": false},
+        "authorization_scope": {"const": "none"},
+        "approval_id": {"type": "null"},
+        "human_approval_required": {"const": true}
+      }
+    },
+    "routing": {"type": "object"},
+    "privacy": {"type": "object"},
+    "safety_flags": {"type": "object"}
+  },
+  "additionalProperties": false
+}

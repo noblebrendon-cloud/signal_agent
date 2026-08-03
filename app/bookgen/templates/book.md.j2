@@ -1,5 +1,15 @@
 \frontmatter
 
+{% if front_matter.cover_image %}
+```{=latex}
+\thispagestyle{empty}
+\newgeometry{margin=0in}
+\noindent\includegraphics[width=\paperwidth,height=\paperheight]{ {{- front_matter.cover_image -}} }
+\clearpage
+\restoregeometry
+```
+
+{% endif %}
 \thispagestyle{empty}
 \begin{center}
 \vspace*{\fill}
@@ -11,12 +21,6 @@
 
 \clearpage
 
-{% if front_matter.cover_blurb %}
-# Cover Blurb {.unnumbered}
-
-{{ front_matter.cover_blurb }}
-
-{% endif %}
 {% if front_matter.copyright %}
 # Copyright {.unnumbered}
 

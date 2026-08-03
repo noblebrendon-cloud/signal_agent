@@ -1,0 +1,61 @@
+{
+  "schema_version": "signal_agent.relationship_topic_taxonomy.v1",
+  "taxonomy_id": "governed_systems_v1",
+  "taxonomy_version": "1.0.0",
+  "clusters": [
+    {
+      "cluster_id": "governed_systems",
+      "label": "Governed systems",
+      "rule_groups": [
+        {
+          "rule_group": "ai_governance",
+          "terms": [
+            "ai governance",
+            "responsible ai",
+            "model governance",
+            "algorithmic accountability",
+            "ai safety"
+          ]
+        },
+        {
+          "rule_group": "knowledge_systems",
+          "terms": [
+            "knowledge system",
+            "knowledge systems",
+            "knowledge graph",
+            "knowledge infrastructure",
+            "knowledge management"
+          ]
+        },
+        {
+          "rule_group": "content_infrastructure",
+          "terms": [
+            "content infrastructure",
+            "content system",
+            "content systems",
+            "content operations",
+            "publishing infrastructure"
+          ]
+        },
+        {
+          "rule_group": "local_first_software",
+          "terms": [
+            "local-first",
+            "local first software",
+            "offline-first",
+            "offline first software"
+          ]
+        }
+      ]
+    }
+  ],
+  "ambiguous_generic_terms": [
+    "ai",
+    "governance",
+    "knowledge",
+    "content",
+    "infrastructure",
+    "local",
+    "software"
+  ]
+}

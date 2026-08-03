@@ -1,0 +1,11 @@
+Notes:
+This is a fictional LinkedIn connections export used only for deterministic acceptance testing.
+First Name,Middle Name,Last Name,URL,Email Address,Company,Position,Connected On
+
+Avery,,Stone,https://www.linkedin.com//in//Avery-Stone/?trk=fixture, Shared@Example.Test ,Northstar AI Governance,AI Governance Architect,01 Jan 2026
+Jordan,,Lee,http://linkedin.com/in/Jordan-Lee/,jordan@example.test,Atlas Knowledge Systems,Knowledge Graph Lead,02 Jan 2026
+Casey,R.,Morgan,https://linkedin.com/in/casey-morgan,casey@example.test,Common Thread Content Infrastructure,Content Operations Engineer,03 Jan 2026
+Rowan,,Pine,https://www.linkedin.com/in/rowan-pine,rowan@example.test,Local First Labs,Local-First Software Builder,04 Jan 2026
+Jordan,,Lee,https://www.linkedin.com/in/JORDAN-LEE?ref=duplicate,shared@example.test,Governed Works,Responsible AI Advisor,05 Jan 2026
+Rowan,,Pine,https://www.linkedin.com/in/rowan-pine,rowan@example.test,Local First Labs,Local-First Software Builder,04 Jan 2026
+Taylor,,Reed,https://www.linkedin.com/in/taylor-reed,taylor@example.test,Content Studio,Content Strategist,06 Jan 2026
