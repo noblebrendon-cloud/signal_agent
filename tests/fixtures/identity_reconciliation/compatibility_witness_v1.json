@@ -1,0 +1,46 @@
+{
+  "candidate_generation_tree": {
+    "00_inputs/source_run_references.json": "sha256:95e39776d5827413f89c4a24bd2b51dc8350f3ea003d30a197a516e0ea979ac2",
+    "01_evidence/ieb_414b8ecd174a7f59d583.json": "sha256:60d099f45a7f637c851947a82a3832be47e0e1c54b9e0c804bd0e35b3e3c9086",
+    "01_evidence/ieb_754cf92c5c635c12d559.json": "sha256:c860fd588e74e2249aefa44130cb5cfff99310974ba8ee475fc167b1d5aed7c3",
+    "01_evidence/ieb_ab49684b021401c7e057.json": "sha256:178a53d68b57754da4ab9082a69c37052ac9cb75bab4442dc1fd53f6732752bf",
+    "01_evidence/ieb_bc3523198cee5b4955ea.json": "sha256:efba9834626b7ba5135f76e6a3c78757bb657a8e7f5b6bd054ce6525f8d16291",
+    "01_evidence/ieb_be89175bf2278d41649e.json": "sha256:b7c4dc3cbf9ed68c73bbda6705ae541bf7607a43a57f30c2e26cc9cc7057f37d",
+    "02_candidates/idc_4483c70b13972a45a549.json": "sha256:99675ac048743fb42e5d59e3106f95449bd9034bd3f2f67b7277b6de5e704cc0",
+    "02_candidates/idc_81506a82a1e98578fb62.json": "sha256:464c5a178a72472a83835f90aaa4d53a7ba08a83db37565856874717364684fd",
+    "02_candidates/idc_e99495b566cbc78d676a.json": "sha256:5680875092a5505eb442538c9def20f44cea87c75a18963dfac46df083f7f09b",
+    "02_candidates/idc_f3e5c4921307a3bdd949.json": "sha256:180945d9b685a51e4ed1007273d3dd91b5a835277b817800ee82f4fa6f340c1d",
+    "02_candidates/idc_fb8a41388a91410ac619.json": "sha256:77e56c037486d77d4b0a3cf9005d6125e9e327f58915a45c187a9c80e17f1e7d",
+    "05_receipts/candidate_generation_manifest.json": "sha256:59a2045ea40a29ece1e5e6ec8949a93a7f8070b6d52e6c0127c65eb74d3a5d82"
+  },
+  "fixed_clock": "2026-08-03T12:00:00Z",
+  "projection_tree": {
+    "04_projections/ril_396f0536d2fed9292373/rip_7fa1361cae0ce5d2e84a.json": "sha256:6be2c041a793467650316c2dbf7412a67d83f71e525b23d540000795d86fe051",
+    "04_projections/ril_396f0536d2fed9292373/status/ips_3a3e13275740dc8575b7.json": "sha256:bf41bbbdfc96aca436b0fe0d8b67b6aa5739f52b004ceb7df630be756b4eb878",
+    "05_receipts/reconciliation_manifests/irm_14378fd32aa042717a0a.json": "sha256:12158981263c307b5b450ec4733edbe39d39b3f3202188b66fe3388948725b90",
+    "05_receipts/reconciliation_manifests/irm_e936fb79cc0392d8fcc8.json": "sha256:312a68ea3e6aa9387ed03d72c7266c753ff353e460b660fd3d07286a2c0d68ac"
+  },
+  "review_tree": {
+    "03_review/idc_81506a82a1e98578fb62/from-idd_bb7cc4ee50a8bd828ea4.decision.json": "sha256:a76e03d937315d8f0165393c5a72edb71da164faf934d331e75653877a627d5b",
+    "03_review/idc_81506a82a1e98578fb62/from-root.decision.json": "sha256:883cf6ebc2a8247ea22c829c6b70d0daff73711574f07b942cc529f6ed541710",
+    "03_review/idc_e99495b566cbc78d676a/from-root.decision.json": "sha256:96e6af99f44892a311ac2daf076719a620eb93dd46941415ae42577c37962e16",
+    "03_review/idc_f3e5c4921307a3bdd949/from-root.decision.json": "sha256:e87685e44bc6e010067f45b4b5f1e921556a7c32923b8aab0d4a86e69e6c168a"
+  },
+  "scenario": {
+    "approval_decision_id": "idd_bb7cc4ee50a8bd828ea4",
+    "automatic_merge_performed": false,
+    "blocked_conflicting_approval": "identity_conflicting_candidate_approval_prohibited",
+    "candidate_count": 5,
+    "conflicting_count": 1,
+    "deferral_decision_id": "idd_8dfb66c36981288b1be1",
+    "projection_effective_status": "withdrawn",
+    "projection_id": "rip_7fa1361cae0ce5d2e84a",
+    "projection_lineage_id": "ril_396f0536d2fed9292373",
+    "proposed_count": 4,
+    "rejection_decision_id": "idd_bec73cae93269bf7384b",
+    "source_records_mutated": false,
+    "status_receipt_id": "ips_3a3e13275740dc8575b7",
+    "withdrawal_decision_id": "idd_907491b11fd89c1bc63a"
+  },
+  "schema_version": "signal_agent.identity_reconciliation_compatibility_witness.v1"
+}
