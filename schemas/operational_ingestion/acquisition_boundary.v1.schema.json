@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://signal-agent.local/schemas/operational_ingestion/acquisition_boundary.v1.schema.json",
+  "title": "Sealed operational acquisition boundary",
+  "type": "object",
+  "required": ["schema_version", "artifact_id", "boundary_id", "source", "adapter", "acquisition_cycle_id", "session_id", "prior_checkpoint", "observation_boundary", "coverage", "assembly_policy", "created_at", "capture_set_hash", "observation_set_hash", "captures", "observation_capture_provenance", "bounded_material", "counts", "terminal", "terminal_continuation", "terminal_evidence", "checkpoint_status", "artifact_hash"],
+  "properties": {
+    "schema_version": {"const": "signal_agent.operational_acquisition_boundary.v1"},
+    "artifact_id": {"type": "string", "pattern": "^oab_[0-9a-f]{20}$"},
+    "boundary_id": {"type": "string", "pattern": "^oab_[0-9a-f]{20}$"},
+    "source": {"type": "object"},
+    "adapter": {"type": "object"},
+    "acquisition_cycle_id": {"type": "string", "pattern": "^oac_[0-9a-f]{20}$"},
+    "session_id": {"type": "string", "pattern": "^oas_[0-9a-f]{20}$"},
+    "prior_checkpoint": {"type": ["object", "null"]},
+    "observation_boundary": {"type": "object", "required": ["kind", "lower", "upper"]},
+    "coverage": {"type": "object", "required": ["kind", "lower_observation_boundary", "upper_observation_boundary"]},
+    "assembly_policy": {"type": "object", "required": ["policy_id", "version", "file_sha256"]},
+    "created_at": {"type": "string", "minLength": 1},
+    "capture_set_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "observation_set_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "captures": {"type": "array", "minItems": 1, "items": {"type": "object"}},
+    "observation_capture_provenance": {"type": "object"},
+    "bounded_material": {"type": "object"},
+    "counts": {"type": "object", "required": ["captured_record_count", "source_record_identity_count", "canonical_observation_count", "observation_version_count", "duplicate_observation_count", "changed_observation_count", "tombstone_observation_count"]},
+    "terminal": {"const": true},
+    "terminal_continuation": {"type": "object"},
+    "terminal_evidence": {"type": "object", "required": ["capture_id", "capture_hash", "page_ordinal", "terminal", "continuation_hash"]},
+    "checkpoint_status": {"const": "uncommitted_acquisition_boundary"},
+    "artifact_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+  },
+  "additionalProperties": false
+}

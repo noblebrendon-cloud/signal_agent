@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://signal-agent.local/schemas/operational_ingestion/ingestion_failure_receipt.v1.schema.json",
+  "title": "Secret-safe operational ingestion failure receipt",
+  "type": "object",
+  "required": ["schema_version", "artifact_id", "failure_id", "session_id", "failed_stage", "failed_at", "error_class", "error_code", "error_detail_persisted", "secret_material_persisted", "retry_disposition", "last_valid_artifacts", "artifact_hash"],
+  "properties": {
+    "schema_version": {"const": "signal_agent.operational_ingestion_failure_receipt.v1"},
+    "artifact_id": {"type": "string", "pattern": "^ofr_[0-9a-f]{20}$"},
+    "failure_id": {"type": "string", "pattern": "^ofr_[0-9a-f]{20}$"},
+    "session_id": {"type": "string", "pattern": "^oas_[0-9a-f]{20}$"},
+    "failed_stage": {"type": "string", "minLength": 1},
+    "failed_at": {"type": "string", "minLength": 1},
+    "error_class": {"type": "string", "minLength": 1},
+    "error_code": {"type": "string", "minLength": 1},
+    "error_detail_persisted": {"const": false},
+    "secret_material_persisted": {"const": false},
+    "retry_disposition": {"const": "resolve_from_last_committed_checkpoint"},
+    "last_valid_artifacts": {"type": "array", "items": {"type": "object"}},
+    "artifact_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+  },
+  "additionalProperties": false
+}

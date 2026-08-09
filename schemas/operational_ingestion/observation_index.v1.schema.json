@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://signal-agent.local/schemas/operational_ingestion/observation_index.v1.schema.json",
+  "title": "Content-addressed operational observation index",
+  "type": "object",
+  "required": ["schema_version", "artifact_id", "observation_index_id", "source", "observation_set_hash", "bounded_material", "capture_set_hash", "prior_observation_index", "entries", "entry_count", "mutable_current_state", "compaction_performed", "artifact_hash"],
+  "properties": {
+    "schema_version": {"const": "signal_agent.operational_observation_index.v1"},
+    "artifact_id": {"type": "string", "pattern": "^oix_[0-9a-f]{20}$"},
+    "observation_index_id": {"type": "string", "pattern": "^oix_[0-9a-f]{20}$"},
+    "source": {"type": "object"},
+    "observation_set_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "bounded_material": {"type": "object"},
+    "capture_set_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "prior_observation_index": {"type": ["object", "null"]},
+    "entries": {"type": "array", "items": {"type": "object"}},
+    "entry_count": {"type": "integer", "minimum": 0},
+    "mutable_current_state": {"const": false},
+    "compaction_performed": {"const": false},
+    "artifact_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+  },
+  "additionalProperties": false
+}

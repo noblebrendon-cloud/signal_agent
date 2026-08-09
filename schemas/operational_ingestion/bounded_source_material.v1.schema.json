@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://signal-agent.local/schemas/operational_ingestion/bounded_source_material.v1.schema.json",
+  "title": "Canonical semantic bounded source material",
+  "type": "object",
+  "required": ["schema_version", "artifact_id", "bounded_material_id", "source", "adapter", "assembly_policy", "observation_boundary", "observation_set_hash", "observations", "observation_count", "semantic_counts", "semantic_identity_excludes", "transport_provenance_external", "artifact_hash"],
+  "properties": {
+    "schema_version": {"const": "signal_agent.operational_bounded_source_material.v1"},
+    "artifact_id": {"type": "string", "pattern": "^obm_[0-9a-f]{20}$"},
+    "bounded_material_id": {"type": "string", "pattern": "^obm_[0-9a-f]{20}$"},
+    "source": {"type": "object"},
+    "adapter": {"type": "object"},
+    "assembly_policy": {"type": "object"},
+    "observation_boundary": {"type": "object", "required": ["kind", "lower", "upper"]},
+    "observation_set_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "observations": {"type": "array", "items": {"type": "object"}},
+    "observation_count": {"type": "integer", "minimum": 0},
+    "semantic_counts": {"type": "object", "required": ["source_record_identity_count", "canonical_observation_count", "observation_version_count", "changed_observation_count", "tombstone_observation_count"]},
+    "semantic_identity_excludes": {"type": "array", "minItems": 5, "items": {"type": "string"}},
+    "transport_provenance_external": {"const": true},
+    "artifact_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://signal-agent.local/schemas/operational_ingestion/acquisition_session.v1.schema.json",
+  "title": "Operational acquisition session descriptor",
+  "type": "object",
+  "required": ["schema_version", "artifact_id", "session_id", "acquisition_cycle_id", "intent", "source", "started_at", "transport_kind", "mode", "state_model", "artifact_hash"],
+  "properties": {
+    "schema_version": {"const": "signal_agent.operational_acquisition_session.v1"},
+    "artifact_id": {"type": "string", "pattern": "^oas_[0-9a-f]{20}$"},
+    "session_id": {"type": "string", "pattern": "^oas_[0-9a-f]{20}$"},
+    "acquisition_cycle_id": {"type": "string", "pattern": "^oac_[0-9a-f]{20}$"},
+    "intent": {"type": "object"},
+    "source": {"type": "object"},
+    "started_at": {"type": "string", "minLength": 1},
+    "transport_kind": {"type": "string", "minLength": 1},
+    "mode": {"enum": ["fixture", "simulation", "live_readonly"]},
+    "state_model": {"const": "immutable_artifact_chain.v1"},
+    "artifact_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+  },
+  "additionalProperties": false
+}

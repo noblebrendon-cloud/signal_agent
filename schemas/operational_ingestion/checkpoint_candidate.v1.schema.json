@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://signal-agent.local/schemas/operational_ingestion/checkpoint_candidate.v1.schema.json",
+  "title": "Completed-manifest-bound operational checkpoint candidate",
+  "type": "object",
+  "required": ["schema_version", "artifact_id", "candidate_id", "source", "adapter", "acquisition_cycle_id", "prior_checkpoint", "acquisition_boundary", "capture_set_hash", "observation_set_hash", "bounded_material", "observation_index", "preservation_receipt", "completed_run", "completion_policy", "created_at", "status", "artifact_hash"],
+  "properties": {
+    "schema_version": {"const": "signal_agent.operational_checkpoint_candidate.v1"},
+    "artifact_id": {"type": "string", "pattern": "^ockc_[0-9a-f]{20}$"},
+    "candidate_id": {"type": "string", "pattern": "^ockc_[0-9a-f]{20}$"},
+    "source": {"type": "object"},
+    "adapter": {"type": "object"},
+    "acquisition_cycle_id": {"type": "string", "pattern": "^oac_[0-9a-f]{20}$"},
+    "prior_checkpoint": {"type": ["object", "null"]},
+    "acquisition_boundary": {"type": "object"},
+    "capture_set_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "observation_set_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "bounded_material": {"type": "object"},
+    "observation_index": {"type": "object"},
+    "preservation_receipt": {"type": "object"},
+    "completed_run": {"type": "object"},
+    "completion_policy": {"type": "object"},
+    "created_at": {"type": "string", "minLength": 1},
+    "status": {"const": "eligible_uncommitted"},
+    "artifact_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+  },
+  "additionalProperties": false
+}

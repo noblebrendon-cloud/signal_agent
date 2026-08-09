@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://signal-agent.local/schemas/operational_ingestion/completed_manifest_verifier_authority.v1.schema.json",
+  "title": "Candidate-bound completed-manifest verifier authority",
+  "type": "object",
+  "required": ["schema_version", "artifact_id", "authority_id", "authority_type", "candidate", "verifier_version", "completion_policy", "verified_at", "verification_time_basis", "completed_run", "assertions", "external_action_authorized", "network_authorized", "upstream_write_authorized", "artifact_hash"],
+  "properties": {
+    "schema_version": {"const": "signal_agent.operational_completed_manifest_verifier_authority.v1"},
+    "artifact_id": {"type": "string", "pattern": "^ocma_[0-9a-f]{20}$"},
+    "authority_id": {"type": "string", "pattern": "^ocma_[0-9a-f]{20}$"},
+    "authority_type": {"const": "completed_manifest_verifier"},
+    "candidate": {"type": "object", "required": ["candidate_id", "candidate_hash"]},
+    "verifier_version": {"const": "1.0.0"},
+    "completion_policy": {"type": "object", "required": ["policy_id", "version", "file_sha256"]},
+    "verified_at": {"type": "string", "minLength": 1},
+    "verification_time_basis": {"const": "sealed_completed_manifest_created_at"},
+    "completed_run": {"type": "object"},
+    "assertions": {"type": "object"},
+    "external_action_authorized": {"const": false},
+    "network_authorized": {"const": false},
+    "upstream_write_authorized": {"const": false},
+    "artifact_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+  },
+  "additionalProperties": false
+}

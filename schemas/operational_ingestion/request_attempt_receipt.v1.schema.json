@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://signal-agent.local/schemas/operational_ingestion/request_attempt_receipt.v1.schema.json",
+  "title": "Secret-safe operational request attempt receipt",
+  "type": "object",
+  "required": ["schema_version", "artifact_id", "attempt_id", "session_id", "page_ordinal", "attempt_ordinal", "request_fingerprint", "continuation_hash", "started_at", "completed_at", "outcome", "status_code", "provider_error_code", "requested_delay_ms", "applied_delay_ms", "response_metadata", "detail_omitted", "secret_material_persisted", "artifact_hash"],
+  "properties": {
+    "schema_version": {"const": "signal_agent.operational_request_attempt_receipt.v1"},
+    "artifact_id": {"type": "string", "pattern": "^oat_[0-9a-f]{20}$"},
+    "attempt_id": {"type": "string", "pattern": "^oat_[0-9a-f]{20}$"},
+    "session_id": {"type": "string", "pattern": "^oas_[0-9a-f]{20}$"},
+    "page_ordinal": {"type": "integer", "minimum": 1},
+    "attempt_ordinal": {"type": "integer", "minimum": 1},
+    "request_fingerprint": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "continuation_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "started_at": {"type": "string", "minLength": 1},
+    "completed_at": {"type": "string", "minLength": 1},
+    "outcome": {"enum": ["success", "retryable_failure", "permanent_failure", "rate_limited", "malformed_response", "capture_failed"]},
+    "status_code": {"type": ["integer", "null"]},
+    "provider_error_code": {"type": ["string", "null"]},
+    "requested_delay_ms": {"type": "integer", "minimum": 0},
+    "applied_delay_ms": {"type": "integer", "minimum": 0},
+    "response_metadata": {"type": "object"},
+    "detail_omitted": {"type": "boolean"},
+    "secret_material_persisted": {"const": false},
+    "artifact_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+  },
+  "additionalProperties": false
+}

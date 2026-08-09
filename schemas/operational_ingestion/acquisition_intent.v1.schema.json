@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://signal-agent.local/schemas/operational_ingestion/acquisition_intent.v1.schema.json",
+  "title": "Operational acquisition intent",
+  "type": "object",
+  "required": ["schema_version", "artifact_id", "intent_id", "acquisition_cycle_id", "source", "adapter", "acquisition_policy", "assembly_policy", "retry_policy", "secret_policy", "observation_boundary", "credential_profile_ref", "authentication_mode", "prior_checkpoint", "artifact_hash"],
+  "properties": {
+    "schema_version": {"const": "signal_agent.operational_acquisition_intent.v1"},
+    "artifact_id": {"type": "string", "pattern": "^oai_[0-9a-f]{20}$"},
+    "intent_id": {"type": "string", "pattern": "^oai_[0-9a-f]{20}$"},
+    "acquisition_cycle_id": {"type": "string", "pattern": "^oac_[0-9a-f]{20}$"},
+    "source": {"type": "object"},
+    "adapter": {"type": "object"},
+    "acquisition_policy": {"type": "object"},
+    "assembly_policy": {"type": "object"},
+    "retry_policy": {"type": "object"},
+    "secret_policy": {"type": "object"},
+    "observation_boundary": {"type": "object", "required": ["kind", "lower", "upper"], "properties": {"kind": {"type": "string", "minLength": 1}, "lower": {}, "upper": {}}, "additionalProperties": false},
+    "credential_profile_ref": {"type": "string", "minLength": 1},
+    "authentication_mode": {"type": "string", "minLength": 1},
+    "prior_checkpoint": {"type": ["object", "null"]},
+    "artifact_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+  },
+  "additionalProperties": false
+}
