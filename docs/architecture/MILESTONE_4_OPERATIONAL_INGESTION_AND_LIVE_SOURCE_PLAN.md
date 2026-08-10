@@ -1035,3 +1035,356 @@ No subsequent milestone may begin until Milestone 4 is separately reviewed and c
 Scheduling, webhooks, continuous synchronization, additional sources, identity use of new live records, operational UI, source retirement, checkpoint compaction, and any upstream action each require their own later plan and authority boundary. Milestone 4 completion authorizes none of them.
 
 Implementation must stop at the first requirement to weaken these preconditions or modify a protected Milestone 1-3 boundary. This document itself is the sole planning deliverable and does not authorize M4A, M4B, M4C1, or M4C2 implementation.
+
+## 31. M4C1 Gmail History source-contract amendment (2026-08-10)
+
+This design-review amendment supersedes every earlier M4C statement that treats
+`users.history.list(labelId=TARGET_LABEL)` as a complete target-label change
+feed. The earlier text remains above as planning history; the contract in this
+section is authoritative for any later M4C1 proposal.
+
+This amendment is planning only. It authorizes no source code, fixtures,
+networking, authentication, credentials, provider SDK, live mailbox access,
+stage, commit, push, or M4C2 work.
+
+### 31.1 Original assumption and Phase 0 stop
+
+The rejected contract assumed that a Gmail History request filtered by one
+configured label could prove all of these for that label:
+
+- complete additions and membership;
+- explicit label departure;
+- permanent mailbox deletion of previously relevant messages; and
+- complete recovery after history expiry.
+
+The official `users.history.list` reference describes `labelId` only as "Only
+return messages with a label matching the ID." It does not state whether this
+test uses current state, prior state, or the label IDs named by a typed history
+event. That omission matters precisely when `labelsRemoved` removes the target
+label or `messagesDeleted` removes the message from the mailbox. The official
+typed-event definitions remain valid globally, but the filter is not documented
+as a complete prior-membership/event-label feed.
+
+The M4C1 Phase 0 review therefore stopped before Git or implementation mutation.
+The filtered acquisition contract is rejected rather than weakened or filled
+with an invented provider guarantee.
+
+Official sources reviewed on 2026-08-10:
+
+- [Gmail `users.history.list`](https://developers.google.com/workspace/gmail/api/reference/rest/v1/users.history/list)
+- [Synchronize clients with Gmail](https://developers.google.com/workspace/gmail/api/guides/sync)
+- [Gmail `users.messages.list`](https://developers.google.com/workspace/gmail/api/reference/rest/v1/users.messages/list)
+- [Gmail `users.messages.get`](https://developers.google.com/workspace/gmail/api/reference/rest/v1/users.messages/get)
+- [Gmail Message resource](https://developers.google.com/workspace/gmail/api/reference/rest/v1/users.messages)
+- [Gmail message `Format`](https://developers.google.com/workspace/gmail/api/reference/rest/v1/Format)
+- [Gmail `users.getProfile`](https://developers.google.com/workspace/gmail/api/reference/rest/v1/users/getProfile)
+- [Choose Gmail API scopes](https://developers.google.com/workspace/gmail/api/auth/scopes)
+
+### 31.2 Replacement contract
+
+The replacement architecture is:
+
+```text
+unfiltered Gmail mailbox history acquisition
+-> canonical typed provider observations
+-> immutable governed local membership projection for TARGET_LABEL
+-> label-scoped semantic evidence
+-> legitimate neutral relationship normalization only
+```
+
+The source of truth is Gmail mailbox history, not Gmail history filtered to one
+label. The configured label is a versioned local projection policy. Gmail is
+authoritative for the typed events it explicitly exposes. The projection is
+authoritative only for this derived statement:
+
+> According to the captured Gmail event history and previously established
+> committed state, this message was or was not within TARGET_LABEL scope at
+> this point.
+
+The projection is not provider-native state and must never be described as one.
+
+### 31.3 Acquisition, semantic, and relationship scopes
+
+The three scopes are separate:
+
+| Scope | Contract |
+|---|---|
+| Acquisition | Mailbox-wide, unfiltered Gmail History metadata events needed to maintain provider continuity after a committed continuation exists |
+| Semantic | Exactly one configured target label interpreted through a governed local projection policy |
+| Relationship output | Only source observations that truthfully satisfy the unchanged neutral relationship-record contract |
+
+Unrelated mailbox events are acquired, canonically represented, and proven for
+continuity. They do not automatically create label transitions or relationship
+records. Target-label filtering must not erase provider provenance.
+
+### 31.4 Typed events and generic-message deduplication
+
+The authoritative provider event classes are the specific collections:
+
+- `messagesAdded`: a message was added to the mailbox;
+- `messagesDeleted`: a message was permanently deleted from the mailbox, not
+  merely moved to Trash;
+- `labelsAdded`: the named labels were added to a message; and
+- `labelsRemoved`: the named labels were removed from a message.
+
+The generic `History.messages` collection may be retained in exact captured
+provider evidence. Because the official reference warns that it may duplicate
+messages present in the typed collections, it creates no semantic event when a
+typed event represents the change.
+
+Mailbox deletion, target-label departure, and absence remain distinct:
+
+- `messagesDeleted` is explicit mailbox-deletion evidence;
+- `labelsRemoved` containing TARGET_LABEL is explicit label-departure evidence;
+- absence from a snapshot, page, or metadata lookup proves neither.
+
+### 31.5 Immutable local label-membership projection
+
+For one protected Gmail message identity and one versioned TARGET_LABEL policy,
+the projection consumes prior committed state plus chronologically ordered typed
+events and emits immutable state/transition artifacts.
+
+Required transitions are:
+
+| Prior established state and event | Derived result |
+|---|---|
+| Outside + `labelsAdded` contains TARGET_LABEL | `entered_target_label` and membership true |
+| Inside + `labelsRemoved` contains TARGET_LABEL | `left_target_label` and membership false |
+| Inside + `messagesDeleted` | `mailbox_deleted_while_in_target_scope` and inactive membership |
+| `messagesAdded` with approved metadata establishing TARGET_LABEL | `entered_target_label` according to the policy |
+| Event unrelated to TARGET_LABEL | Provider evidence only; no target transition |
+| Missing prior relevance for a deletion | Provider deletion retained; target relevance `coverage_unknown`; no target tombstone invented |
+
+Every projection transition must reference:
+
+- source history-record ID and typed provider event identity;
+- protected Gmail message identity;
+- prior projection state/reference, if one exists;
+- resulting state;
+- exact capture provenance;
+- projection-policy ID, version, and hash; and
+- a projection-set hash distinct from the provider observation-set hash.
+
+Historical membership evidence is immutable. A successor projection references
+its predecessor; it never rewrites it.
+
+### 31.6 Provider and projection identities
+
+At least two content identities are required:
+
+- `observation_set_hash` binds the canonical unfiltered provider events for the
+  acquisition boundary, independent of valid page partition and retry history;
+- `target_label_projection_set_hash` binds the deterministic interpretation of
+  those events plus prior committed membership state under one exact projection
+  policy.
+
+`capture_set_hash` continues to bind exact transport provenance. It remains
+distinct from both semantic hashes. The M4A checkpoint candidate must bind the
+provider observation set, target-label projection set, projection-policy hash,
+bounded material, preserved receipt, and completed manifest before commit.
+
+### 31.7 Partial synchronization after a committed continuation
+
+Once a committed Gmail history continuation exists, the authoritative continuity
+request is unfiltered:
+
+```text
+users.history.list(startHistoryId=COMMITTED_HISTORY_ID)
+```
+
+It must not pass `labelId`. `nextPageToken` is temporary page continuation;
+the terminal response `historyId` is a remote mailbox-continuation candidate.
+Neither is a local checkpoint.
+
+Commit remains gated by the complete existing M4A chain: verified pages and
+metadata lookups, provider observation set, target-label projection, boundary,
+bounded material, preservation, normalization, governed processing, detached
+manifest, candidate, verifier authority, actual predecessor, and exclusive
+successor creation.
+
+### 31.8 Bootstrap continuation decision
+
+The normative bootstrap continuation source is a recent message history ID, as
+described by the official synchronization guide and accepted by the
+`startHistoryId` reference. `messages.list` returns only message ID/thread ID,
+so an approved metadata/minimal message retrieval must supply the message's
+history ID without admitting body content.
+
+`users.getProfile` exposes a field described as the mailbox's current
+`historyId`, but the official `history.list` reference names only a message,
+thread, or previous history-list response as a `startHistoryId` source. The
+profile value is therefore informative only and is not a normative continuation
+source in the first M4C1 contract.
+
+For a nonempty target label, the bootstrap may enumerate
+`messages.list(labelIds=[TARGET_LABEL])`, retrieve approved metadata for every
+admitted message within explicit limits, and retain a recent message-derived
+history ID as its overlap anchor. If the enumeration exceeds policy bounds or a
+required lookup fails, bootstrap is incomplete and checkpoint-ineligible.
+
+### 31.9 Empty-label and empty-mailbox decisions
+
+An empty target label does not itself provide a message-derived continuation.
+
+- If the mailbox contains at least one message, a separately declared bounded
+  unfiltered `messages.list(maxResults=1)` plus approved message lookup may
+  provide the recent-message anchor described by the synchronization guide.
+  The unrelated anchor is provider-acquisition evidence only and creates no
+  target-label semantic member.
+- If the mailbox itself contains no message, the first M4C1 lane has no
+  documented message/thread/history-list continuation source. Because
+  `getProfile.historyId` is not explicitly authorized as `startHistoryId`, this
+  condition is `unsupported_bootstrap_continuation`, not success.
+
+The offline M4C1 contract must test both outcomes. M4C2 may not reinterpret the
+unsupported case without a new official-provider review.
+
+### 31.10 Bootstrap overlap and race limitation
+
+The synchronization guide recommends full synchronization followed by storing
+the most recent message's history ID. It does not document snapshot isolation
+for paginated `messages.list`, an atomic relationship between list pages and
+later message lookups, or a proof that a message deleted during enumeration
+retains enough prior label state to classify its target relevance.
+
+Therefore M4C1 must not claim a universally gap-free live bootstrap. It may
+prove these offline behaviors:
+
+1. deterministic processing when a complete synthetic snapshot and
+   message-derived overlap anchor are supplied;
+2. unfiltered catch-up from that anchor with deterministic deduplication of
+   observations already reflected in the snapshot;
+3. idempotent membership results for repeated label-add/remove observations;
+4. preservation of all provider deletion evidence; and
+5. fail-closed `coverage_unknown` when a deletion or concurrent change cannot
+   be related to an established target-label state.
+
+A successful fixture proves the implementation's overlap algorithm for those
+captured inputs. It does not prove undocumented Gmail snapshot isolation. Any
+proposal to claim complete live bootstrap transition history remains a stop
+condition.
+
+### 31.11 Expiry recovery
+
+An invalid or out-of-range `startHistoryId` is an explicit expiry failure. It
+leaves the prior checkpoint current and requires a bounded bootstrap recovery.
+The recovery may reconstruct current target membership and establish a new
+message-derived overlap anchor, but snapshot absence cannot reconstruct label
+departures or deletions that fell outside Gmail's retained history.
+
+Lost provider history is recorded as a coverage limitation. It is never an
+empty delta, deletion inference, or silent successor checkpoint. A recovery is
+checkpoint-eligible only under an explicitly approved coverage classification;
+otherwise the prior checkpoint remains current.
+
+### 31.12 Privacy expansion and M4C2 gate
+
+Unfiltered history expands provider-metadata capture beyond the configured
+semantic label. Because M4A preserves exact successful response bodies, a
+future live M4C2 transport could durably retain message/thread identifiers and
+typed mailbox events unrelated to TARGET_LABEL.
+
+Synthetic M4C1 fixtures create no live-data exposure. They do not decide whether
+the live privacy cost is acceptable. Before M4C2, a separate approval must
+review:
+
+- mailbox-wide metadata acquisition and exact response retention;
+- retention duration and deletion/compaction policy;
+- filesystem access restrictions and encryption expectations;
+- provider identifiers and permitted headers;
+- whether metadata can be minimized before durable capture without weakening
+  M4A evidence guarantees;
+- authentication/credential lifecycle and least-privilege scope;
+- the unresolved bootstrap race and empty-mailbox case; and
+- whether the privacy cost is proportionate to a one-label projection.
+
+M4C2 remains unauthorized by M4C1 implementation or acceptance.
+
+### 31.13 Revised M4C1 fixture and gate plan
+
+Synthetic provider-shaped fixtures must include:
+
+- target-label and OTHER_LABEL events in one unfiltered history interval;
+- unrelated messages and an unrelated mailbox deletion;
+- target message entering and leaving the label;
+- a previously established target member later permanently deleted;
+- generic `History.messages` duplication alongside typed fields;
+- history pagination, terminal mailbox history ID, and alternate valid page
+  partitions;
+- a message-derived bootstrap anchor and label snapshot overlap;
+- empty target label with nonempty mailbox anchor;
+- empty mailbox unsupported continuation;
+- bootstrap deletion with unknown prior target relevance;
+- expired history and bounded recovery; and
+- metadata/body/secret negative cases.
+
+Required proofs include:
+
+- unrelated events are acquired and verified but create no target relationship
+  effects;
+- provider and projection hashes remain distinct and deterministic;
+- mailbox deletion and label departure remain distinct;
+- generic messages create no duplicate effects;
+- page/retry topology does not enter either semantic identity;
+- ambiguous bootstrap/expiry coverage fails closed;
+- the projection-policy hash is bound into checkpoint eligibility; and
+- no M1-M4B protected implementation or witness changes.
+
+### 31.14 Revised M4C1 Definition of Done
+
+M4C1 may be accepted as an offline source-contract implementation only when:
+
+- acquisition uses synthetic unfiltered mailbox history and never relies on
+  label-filtered history for continuity;
+- the one-label projection is immutable, deterministic, predecessor-bound, and
+  policy-hash-bound;
+- provider observations, label projections, and relationship outputs remain
+  separate scopes;
+- typed provider events are canonical and generic-message duplicates create no
+  additional effects;
+- established-checkpoint partial synchronization, pagination, expiry, and
+  transitive M4A verification pass;
+- nonempty-label and empty-label/nonempty-mailbox message-derived bootstrap
+  anchors are tested;
+- empty-mailbox bootstrap is explicitly unsupported;
+- overlap is deterministically deduplicated for accepted fixtures;
+- unresolved bootstrap or expiry relevance becomes `coverage_unknown` and
+  cannot support a complete-history claim;
+- explicit mailbox deletion affects target scope only with established target
+  relevance;
+- label removal is never represented as mailbox deletion;
+- absence creates neither event;
+- unrelated mailbox events create zero target-label relationship effects;
+- bodies, snippets, attachments, credentials, and personal data are absent;
+- no networking, Google client, OAuth, credential, token, CLI, scheduler,
+  daemon, webhook, or Gmail write path exists;
+- all M4A/M4B gates and M1-M4B witnesses/protected hashes remain exact; and
+- the implementation report states that offline success does not authorize or
+  prove a gap-free live bootstrap or M4C2 privacy acceptability.
+
+### 31.15 Revised stop conditions and implementation recommendation
+
+Stop any later M4C1 implementation if it requires:
+
+- `history.list(labelId=TARGET_LABEL)` as the authoritative continuity stream;
+- `getProfile.historyId` as a normative start value without new official
+  documentation;
+- treating empty-mailbox bootstrap as complete;
+- claiming snapshot isolation or gap-free bootstrap not documented by Gmail;
+- treating `coverage_unknown` as complete or checkpoint-eligible under a policy
+  requiring completeness;
+- inferring deletion/departure from absence;
+- treating label removal as mailbox deletion;
+- dropping unrelated provider events needed for mailbox continuity;
+- overloading `observation_set_hash` with target-projection semantics;
+- changing M4A/M4B, the generic runner, existing schemas/adapters,
+  identity-reconciliation, or an existing witness;
+- admitting bodies/snippets/attachments, live networking, credentials, Google
+  SDK execution, or any Gmail write; or
+- beginning M4C2.
+
+With these limits, an **offline M4C1 implementation is defensible** as a proof
+of deterministic processing for captured unfiltered history intervals and
+fail-closed handling of unsupported/ambiguous bootstrap states. It is **not** a
+proof of universally gap-free live bootstrap, and M4C2 remains blocked on the
+separate privacy and provider-bootstrap review described above.
