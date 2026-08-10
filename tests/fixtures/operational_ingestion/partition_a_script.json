@@ -1,0 +1,30 @@
+{
+  "schema_version": "signal_agent.simulated_acquisition_script.v1",
+  "script_id": "simulated-equivalent-partition-a-v1",
+  "source_instance_id": "simsrc_partition_equivalence_v1",
+  "response_schema": "signal_agent.simulated_remote_relationship_page.v1",
+  "pages": [
+    {
+      "request_continuation": "root",
+      "outcomes": [{"outcome": "success", "status_code": 200, "page": {"schema_version": "signal_agent.simulated_remote_relationship_page.v1", "page_id": "A1", "records": [
+        {"record_id": "R1", "version": 1, "state": "active", "display_name": "Avery Simulated", "company": "Atlas Simulated", "position": "Research Lead", "source_event_time": "2026-08-10T10:00:00Z", "remote_modified_at": "2026-08-10T10:05:00Z"},
+        {"record_id": "R2", "version": 1, "state": "active", "display_name": "Jordan Simulated", "company": "Governed Systems Lab", "position": "Systems Architect", "source_event_time": "2026-08-10T10:10:00Z", "remote_modified_at": "2026-08-10T10:15:00Z"}
+      ], "next_cursor": "cursor-a1", "terminal": false}}]
+    },
+    {
+      "request_continuation": "cursor-a1",
+      "outcomes": [{"outcome": "success", "status_code": 200, "page": {"schema_version": "signal_agent.simulated_remote_relationship_page.v1", "page_id": "A2", "records": [
+        {"record_id": "R2", "version": 1, "state": "active", "display_name": "Jordan Simulated", "company": "Governed Systems Lab", "position": "Systems Architect", "source_event_time": "2026-08-10T10:10:00Z", "remote_modified_at": "2026-08-10T10:15:00Z"},
+        {"record_id": "R3", "version": 1, "state": "active", "display_name": "Casey Simulated", "company": "Evidence Cooperative", "position": "Program Director", "source_event_time": "2026-08-10T10:20:00Z", "remote_modified_at": "2026-08-10T10:25:00Z"},
+        {"record_id": "R4", "version": 1, "state": "active", "display_name": "Rowan Simulated", "company": "Portability Studio", "position": "Engineer", "source_event_time": "2026-08-10T10:22:00Z", "remote_modified_at": "2026-08-10T10:27:00Z"}
+      ], "next_cursor": "cursor-a2", "terminal": false}}]
+    },
+    {
+      "request_continuation": "cursor-a2",
+      "outcomes": [{"outcome": "success", "status_code": 200, "page": {"schema_version": "signal_agent.simulated_remote_relationship_page.v1", "page_id": "A3", "records": [
+        {"record_id": "R2", "version": 2, "state": "active", "display_name": "Jordan Simulated", "company": "Governed Systems Lab", "position": "Principal Systems Architect", "source_event_time": "2026-08-10T10:30:00Z", "remote_modified_at": "2026-08-10T10:35:00Z"},
+        {"record_id": "R3", "version": 2, "state": "tombstone", "display_name": "Casey Simulated", "company": "Evidence Cooperative", "position": "Program Director", "source_event_time": "2026-08-10T10:40:00Z", "remote_modified_at": "2026-08-10T10:45:00Z"}
+      ], "next_cursor": null, "terminal": true}}]
+    }
+  ]
+}
