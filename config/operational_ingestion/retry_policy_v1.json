@@ -1,0 +1,24 @@
+{
+  "schema_version": "signal_agent.operational_retry_policy.v1",
+  "policy_id": "simulated_operational_retry_policy",
+  "version": "1.0.0",
+  "retryable_outcome_classes": [
+    "rate_limited",
+    "retryable_failure"
+  ],
+  "maximum_attempts": 3,
+  "exponential_backoff": {
+    "initial_delay_ms": 500,
+    "multiplier": 2,
+    "maximum_delay_ms": 4000
+  },
+  "deterministic_simulation_jitter": {
+    "rule": "sha256_modulo_ms",
+    "maximum_jitter_ms": 37
+  },
+  "maximum_elapsed_acquisition_ms": 30000,
+  "retry_after": {
+    "mode": "maximum_of_backoff_and_retry_after",
+    "maximum_retry_after_ms": 5000
+  }
+}
