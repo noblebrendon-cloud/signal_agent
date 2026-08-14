@@ -1,0 +1,63 @@
+{
+  "schema_version": "signal_agent.gmail_history_metadata_policy.v1",
+  "policy_id": "gmail_history_metadata_v1",
+  "version": "1.0.0",
+  "source_type": "gmail_history_offline.v1",
+  "adapter_id": "gmail_history_offline_adapter",
+  "canonicalization_id": "gmail_history_provider_canonicalization.v1",
+  "projection_policy": {
+    "policy_id": "gmail_target_label_projection_v1",
+    "version": "1.0.0"
+  },
+  "metadata": {
+    "format": "METADATA",
+    "allowed_headers": [
+      "From"
+    ],
+    "allowed_message_fields": [
+      "historyId",
+      "id",
+      "internalDate",
+      "labelIds",
+      "payload",
+      "threadId"
+    ],
+    "allowed_payload_fields": [
+      "headers"
+    ]
+  },
+  "bounds": {
+    "maximum_operations": 24,
+    "maximum_history_records": 100,
+    "maximum_metadata_lookups": 20,
+    "maximum_response_bytes": 262144
+  },
+  "protection": {
+    "algorithm": "HMAC-SHA-256",
+    "namespace": "gmail_history_source_identifier.v1",
+    "version": "gmail_history_identifier_token.v1"
+  },
+  "checkpoint_eligible_coverage": [
+    "complete_captured_bootstrap",
+    "complete_captured_interval",
+    "empty_target_label_anchor_only",
+    "recovery_current_state_history_gap_acknowledged"
+  ],
+  "forbidden_provider_fields": [
+    "attachmentId",
+    "attachments",
+    "body",
+    "classificationLabelValues",
+    "parts",
+    "raw",
+    "sizeEstimate",
+    "snippet"
+  ],
+  "authorizations": {
+    "authentication_allowed": false,
+    "gmail_write_allowed": false,
+    "live_mailbox_access_allowed": false,
+    "network_allowed": false,
+    "oauth_allowed": false
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://signal-agent.local/schemas/operational_ingestion/gmail_target_label_projection.v1.schema.json",
+  "title": "Gmail target-label projection",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "projection_id",
+    "source",
+    "projection_policy",
+    "target_label_ref",
+    "prior_projection",
+    "coverage_classification",
+    "transitions",
+    "final_states",
+    "unresolved_relevance",
+    "provider_observation_set_hash",
+    "target_label_projection_set_hash",
+    "semantic_identity_excludes",
+    "projection_hash"
+  ],
+  "properties": {
+    "schema_version": {"const": "signal_agent.gmail_target_label_projection.v1"},
+    "projection_id": {"type": "string", "minLength": 1},
+    "source": {"type": "object"},
+    "projection_policy": {"type": "object"},
+    "target_label_ref": {"type": "object"},
+    "prior_projection": {"type": ["object", "null"]},
+    "coverage_classification": {"type": "string", "minLength": 1},
+    "transitions": {"type": "array", "items": {"type": "object"}},
+    "final_states": {"type": "array", "items": {"type": "object"}},
+    "unresolved_relevance": {"type": "array", "items": {"type": "object"}},
+    "provider_observation_set_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "target_label_projection_set_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "semantic_identity_excludes": {"type": "array", "items": {"type": "string"}},
+    "projection_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+  },
+  "additionalProperties": false
+}

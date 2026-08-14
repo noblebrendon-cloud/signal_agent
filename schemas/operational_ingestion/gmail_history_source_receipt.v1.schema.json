@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://signal-agent.local/schemas/operational_ingestion/gmail_history_source_receipt.v1.schema.json",
+  "title": "Gmail History offline source receipt",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "receipt_id",
+    "created_at",
+    "status",
+    "operational_input",
+    "source_sha256",
+    "source_byte_size",
+    "preserved_source",
+    "provider_observation_set_hash",
+    "target_label_projection",
+    "identifier_protection",
+    "source_records_mutated",
+    "authorizations",
+    "receipt_hash"
+  ],
+  "properties": {
+    "schema_version": {"const": "signal_agent.gmail_history_source_receipt.v1"},
+    "receipt_id": {"type": "string", "minLength": 1},
+    "created_at": {"type": "string", "format": "date-time"},
+    "status": {"const": "completed"},
+    "operational_input": {"type": "object"},
+    "source_sha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "source_byte_size": {"type": "integer", "minimum": 1},
+    "preserved_source": {"type": "object"},
+    "provider_observation_set_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "target_label_projection": {"type": "object"},
+    "identifier_protection": {"type": "object"},
+    "source_records_mutated": {"const": false},
+    "authorizations": {"type": "object"},
+    "receipt_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+  },
+  "additionalProperties": true
+}
