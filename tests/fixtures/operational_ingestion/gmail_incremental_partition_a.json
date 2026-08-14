@@ -1,0 +1,90 @@
+{
+  "schema_version": "signal_agent.gmail_history_offline_fixture.v1",
+  "script_id": "gmail-incremental-partition-a-v1",
+  "mode": "incremental",
+  "source_instance_ref": "synthetic-mailbox-alpha",
+  "target_label_id": "Label_TARGET",
+  "coverage_classification": "complete_captured_interval",
+  "expected_terminal_history_id": "300",
+  "operations": [
+    {
+      "operation": "users.history.list",
+      "request": {"startHistoryId": "90"},
+      "status_code": 200,
+      "response": {
+        "history": [
+          {
+            "id": "101",
+            "messages": [{"id": "m-enter", "threadId": "t-enter", "labelIds": ["INBOX", "Label_TARGET"]}],
+            "messagesAdded": [{"message": {"id": "m-enter", "threadId": "t-enter", "labelIds": ["INBOX", "Label_TARGET"]}}]
+          },
+          {
+            "id": "109",
+            "messagesAdded": [{"message": {"id": "m-other", "threadId": "t-other", "labelIds": ["INBOX"]}}]
+          },
+          {
+            "id": "120",
+            "labelsAdded": [{"message": {"id": "m-label", "threadId": "t-label", "labelIds": ["INBOX", "Label_TARGET"]}, "labelIds": ["Label_TARGET"]}]
+          },
+          {
+            "id": "135",
+            "labelsRemoved": [{"message": {"id": "m-leave", "threadId": "t-leave", "labelIds": ["INBOX"]}, "labelIds": ["Label_TARGET"]}]
+          }
+        ],
+        "nextPageToken": "partition-a-page-2"
+      }
+    },
+    {
+      "operation": "users.history.list",
+      "request": {"startHistoryId": "90", "pageToken": "partition-a-page-2"},
+      "status_code": 200,
+      "response": {
+        "history": [
+          {
+            "id": "150",
+            "messagesDeleted": [{"message": {"id": "m-delete", "threadId": "t-delete", "labelIds": []}}]
+          },
+          {
+            "id": "180",
+            "labelsAdded": [{"message": {"id": "m-other", "threadId": "t-other", "labelIds": ["INBOX", "Label_OTHER"]}, "labelIds": ["Label_OTHER"]}]
+          },
+          {
+            "id": "220",
+            "labelsRemoved": [{"message": {"id": "m-other", "threadId": "t-other", "labelIds": ["INBOX"]}, "labelIds": ["Label_OTHER"]}]
+          },
+          {
+            "id": "250",
+            "messagesDeleted": [{"message": {"id": "m-unrelated-delete", "threadId": "t-unrelated", "labelIds": []}}]
+          }
+        ],
+        "historyId": "300"
+      }
+    },
+    {
+      "operation": "users.messages.get",
+      "request": {"id": "m-enter", "format": "METADATA", "metadataHeaders": ["From"]},
+      "status_code": 200,
+      "response": {
+        "id": "m-enter",
+        "threadId": "t-enter",
+        "labelIds": ["INBOX", "Label_TARGET"],
+        "historyId": "101",
+        "internalDate": "1770000240000",
+        "payload": {"headers": [{"name": "From", "value": "Enter Fixture <enter@synthetic.invalid>"}]}
+      }
+    },
+    {
+      "operation": "users.messages.get",
+      "request": {"id": "m-label", "format": "METADATA", "metadataHeaders": ["From"]},
+      "status_code": 200,
+      "response": {
+        "id": "m-label",
+        "threadId": "t-label",
+        "labelIds": ["INBOX", "Label_TARGET"],
+        "historyId": "120",
+        "internalDate": "1770000300000",
+        "payload": {"headers": [{"name": "From", "value": "Label Fixture <label@synthetic.invalid>"}]}
+      }
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "schema_version": "signal_agent.gmail_history_offline_fixture.v1",
+  "script_id": "gmail-bootstrap-empty-mailbox-v1",
+  "mode": "bootstrap",
+  "source_instance_ref": "synthetic-mailbox-empty",
+  "target_label_id": "Label_TARGET",
+  "coverage_classification": "unsupported_bootstrap_continuation",
+  "expected_terminal_history_id": null,
+  "operations": [
+    {
+      "operation": "users.messages.list",
+      "request": {"labelIds": ["Label_TARGET"]},
+      "status_code": 200,
+      "response": {"messages": [], "resultSizeEstimate": 0}
+    },
+    {
+      "operation": "users.messages.list",
+      "request": {"maxResults": 1},
+      "status_code": 200,
+      "response": {"messages": [], "resultSizeEstimate": 0}
+    }
+  ]
+}

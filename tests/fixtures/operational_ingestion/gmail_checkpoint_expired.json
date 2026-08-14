@@ -1,0 +1,18 @@
+{
+  "schema_version": "signal_agent.gmail_history_offline_fixture.v1",
+  "script_id": "gmail-checkpoint-expired-v1",
+  "mode": "expired",
+  "source_instance_ref": "synthetic-mailbox-alpha",
+  "target_label_id": "Label_TARGET",
+  "coverage_classification": "checkpoint_expired",
+  "expected_terminal_history_id": null,
+  "operations": [
+    {
+      "operation": "users.history.list",
+      "request": {"startHistoryId": "300"},
+      "status_code": 404,
+      "response": null,
+      "attempts": [{"outcome": "permanent_failure", "status_code": 404, "provider_error_code": "history_id_expired"}]
+    }
+  ]
+}

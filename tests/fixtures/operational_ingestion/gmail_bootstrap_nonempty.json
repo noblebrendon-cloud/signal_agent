@@ -1,0 +1,49 @@
+{
+  "schema_version": "signal_agent.gmail_history_offline_fixture.v1",
+  "script_id": "gmail-bootstrap-nonempty-v1",
+  "mode": "bootstrap",
+  "source_instance_ref": "synthetic-mailbox-alpha",
+  "target_label_id": "Label_TARGET",
+  "coverage_classification": "complete_captured_bootstrap",
+  "expected_terminal_history_id": "90",
+  "operations": [
+    {
+      "operation": "users.messages.list",
+      "request": {"labelIds": ["Label_TARGET"]},
+      "status_code": 200,
+      "response": {
+        "messages": [
+          {"id": "m-delete", "threadId": "t-delete"},
+          {"id": "m-leave", "threadId": "t-leave"}
+        ],
+        "resultSizeEstimate": 2
+      }
+    },
+    {
+      "operation": "users.messages.get",
+      "request": {"id": "m-delete", "format": "METADATA", "metadataHeaders": ["From"]},
+      "status_code": 200,
+      "response": {
+        "id": "m-delete",
+        "threadId": "t-delete",
+        "labelIds": ["INBOX", "Label_TARGET"],
+        "historyId": "90",
+        "internalDate": "1770000000000",
+        "payload": {"headers": [{"name": "From", "value": "Delete Fixture <delete@synthetic.invalid>"}]}
+      }
+    },
+    {
+      "operation": "users.messages.get",
+      "request": {"id": "m-leave", "format": "METADATA", "metadataHeaders": ["From"]},
+      "status_code": 200,
+      "response": {
+        "id": "m-leave",
+        "threadId": "t-leave",
+        "labelIds": ["INBOX", "Label_TARGET"],
+        "historyId": "80",
+        "internalDate": "1770000060000",
+        "payload": {"headers": [{"name": "From", "value": "Leave Fixture <leave@synthetic.invalid>"}]}
+      }
+    }
+  ]
+}

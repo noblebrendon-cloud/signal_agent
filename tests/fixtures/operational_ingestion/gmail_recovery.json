@@ -1,0 +1,49 @@
+{
+  "schema_version": "signal_agent.gmail_history_offline_fixture.v1",
+  "script_id": "gmail-recovery-v1",
+  "mode": "recovery",
+  "source_instance_ref": "synthetic-mailbox-alpha",
+  "target_label_id": "Label_TARGET",
+  "coverage_classification": "recovery_current_state_history_gap_acknowledged",
+  "expected_terminal_history_id": "400",
+  "operations": [
+    {
+      "operation": "users.messages.list",
+      "request": {"labelIds": ["Label_TARGET"]},
+      "status_code": 200,
+      "response": {
+        "messages": [
+          {"id": "m-recovered", "threadId": "t-recovered"},
+          {"id": "m-enter", "threadId": "t-enter"}
+        ],
+        "resultSizeEstimate": 2
+      }
+    },
+    {
+      "operation": "users.messages.get",
+      "request": {"id": "m-recovered", "format": "METADATA", "metadataHeaders": ["From"]},
+      "status_code": 200,
+      "response": {
+        "id": "m-recovered",
+        "threadId": "t-recovered",
+        "labelIds": ["INBOX", "Label_TARGET"],
+        "historyId": "400",
+        "internalDate": "1770000360000",
+        "payload": {"headers": [{"name": "From", "value": "Recovered Fixture <recovered@synthetic.invalid>"}]}
+      }
+    },
+    {
+      "operation": "users.messages.get",
+      "request": {"id": "m-enter", "format": "METADATA", "metadataHeaders": ["From"]},
+      "status_code": 200,
+      "response": {
+        "id": "m-enter",
+        "threadId": "t-enter",
+        "labelIds": ["INBOX", "Label_TARGET"],
+        "historyId": "390",
+        "internalDate": "1770000420000",
+        "payload": {"headers": [{"name": "From", "value": "Enter Fixture <enter@synthetic.invalid>"}]}
+      }
+    }
+  ]
+}

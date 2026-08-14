@@ -1,0 +1,36 @@
+{
+  "schema_version": "signal_agent.gmail_history_offline_fixture.v1",
+  "script_id": "gmail-bootstrap-coverage-unknown-v1",
+  "mode": "bootstrap",
+  "source_instance_ref": "synthetic-mailbox-ambiguous",
+  "target_label_id": "Label_TARGET",
+  "coverage_classification": "coverage_unknown",
+  "expected_terminal_history_id": "75",
+  "operations": [
+    {
+      "operation": "users.messages.list",
+      "request": {"labelIds": ["Label_TARGET"]},
+      "status_code": 200,
+      "response": {"messages": [], "resultSizeEstimate": 0}
+    },
+    {
+      "operation": "users.messages.list",
+      "request": {"maxResults": 1},
+      "status_code": 200,
+      "response": {"messages": [{"id": "m-ambiguous", "threadId": "t-ambiguous"}], "resultSizeEstimate": 1}
+    },
+    {
+      "operation": "users.messages.get",
+      "request": {"id": "m-ambiguous", "format": "METADATA", "metadataHeaders": ["From"]},
+      "status_code": 200,
+      "response": {
+        "id": "m-ambiguous",
+        "threadId": "t-ambiguous",
+        "labelIds": ["INBOX"],
+        "historyId": "75",
+        "internalDate": "1770000180000",
+        "payload": {"headers": [{"name": "From", "value": "Ambiguous Fixture <ambiguous@synthetic.invalid>"}]}
+      }
+    }
+  ]
+}

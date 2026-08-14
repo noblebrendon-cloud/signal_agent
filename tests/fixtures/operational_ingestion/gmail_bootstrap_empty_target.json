@@ -1,0 +1,36 @@
+{
+  "schema_version": "signal_agent.gmail_history_offline_fixture.v1",
+  "script_id": "gmail-bootstrap-empty-target-v1",
+  "mode": "bootstrap",
+  "source_instance_ref": "synthetic-mailbox-empty-target",
+  "target_label_id": "Label_TARGET",
+  "coverage_classification": "empty_target_label_anchor_only",
+  "expected_terminal_history_id": "70",
+  "operations": [
+    {
+      "operation": "users.messages.list",
+      "request": {"labelIds": ["Label_TARGET"]},
+      "status_code": 200,
+      "response": {"messages": [], "resultSizeEstimate": 0}
+    },
+    {
+      "operation": "users.messages.list",
+      "request": {"maxResults": 1},
+      "status_code": 200,
+      "response": {"messages": [{"id": "m-anchor", "threadId": "t-anchor"}], "resultSizeEstimate": 1}
+    },
+    {
+      "operation": "users.messages.get",
+      "request": {"id": "m-anchor", "format": "METADATA", "metadataHeaders": ["From"]},
+      "status_code": 200,
+      "response": {
+        "id": "m-anchor",
+        "threadId": "t-anchor",
+        "labelIds": ["INBOX"],
+        "historyId": "70",
+        "internalDate": "1770000120000",
+        "payload": {"headers": [{"name": "From", "value": "Anchor Fixture <anchor@synthetic.invalid>"}]}
+      }
+    }
+  ]
+}

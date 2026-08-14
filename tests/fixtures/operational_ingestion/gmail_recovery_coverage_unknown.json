@@ -1,0 +1,30 @@
+{
+  "schema_version": "signal_agent.gmail_history_offline_fixture.v1",
+  "script_id": "gmail-recovery-coverage-unknown-v1",
+  "mode": "recovery",
+  "source_instance_ref": "synthetic-mailbox-alpha",
+  "target_label_id": "Label_TARGET",
+  "coverage_classification": "coverage_unknown",
+  "expected_terminal_history_id": "410",
+  "operations": [
+    {
+      "operation": "users.messages.list",
+      "request": {"labelIds": ["Label_TARGET"]},
+      "status_code": 200,
+      "response": {"messages": [{"id": "m-concurrent", "threadId": "t-concurrent"}], "resultSizeEstimate": 1}
+    },
+    {
+      "operation": "users.messages.get",
+      "request": {"id": "m-concurrent", "format": "METADATA", "metadataHeaders": ["From"]},
+      "status_code": 200,
+      "response": {
+        "id": "m-concurrent",
+        "threadId": "t-concurrent",
+        "labelIds": ["INBOX"],
+        "historyId": "410",
+        "internalDate": "1770000480000",
+        "payload": {"headers": [{"name": "From", "value": "Concurrent Fixture <concurrent@synthetic.invalid>"}]}
+      }
+    }
+  ]
+}
