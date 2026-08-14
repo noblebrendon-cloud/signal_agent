@@ -1,0 +1,354 @@
+{
+  "artifacts": [
+    {
+      "byte_size": 2856,
+      "path": "store/osi_88e952f513d4f6f44140/checkpoint_candidates/ockc_01041f7d964622616757.checkpoint-candidate.json",
+      "sha256": "sha256:37416ea29f19e441be30a8c88ff3d45f2949bccf32459e27bfd7059a1d41bbcd"
+    },
+    {
+      "byte_size": 2988,
+      "path": "store/osi_88e952f513d4f6f44140/checkpoint_candidates/ockc_f1d40e313d1da0fa2475.checkpoint-candidate.json",
+      "sha256": "sha256:c3fd49ba54b19a2950e9ac5afaf855fabc941544a8ee3e03d7ef868112048622"
+    },
+    {
+      "byte_size": 3251,
+      "path": "store/osi_88e952f513d4f6f44140/checkpoints/from-ock_45de27123174fd563d2f/checkpoint-commit.json",
+      "sha256": "sha256:23e30ed5dee80a6067ed51d4b2b95983dbad7b59ed02539a26f409737ae2a46b"
+    },
+    {
+      "byte_size": 3162,
+      "path": "store/osi_88e952f513d4f6f44140/checkpoints/from-root/checkpoint-commit.json",
+      "sha256": "sha256:57a7a859073193a9384475cbd7de9cf2b57be21bf26979857df1dbb89c20be55"
+    },
+    {
+      "byte_size": 2774,
+      "path": "store/osi_88e952f513d4f6f44140/completion_authorities/ocma_51b2dc4a746314667815.authority.json",
+      "sha256": "sha256:a8635876d736e755584bcf8d3397c7e0eb0196a806580fd95663c1ec5c5ec125"
+    },
+    {
+      "byte_size": 2774,
+      "path": "store/osi_88e952f513d4f6f44140/completion_authorities/ocma_8db3f146b56e97dd1397.authority.json",
+      "sha256": "sha256:63e42fb7fcab9d5a07459f842dd200b1bfb286ad9ba1f6de2da567d5f4060be2"
+    },
+    {
+      "byte_size": 1590,
+      "path": "store/osi_88e952f513d4f6f44140/observation_indexes/oix_ab1ffacc15e2562c50b1.observation-index.json",
+      "sha256": "sha256:495bf2b4fc87d411ab51a9e9970918109fdb583fa05f8530aa5f0b96d221c90f"
+    },
+    {
+      "byte_size": 4902,
+      "path": "store/osi_88e952f513d4f6f44140/observation_indexes/oix_c874573b71b6c8c83a19.observation-index.json",
+      "sha256": "sha256:f4b43569ebe30aca402c102e4d20b35e724b6da9558f56e0a1da83f31b571c8a"
+    },
+    {
+      "byte_size": 1571,
+      "path": "store/osi_88e952f513d4f6f44140/sessions/oas_6177177d4c82c6528901/00_intent/acquisition_intent.json",
+      "sha256": "sha256:6d4a1baf3c6d5b4332f138ecc6db713ae06917d34439ad8726bcfd331db3025d"
+    },
+    {
+      "byte_size": 666,
+      "path": "store/osi_88e952f513d4f6f44140/sessions/oas_6177177d4c82c6528901/00_intent/session_descriptor.json",
+      "sha256": "sha256:773019076623d809fe038833fa9c3ac41224b9fbedad0bf80097450d16e8cdfd"
+    },
+    {
+      "byte_size": 817,
+      "path": "store/osi_88e952f513d4f6f44140/sessions/oas_6177177d4c82c6528901/01_attempts/oat_3aebfe8069d393d70e1a.attempt.json",
+      "sha256": "sha256:a575307a50957b3f9303a626877aacad72200e9ddad4907b8d250e921b7e7024"
+    },
+    {
+      "byte_size": 816,
+      "path": "store/osi_88e952f513d4f6f44140/sessions/oas_6177177d4c82c6528901/01_attempts/oat_5d744285b201d9a665e4.attempt.json",
+      "sha256": "sha256:adc24b9890e5e348c0402bb217034c1c8949ad8d5b8c007fe539db103cb906ba"
+    },
+    {
+      "byte_size": 816,
+      "path": "store/osi_88e952f513d4f6f44140/sessions/oas_6177177d4c82c6528901/01_attempts/oat_a15648bac5311bab359c.attempt.json",
+      "sha256": "sha256:1a5806bad6ba0b8594b9cbb1281e080afc2d977035d220f243ec5ea1ae570aab"
+    },
+    {
+      "byte_size": 212,
+      "path": "store/osi_88e952f513d4f6f44140/sessions/oas_6177177d4c82c6528901/02_captures/ocb_1270f70a17a6018b793c.body",
+      "sha256": "sha256:c65cf883dd0ccb138cc067ea17de080ace021a969de66fb6b18df223b6fe0eae"
+    },
+    {
+      "byte_size": 216,
+      "path": "store/osi_88e952f513d4f6f44140/sessions/oas_6177177d4c82c6528901/02_captures/ocb_728f8c0c0459edc55bfa.body",
+      "sha256": "sha256:03b0bfc8a0f757049c00e2cc0311887522cb6d67191c7267a92199fb89488af5"
+    },
+    {
+      "byte_size": 116,
+      "path": "store/osi_88e952f513d4f6f44140/sessions/oas_6177177d4c82c6528901/02_captures/ocb_fc34c94207754300bcc8.body",
+      "sha256": "sha256:43f5e08c3ec1ce8b352e1cd33039165eb7460202b5983cc6f3af63ea15aae54e"
+    },
+    {
+      "byte_size": 1966,
+      "path": "store/osi_88e952f513d4f6f44140/sessions/oas_6177177d4c82c6528901/02_captures/opc_3761255ccd41bdbdf5f4.capture.json",
+      "sha256": "sha256:8ed2d89b690d3a5d2a6cb835a6120fe951baca0d2bbba21cb5a8afbb034b6c4b"
+    },
+    {
+      "byte_size": 1864,
+      "path": "store/osi_88e952f513d4f6f44140/sessions/oas_6177177d4c82c6528901/02_captures/opc_469f581b4852fa8e5ef2.capture.json",
+      "sha256": "sha256:4fa450e28c2a3352b0e562d362356e4c71764d363c8cd08a984e47d6feea0b33"
+    },
+    {
+      "byte_size": 1433,
+      "path": "store/osi_88e952f513d4f6f44140/sessions/oas_6177177d4c82c6528901/02_captures/opc_f8a8bc7cc72945a620fc.capture.json",
+      "sha256": "sha256:08b755e3cd4a1e7a448969704fb3817cf026540acd57f8547451e3c55eb0e461"
+    },
+    {
+      "byte_size": 3625,
+      "path": "store/osi_88e952f513d4f6f44140/sessions/oas_6177177d4c82c6528901/03_boundary/acquisition_boundary.json",
+      "sha256": "sha256:c907cf6820716aed30290c7b9793773773844f62305242bfc166d7398f25846d"
+    },
+    {
+      "byte_size": 4114,
+      "path": "store/osi_88e952f513d4f6f44140/sessions/oas_6177177d4c82c6528901/04_batch/obm_0b0600dae40cdd86ee19.source.json",
+      "sha256": "sha256:87b731b100ff7828ccc04afdc54e793fbf978fa9c29c0022d29710b83ac56a78"
+    },
+    {
+      "byte_size": 1771,
+      "path": "store/osi_88e952f513d4f6f44140/sessions/oas_6fd581389761040a7ab7/00_intent/acquisition_intent.json",
+      "sha256": "sha256:fb779f9bbfe5caa34807bd7ad8394a0fb5b1ae08d3b1f9654d9d1959f0636290"
+    },
+    {
+      "byte_size": 666,
+      "path": "store/osi_88e952f513d4f6f44140/sessions/oas_6fd581389761040a7ab7/00_intent/session_descriptor.json",
+      "sha256": "sha256:173465d99819975b1000c7842827982d9f0cd2123b1573b89c04d7028e83d2d4"
+    },
+    {
+      "byte_size": 816,
+      "path": "store/osi_88e952f513d4f6f44140/sessions/oas_6fd581389761040a7ab7/01_attempts/oat_0758d9c48ee6315689e5.attempt.json",
+      "sha256": "sha256:102c472ce42e3ead0509c263d811221f490143ad9d9c087b4ac517e489e5df33"
+    },
+    {
+      "byte_size": 816,
+      "path": "store/osi_88e952f513d4f6f44140/sessions/oas_6fd581389761040a7ab7/01_attempts/oat_60dbb87f7de06f45d5c4.attempt.json",
+      "sha256": "sha256:6c5ee64743d7d465ed1774c2170535b6eb2cb0dff04219c5bb5539d2312a1e4a"
+    },
+    {
+      "byte_size": 816,
+      "path": "store/osi_88e952f513d4f6f44140/sessions/oas_6fd581389761040a7ab7/01_attempts/oat_9b15d8aae7655c1c6b3c.attempt.json",
+      "sha256": "sha256:08e1b7223e1eee2efbb2f83cdf02b326913b3223adeb6746461331ff6b550c1d"
+    },
+    {
+      "byte_size": 816,
+      "path": "store/osi_88e952f513d4f6f44140/sessions/oas_6fd581389761040a7ab7/01_attempts/oat_c36336f3dddf30a9eabd.attempt.json",
+      "sha256": "sha256:39f118d658740a3246b60bbc1c6d7579fea5bcd9631148237cbc655c4a72ea15"
+    },
+    {
+      "byte_size": 513,
+      "path": "store/osi_88e952f513d4f6f44140/sessions/oas_6fd581389761040a7ab7/02_captures/ocb_54a2bf2bb3cc49d6ec95.body",
+      "sha256": "sha256:727be17eee8e653f44fc9e8c15e65c330451279787edb17982afb93fe2a0d0a6"
+    },
+    {
+      "byte_size": 213,
+      "path": "store/osi_88e952f513d4f6f44140/sessions/oas_6fd581389761040a7ab7/02_captures/ocb_6311e503007e9c580fac.body",
+      "sha256": "sha256:2668fe0a038a0ac239913c0f13f29bb707ba160dcca22e05c688a54013c866ac"
+    },
+    {
+      "byte_size": 630,
+      "path": "store/osi_88e952f513d4f6f44140/sessions/oas_6fd581389761040a7ab7/02_captures/ocb_ba7bd42c963535dd9ce5.body",
+      "sha256": "sha256:874564eb5dd675acd2ded509c3c8dc329d4b0037adb1b59e66f888ce63a57b55"
+    },
+    {
+      "byte_size": 213,
+      "path": "store/osi_88e952f513d4f6f44140/sessions/oas_6fd581389761040a7ab7/02_captures/ocb_ee1bb865ab6ced7cfef7.body",
+      "sha256": "sha256:c545e8452207178817b19b2df9df7f25c4dc2f0a7a5d482d9659dca27ffa4a31"
+    },
+    {
+      "byte_size": 1966,
+      "path": "store/osi_88e952f513d4f6f44140/sessions/oas_6fd581389761040a7ab7/02_captures/opc_493f88200815e1b4345b.capture.json",
+      "sha256": "sha256:a95172e578f19246ddb7423bb85c2d966327ab971244baad5319fd57fce10e5a"
+    },
+    {
+      "byte_size": 2713,
+      "path": "store/osi_88e952f513d4f6f44140/sessions/oas_6fd581389761040a7ab7/02_captures/opc_6ad024a6ef2a45816126.capture.json",
+      "sha256": "sha256:d8fb1ea5dc848e0021e82792a1686f5b3de65d1544c4b5ea1bbbd0a4fac01e74"
+    },
+    {
+      "byte_size": 1864,
+      "path": "store/osi_88e952f513d4f6f44140/sessions/oas_6fd581389761040a7ab7/02_captures/opc_95d3c79e5e9f3cde7071.capture.json",
+      "sha256": "sha256:212405f474fe4dd054aed29e9108b6b40b2458a432ca5a54a171d41535eb3655"
+    },
+    {
+      "byte_size": 2525,
+      "path": "store/osi_88e952f513d4f6f44140/sessions/oas_6fd581389761040a7ab7/02_captures/opc_e6640bf2919fc5ecfb05.capture.json",
+      "sha256": "sha256:731b7e55e4dc53f5a6f86f37417c60786be1a009ab0dffb82dd5392599e1c8b6"
+    },
+    {
+      "byte_size": 4993,
+      "path": "store/osi_88e952f513d4f6f44140/sessions/oas_6fd581389761040a7ab7/03_boundary/acquisition_boundary.json",
+      "sha256": "sha256:3b795b1d325fa464134757bbce069c63af565dea7618511ab6f926ff94d0cc16"
+    },
+    {
+      "byte_size": 14478,
+      "path": "store/osi_88e952f513d4f6f44140/sessions/oas_6fd581389761040a7ab7/04_batch/obm_5d582f9cbf0d81e3e2ff.source.json",
+      "sha256": "sha256:dd8db66ee96059ea351ce8ed9ca98c630166c0627dcd1c0f97a1a8785824c3fe"
+    },
+    {
+      "byte_size": 4114,
+      "path": "bootstrap-governed/00_original/gmail_history_bounded_source.json",
+      "sha256": "sha256:87b731b100ff7828ccc04afdc54e793fbf978fa9c29c0022d29710b83ac56a78"
+    },
+    {
+      "byte_size": 100,
+      "path": "bootstrap-governed/00_original/gmail_history_bounded_source.sha256.txt",
+      "sha256": "sha256:ca042194d0a0c6fb5d1ca2b4b7fbade8742dbaab43b7890d8cde655d9e778256"
+    },
+    {
+      "byte_size": 6482,
+      "path": "bootstrap-governed/01_normalized/relationship_records.jsonl",
+      "sha256": "sha256:98cf8222b7c60c6c0a373d313b6d459704acfede4e269fb092aa24a152e8a62f"
+    },
+    {
+      "byte_size": 481,
+      "path": "bootstrap-governed/02_analysis/related_work.json",
+      "sha256": "sha256:347e9f88ab64e529436b7cff9e71ccb30fc4d20d8c6fdbb9037ac1a2fbddfcf4"
+    },
+    {
+      "byte_size": 908,
+      "path": "bootstrap-governed/02_analysis/topic_cluster.json",
+      "sha256": "sha256:c173e103e33c87982ce1532c642c924ad21459479663cbf0ccbd3c960b8f6089"
+    },
+    {
+      "byte_size": 747,
+      "path": "bootstrap-governed/02_analysis/unresolved_matches.json",
+      "sha256": "sha256:84944e0d79526c79b8c63f7222ee3f569099a82d8619a9d312cccf078008e6b0"
+    },
+    {
+      "byte_size": 1864,
+      "path": "bootstrap-governed/04_packets/campaign_context_packet.json",
+      "sha256": "sha256:ee3e5bfe77d52b0f7cfb5cde2f2e9d55fe697c79c7e4d8f3d30f5845ea10140f"
+    },
+    {
+      "byte_size": 2998,
+      "path": "bootstrap-governed/04_packets/signal_packet.json",
+      "sha256": "sha256:9a658eb5660f7086331a50be69d9c3c0a84f541e91c8028d8141ea595ab74550"
+    },
+    {
+      "byte_size": 2764,
+      "path": "bootstrap-governed/05_receipts/gmail_history_source_receipt.json",
+      "sha256": "sha256:56a96f1f32894c2edd71de58921ee82aeb64b58696d533ef0ad0e392b0023b26"
+    },
+    {
+      "byte_size": 3377,
+      "path": "bootstrap-governed/05_receipts/gmail_operational_completed_manifest.json",
+      "sha256": "sha256:8ff26c65908c5cbc467f1c7fad484b2c4f2fcf517c7574daaa0490b8f933fda5"
+    },
+    {
+      "byte_size": 4578,
+      "path": "bootstrap-governed/05_receipts/gmail_target_label_projection.json",
+      "sha256": "sha256:28bfa79ce7364a5822c4cdac6a317196464a0e16bce1150cad40f9b04ae911dd"
+    },
+    {
+      "byte_size": 3235,
+      "path": "bootstrap-governed/05_receipts/run_manifest.json",
+      "sha256": "sha256:aa64711c555b7fe9a9435044241a110ac2b2447702cb4f5d9c4e4799b0c17454"
+    },
+    {
+      "byte_size": 14478,
+      "path": "incremental-governed/00_original/gmail_history_bounded_source.json",
+      "sha256": "sha256:dd8db66ee96059ea351ce8ed9ca98c630166c0627dcd1c0f97a1a8785824c3fe"
+    },
+    {
+      "byte_size": 100,
+      "path": "incremental-governed/00_original/gmail_history_bounded_source.sha256.txt",
+      "sha256": "sha256:eb177f5a1167bef29e8be3f45541cecad2aa7ad932619f52738cf512e7f0c743"
+    },
+    {
+      "byte_size": 12876,
+      "path": "incremental-governed/01_normalized/relationship_records.jsonl",
+      "sha256": "sha256:8eb81eb1d2feaee63286ff712d53222bce28ca38170e584eb830320a74e7f90b"
+    },
+    {
+      "byte_size": 481,
+      "path": "incremental-governed/02_analysis/related_work.json",
+      "sha256": "sha256:347e9f88ab64e529436b7cff9e71ccb30fc4d20d8c6fdbb9037ac1a2fbddfcf4"
+    },
+    {
+      "byte_size": 962,
+      "path": "incremental-governed/02_analysis/topic_cluster.json",
+      "sha256": "sha256:72147791119330a0ac1a078876860e812bcb52ea2819807f9b324abe7d14f427"
+    },
+    {
+      "byte_size": 801,
+      "path": "incremental-governed/02_analysis/unresolved_matches.json",
+      "sha256": "sha256:1deae9ef18da2c090c9e017fc4978d01bc04e8087335cdc1aa35d599b6f33ffb"
+    },
+    {
+      "byte_size": 1864,
+      "path": "incremental-governed/04_packets/campaign_context_packet.json",
+      "sha256": "sha256:d5fe238726ffe27bf422baa12f9a36173702c614395e2324a48cf6e20a6eec3a"
+    },
+    {
+      "byte_size": 3052,
+      "path": "incremental-governed/04_packets/signal_packet.json",
+      "sha256": "sha256:8895f5ba313b35c6bc5401df8c79543eee6c567dab9ba92cc761f8b2bfb33926"
+    },
+    {
+      "byte_size": 3621,
+      "path": "incremental-governed/05_receipts/gmail_history_source_receipt.json",
+      "sha256": "sha256:4a860ec93b49ce2078f28eda6a74b3bb372d81d48d92ba4b0bf7e4a0572f39f1"
+    },
+    {
+      "byte_size": 3378,
+      "path": "incremental-governed/05_receipts/gmail_operational_completed_manifest.json",
+      "sha256": "sha256:033c4599d43890b2a56629a1760e2850b00c412a8d6af46fe9ef0b5cc6dc0c38"
+    },
+    {
+      "byte_size": 8717,
+      "path": "incremental-governed/05_receipts/gmail_target_label_projection.json",
+      "sha256": "sha256:7c9ef0e526176cc1f11400a24dc580113c1593106f628082afa3bc54708ad756"
+    },
+    {
+      "byte_size": 3235,
+      "path": "incremental-governed/05_receipts/run_manifest.json",
+      "sha256": "sha256:9d5574ec6b9ccdff962a239bd85cb87b452065a20915501e69e88b2fa7f07169"
+    }
+  ],
+  "base_sha": "fa26dc3a7e20cc8deaf9ac99792933ce723a9b45",
+  "expected": {
+    "bootstrap": {
+      "authority_id": "ocma_51b2dc4a746314667815",
+      "bounded_material_id": "obm_0b0600dae40cdd86ee19",
+      "candidate_id": "ockc_01041f7d964622616757",
+      "capture_set_hash": "sha256:01823d92c3d0a848a811cd48cfa07d3d434802d6c4db97f92e294cf5d1d6195c",
+      "checkpoint_id": "ock_45de27123174fd563d2f",
+      "governed_run_id": "ghgr_8d8c74290fe96888372b",
+      "observation_set_hash": "sha256:b6d31d429a8e6bed354dd18827ffdabc07797ef3887e27640917404d3145a157",
+      "projection_set_hash": "sha256:3b10c764cc285ffab3ebbc1edec1ea6c1212853fb247c4d2885c60226300e5a0",
+      "relationship_effect_count": 2,
+      "source_receipt_id": "ghsr_a160a08f0c04255e783b"
+    },
+    "incremental": {
+      "authority_id": "ocma_8db3f146b56e97dd1397",
+      "bounded_material_id": "obm_5d582f9cbf0d81e3e2ff",
+      "candidate_id": "ockc_f1d40e313d1da0fa2475",
+      "capture_set_hash": "sha256:442574f1fcfcc50403c53a0d6d4e8aeaa28096cdfd04d81675faaaeb9007f34f",
+      "checkpoint_id": "ock_ebe9629f69cbd8d0e8db",
+      "governed_run_id": "ghgr_f24538aeb1862cd5f902",
+      "observation_set_hash": "sha256:803d01b27efcbec4995ecec5eff3d849be63c17fa6151b6290eab0d71519d04a",
+      "projection_set_hash": "sha256:f43e6da06e8842391676f99533ed236dd840a499b15cb7870320df45fde63b4c",
+      "relationship_effect_count": 4,
+      "semantic_projection_hash": "sha256:0dd062579b9530c307e38f8f1a6935b15c281f6695cc0724d0bcf01b1d9c84e5",
+      "source_receipt_id": "ghsr_0a5fda84e9d3f79eb7cc",
+      "unresolved_relevance_count": 1
+    },
+    "safety": {
+      "authentication_authorized": false,
+      "automatic_merge_performed": false,
+      "gmail_write_authorized": false,
+      "live_mailbox_access_authorized": false,
+      "network_authorized": false,
+      "oauth_authorized": false,
+      "source_records_mutated": false
+    }
+  },
+  "fixed_clocks": [
+    "2026-08-10T12:00:00Z",
+    "2026-08-10T13:00:00Z"
+  ],
+  "scenario_id": "gmail-history-offline-bootstrap-plus-incremental-v1",
+  "schema_version": "signal_agent.m4c1_gmail_history_offline_compatibility_witness.v1",
+  "witness_hash": "sha256:22914c07c53630c452c8928a18d0b5e2595ce55e3180342640a6d3fb8d5d5a76"
+}
