@@ -1,0 +1,324 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "source_to_series.task_packet.v1.schema.json",
+  "title": "Source to Series campaign task packet v1",
+  "description": "Pending scoped tasks with source, decision, principle and evidence context. This packet carries no approval or completed-media receipt.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "source_to_series.task_packet.v1"
+    },
+    "packet_id": {
+      "type": "string",
+      "pattern": "^source-to-series\\.[a-f0-9]{24}$"
+    },
+    "executor": {
+      "const": "source-to-series"
+    },
+    "campaign_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$",
+      "maxLength": 128
+    },
+    "campaign_digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "decision_id": {
+      "type": "string",
+      "pattern": "^campaign_decision\\.[a-f0-9]{64}$"
+    },
+    "source_packet_id": {
+      "type": "string",
+      "pattern": "^campaign-source\\.[a-f0-9]{24}$"
+    },
+    "catalog_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "catalog_digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "catalog_notice": {
+      "type": "string",
+      "minLength": 1
+    },
+    "proposed_action": {
+      "enum": [
+        "revise_hook",
+        "clarify_message",
+        "deepen_explanation",
+        "vary_format",
+        "repeat_theme",
+        "run_small_test",
+        "adapt_platform"
+      ]
+    },
+    "working_hypothesis": {
+      "type": "string",
+      "minLength": 1
+    },
+    "lineage": {
+      "$ref": "campaign_context.v1.schema.json#/properties/lineage"
+    },
+    "purpose": {
+      "type": "string",
+      "minLength": 1
+    },
+    "constraints": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "maxItems": 100
+    },
+    "principle_ids": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "mirror",
+          "future_self",
+          "messaging",
+          "enemy",
+          "before",
+          "consistency",
+          "polarity",
+          "transformation",
+          "levels",
+          "gap",
+          "repeated_offender"
+        ]
+      },
+      "uniqueItems": true,
+      "maxItems": 11
+    },
+    "principle_guidance": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "enum": [
+              "mirror",
+              "future_self",
+              "messaging",
+              "enemy",
+              "before",
+              "consistency",
+              "polarity",
+              "transformation",
+              "levels",
+              "gap",
+              "repeated_offender"
+            ]
+          },
+          "source_label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "working_rule": {
+            "type": "string",
+            "minLength": 1
+          },
+          "decision_question": {
+            "type": "string",
+            "minLength": 1
+          },
+          "candidate_actions": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "revise_hook",
+                "clarify_message",
+                "deepen_explanation",
+                "vary_format",
+                "repeat_theme",
+                "run_small_test",
+                "adapt_platform",
+                "observe_more",
+                "expand_campaign",
+                "propose_lane_routing",
+                "pause",
+                "archive"
+              ]
+            },
+            "uniqueItems": true
+          },
+          "evidence_to_collect": {
+            "type": "string",
+            "minLength": 1
+          },
+          "limit": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "source_label",
+          "working_rule",
+          "decision_question",
+          "candidate_actions",
+          "evidence_to_collect",
+          "limit"
+        ],
+        "additionalProperties": false
+      },
+      "maxItems": 11
+    },
+    "evidence_limits": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "source_refs": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "items": {
+        "type": "object",
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$",
+            "maxLength": 128
+          },
+          "uri": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        },
+        "required": [
+          "source_id",
+          "uri",
+          "content_hash"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "claim_refs": {
+      "$ref": "../governed_authoring/source_packet.v1.schema.json#/properties/claims",
+      "minItems": 1
+    },
+    "tasks": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "items": {
+        "type": "object",
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "pattern": "^campaign-task\\.[a-f0-9]{24}$"
+          },
+          "output_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$",
+            "maxLength": 128
+          },
+          "kind": {
+            "enum": [
+              "short_post",
+              "essay",
+              "video_script",
+              "visual_brief",
+              "narration_script"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "const": "pending"
+          },
+          "source_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$",
+              "maxLength": 128
+            },
+            "minItems": 1,
+            "uniqueItems": true,
+            "maxItems": 32
+          },
+          "claim_ids": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$",
+              "maxLength": 128
+            },
+            "uniqueItems": true,
+            "maxItems": 200
+          }
+        },
+        "required": [
+          "task_id",
+          "output_id",
+          "kind",
+          "description",
+          "status",
+          "source_ids",
+          "claim_ids"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "publication_authorized": {
+      "const": false
+    },
+    "source_fidelity_requirements": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "execution_status": {
+      "const": "pending_external_executor"
+    },
+    "release_requirement": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "schema_version",
+    "packet_id",
+    "executor",
+    "campaign_id",
+    "campaign_digest",
+    "decision_id",
+    "source_packet_id",
+    "catalog_version",
+    "catalog_digest",
+    "catalog_notice",
+    "proposed_action",
+    "working_hypothesis",
+    "lineage",
+    "purpose",
+    "constraints",
+    "principle_ids",
+    "principle_guidance",
+    "evidence_limits",
+    "source_refs",
+    "claim_refs",
+    "tasks",
+    "publication_authorized",
+    "source_fidelity_requirements",
+    "execution_status",
+    "release_requirement"
+  ],
+  "additionalProperties": false
+}

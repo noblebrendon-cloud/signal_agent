@@ -1,0 +1,54 @@
+{
+  "schema_version": "campaign_context.v1",
+  "campaign_id": "garden-notes-demo",
+  "title": "A small garden-notes experiment",
+  "purpose": "Explain a simple way to record observations while keeping causal conclusions qualified.",
+  "phase": "planned",
+  "principle_ids": [
+    "messaging",
+    "transformation"
+  ],
+  "constraints": [
+    "Preserve the distinction between an observed pattern and an established cause."
+  ],
+  "sources": [
+    {
+      "source_id": "garden-note-source",
+      "text": "A weekly garden note records what was planted, the watering schedule, and the conditions observed. Comparing these notes can help a gardener notice patterns, but a single week's result does not prove what caused a plant to grow.",
+      "uri": "example:authored-garden-note",
+      "content_hash": "sha256:eba7e80088df6e85c0df651147d9de63ffd9bc6d30bd02f2f033e296ad4267a5",
+      "evidence_refs": [
+        "example:authored-garden-note"
+      ]
+    }
+  ],
+  "claims": [
+    {
+      "claim_id": "garden-note-claim",
+      "statement": "A garden notebook may help a person notice patterns; the notes alone do not establish a cause.",
+      "status": "qualified",
+      "evidence_refs": [
+        "example:authored-garden-note"
+      ]
+    }
+  ],
+  "review": {
+    "mission": "aligned",
+    "source_fidelity": "preserved",
+    "by": "example-editor",
+    "reason": "The illustrative brief preserves the sample source purpose and its causal qualification.",
+    "evidence_refs": [
+      "example:authored-garden-note"
+    ]
+  },
+  "evaluation_plan": null,
+  "observations": [],
+  "requested_outputs": [
+    {
+      "output_id": "garden-note-post",
+      "kind": "short_post",
+      "description": "Draft one concise introductory post using the source and retaining its causal qualification."
+    }
+  ],
+  "operator_request": null
+}

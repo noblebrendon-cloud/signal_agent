@@ -1,0 +1,737 @@
+{
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "campaign_context.v1"
+    },
+    "campaign_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$",
+      "maxLength": 128
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "purpose": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 8000
+    },
+    "phase": {
+      "type": "string",
+      "enum": [
+        "planned",
+        "testing",
+        "reviewing",
+        "paused",
+        "archived"
+      ]
+    },
+    "principle_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "mirror",
+          "future_self",
+          "messaging",
+          "enemy",
+          "before",
+          "consistency",
+          "polarity",
+          "transformation",
+          "levels",
+          "gap",
+          "repeated_offender"
+        ]
+      },
+      "maxItems": 11,
+      "uniqueItems": true
+    },
+    "constraints": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 2048
+      },
+      "maxItems": 50,
+      "uniqueItems": true
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$",
+            "maxLength": 128
+          },
+          "text": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 200000
+          },
+          "uri": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 4096
+          },
+          "content_hash": {
+            "type": "string",
+            "pattern": "^(?:|(?:sha256:)?[a-fA-F0-9]{64})$",
+            "maxLength": 71
+          },
+          "evidence_refs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            },
+            "maxItems": 200,
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "source_id"
+        ],
+        "additionalProperties": false
+      },
+      "maxItems": 32
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "claim_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$",
+            "maxLength": 128
+          },
+          "statement": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 8000
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "confirmed",
+              "qualified",
+              "unverified"
+            ]
+          },
+          "evidence_refs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            },
+            "maxItems": 200,
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "claim_id",
+          "statement"
+        ],
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "const": "confirmed"
+                }
+              },
+              "required": [
+                "status"
+              ]
+            },
+            "then": {
+              "required": [
+                "evidence_refs"
+              ],
+              "properties": {
+                "evidence_refs": {
+                  "minItems": 1
+                }
+              }
+            }
+          }
+        ]
+      },
+      "maxItems": 200
+    },
+    "review": {
+      "type": "object",
+      "properties": {
+        "mission": {
+          "type": "string",
+          "enum": [
+            "aligned",
+            "misaligned",
+            "unknown"
+          ]
+        },
+        "source_fidelity": {
+          "type": "string",
+          "enum": [
+            "preserved",
+            "violated",
+            "unknown"
+          ]
+        },
+        "by": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 256
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 4000
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048
+          },
+          "maxItems": 200,
+          "uniqueItems": true
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "anyOf": [
+              {
+                "properties": {
+                  "mission": {
+                    "enum": [
+                      "aligned",
+                      "misaligned"
+                    ]
+                  }
+                },
+                "required": [
+                  "mission"
+                ]
+              },
+              {
+                "properties": {
+                  "source_fidelity": {
+                    "enum": [
+                      "preserved",
+                      "violated"
+                    ]
+                  }
+                },
+                "required": [
+                  "source_fidelity"
+                ]
+              }
+            ]
+          },
+          "then": {
+            "required": [
+              "by",
+              "reason"
+            ],
+            "properties": {
+              "by": {
+                "minLength": 1
+              },
+              "reason": {
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "evaluation_plan": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "window_start": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time",
+                  "maxLength": 64
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "window_end": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time",
+                  "maxLength": 64
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "platform": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "format": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "minimum_observations": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1000000000000
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "minimum_exposures": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1000000000000
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "minimum_independent_variants": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1000000000000
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "observations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "observation_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$",
+            "maxLength": 128
+          },
+          "variant_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$",
+            "maxLength": 128
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "recognition",
+              "request_for_depth",
+              "misunderstanding",
+              "conflict",
+              "repeat_value",
+              "performance",
+              "other"
+            ]
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "source_ref": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 4096
+          },
+          "observed_at": {
+            "type": "string",
+            "format": "date-time",
+            "maxLength": 64
+          },
+          "platform": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "format": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "verification": {
+            "type": "string",
+            "enum": [
+              "verified",
+              "reported",
+              "unverified",
+              "contradicted"
+            ]
+          },
+          "verified_by": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 256
+          },
+          "exposures": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000000000000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "metric": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "numerator": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000000000000
+                  },
+                  "denominator": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1000000000000
+                  }
+                },
+                "required": [
+                  "name",
+                  "numerator",
+                  "denominator"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "observation_id",
+          "variant_id",
+          "kind",
+          "summary",
+          "source_ref",
+          "observed_at",
+          "platform",
+          "format",
+          "verification"
+        ],
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "verification": {
+                  "const": "verified"
+                }
+              },
+              "required": [
+                "verification"
+              ]
+            },
+            "then": {
+              "required": [
+                "verified_by"
+              ],
+              "properties": {
+                "verified_by": {
+                  "minLength": 1
+                },
+                "source_ref": {
+                  "minLength": 1
+                }
+              }
+            }
+          }
+        ]
+      },
+      "maxItems": 1000
+    },
+    "requested_outputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "output_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$",
+            "maxLength": 128
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "short_post",
+              "essay",
+              "video_script",
+              "visual_brief",
+              "narration_script"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          }
+        },
+        "required": [
+          "output_id",
+          "kind",
+          "description"
+        ],
+        "additionalProperties": false
+      },
+      "maxItems": 32
+    },
+    "operator_request": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "action": {
+              "type": "string",
+              "enum": [
+                "observe_more",
+                "revise_hook",
+                "clarify_message",
+                "deepen_explanation",
+                "vary_format",
+                "repeat_theme",
+                "run_small_test",
+                "adapt_platform",
+                "expand_campaign",
+                "propose_lane_routing",
+                "pause",
+                "archive"
+              ]
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4000
+            },
+            "by": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "evidence_refs": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2048
+              },
+              "maxItems": 200,
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "action",
+            "reason",
+            "by"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "lineage": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "parent_campaign_digest": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string",
+                  "pattern": "^sha256:[a-f0-9]{64}$",
+                  "maxLength": 71
+                }
+              ]
+            },
+            "parent_decision_id": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string",
+                  "pattern": "^campaign_decision\\.[a-f0-9]{64}$",
+                  "maxLength": 82
+                }
+              ]
+            },
+            "parent_variant_ids": {
+              "type": "array",
+              "maxItems": 200,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$",
+                "maxLength": 128
+              }
+            },
+            "corrected_claim_ids": {
+              "type": "array",
+              "maxItems": 200,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$",
+                "maxLength": 128
+              }
+            },
+            "change_note": {
+              "type": "string",
+              "maxLength": 4000
+            }
+          },
+          "additionalProperties": false,
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "corrected_claim_ids": {
+                    "minItems": 1
+                  }
+                },
+                "required": [
+                  "corrected_claim_ids"
+                ]
+              },
+              "then": {
+                "required": [
+                  "change_note"
+                ],
+                "properties": {
+                  "change_note": {
+                    "minLength": 1,
+                    "pattern": "\\S"
+                  }
+                },
+                "anyOf": [
+                  {
+                    "required": [
+                      "parent_campaign_digest"
+                    ],
+                    "properties": {
+                      "parent_campaign_digest": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  {
+                    "required": [
+                      "parent_decision_id"
+                    ],
+                    "properties": {
+                      "parent_decision_id": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  {
+                    "required": [
+                      "parent_variant_ids"
+                    ],
+                    "properties": {
+                      "parent_variant_ids": {
+                        "minItems": 1
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "description": "Caller-supplied predecessor and correction references. Validation verifies shape and correction context, not parent existence or authority."
+    }
+  },
+  "required": [
+    "schema_version",
+    "campaign_id",
+    "title",
+    "purpose",
+    "phase"
+  ],
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "campaign_context.v1.schema.json",
+  "title": "Campaign context v1",
+  "description": "Strict campaign input. Runtime additionally verifies UTF-8 hashes, cross-field denominators, timestamps, duplicate collection IDs and a 1 MiB input limit. Editorial review is an attributed content assessment, not release authority."
+}

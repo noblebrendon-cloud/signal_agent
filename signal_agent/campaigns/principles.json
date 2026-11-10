@@ -1,0 +1,185 @@
+{
+  "schema_version": "campaign_principle_catalog.v1",
+  "version": "1.0.0",
+  "status": "proposed_creative_heuristics_not_universal_laws",
+  "source": {
+    "filename": "1000005066.mp4",
+    "sha256": "dba063569a7992164d91f5b8997445178590cb4ce2eab99f83975f669b3f978d",
+    "observed_title": "11 Laws of Content Creation",
+    "observation_basis": "visible_on_screen_labels",
+    "spoken_transcript_verified": false,
+    "interpretation_status": "The eleven names were read from the recording. Operational meanings below are proposed adaptations for Signal Agent, not a verified transcription of the speaker's definitions.\n"
+  },
+  "interpretation_notice": "The eleven labels are observed on screen. Working rules are proposed adaptations for Signal Agent; the spoken definitions were not verified.",
+  "application": "Select relevant principles as hypothesis prompts. An empty selection is valid. They are not obligatory hard gates, success thresholds, or release authority.",
+  "principles": [
+    {
+      "id": "mirror",
+      "source_label": "Law of the mirror",
+      "working_rule": "Describe a recognizable experience without inventing knowledge about the audience.",
+      "decision_question": "What can a person recognize from their own experience?",
+      "candidate_actions": [
+        "clarify_message",
+        "revise_hook"
+      ],
+      "evidence_to_collect": "Actual audience language, recurring questions, and relevant source material.",
+      "limit": "Recognition is a hypothesis until supported; do not infer private traits from clicks."
+    },
+    {
+      "id": "future_self",
+      "source_label": "Law of future self",
+      "working_rule": "Name a credible direction of growth, understanding, or useful action.",
+      "decision_question": "What could someone understand or do differently after engaging?",
+      "candidate_actions": [
+        "clarify_message",
+        "deepen_explanation"
+      ],
+      "evidence_to_collect": "Questions about next steps and voluntary reports of application.",
+      "limit": "Do not promise transformation or treat engagement as proof that it happened."
+    },
+    {
+      "id": "messaging",
+      "source_label": "Law of messaging",
+      "working_rule": "Keep a clear central claim consistent with its source and qualifications.",
+      "decision_question": "Can the intended takeaway be stated accurately in one sentence?",
+      "candidate_actions": [
+        "clarify_message",
+        "revise_hook"
+      ],
+      "evidence_to_collect": "Audience paraphrases, misunderstandings, source checks, and editorial assessment.",
+      "limit": "Clarity must preserve qualifications rather than delete them."
+    },
+    {
+      "id": "enemy",
+      "source_label": "Law of the enemy",
+      "working_rule": "Identify the obstacle, false claim, harmful practice, or conflict the campaign addresses.",
+      "decision_question": "What exactly is being challenged, and what supports that characterization?",
+      "candidate_actions": [
+        "clarify_message",
+        "run_small_test"
+      ],
+      "evidence_to_collect": "Documented claims, relevant examples, and audience interpretation.",
+      "limit": "Do not manufacture conflict or intensify hostility to improve metrics."
+    },
+    {
+      "id": "before",
+      "source_label": "Law of before",
+      "working_rule": "Establish the starting situation before introducing the change or explanation.",
+      "decision_question": "What does a new viewer need to understand first?",
+      "candidate_actions": [
+        "revise_hook",
+        "deepen_explanation"
+      ],
+      "evidence_to_collect": "Missing-context questions and observed comprehension.",
+      "limit": "Do not fabricate personal history, testimonials, or a before-and-after claim."
+    },
+    {
+      "id": "consistency",
+      "source_label": "Law of consistency",
+      "working_rule": "Maintain a recognizable purpose and a feasible review-and-production cadence.",
+      "decision_question": "What should stay stable while this experiment changes one useful thing?",
+      "candidate_actions": [
+        "repeat_theme",
+        "vary_format"
+      ],
+      "evidence_to_collect": "Version history, completed publishing records, and available production capacity.",
+      "limit": "Consistency does not require identical output or an unsustainable schedule."
+    },
+    {
+      "id": "polarity",
+      "source_label": "Law of polarity",
+      "working_rule": "State a defensible position and its reasons clearly.",
+      "decision_question": "What is the actual disagreement, including uncertainty and fair alternatives?",
+      "candidate_actions": [
+        "clarify_message",
+        "deepen_explanation"
+      ],
+      "evidence_to_collect": "Substantive objections, misunderstandings, and supporting sources.",
+      "limit": "Disagreement and comment volume are not automatic evidence of usefulness."
+    },
+    {
+      "id": "transformation",
+      "source_label": "Law of transformation",
+      "working_rule": "Specify the useful difference the content is intended to make.",
+      "decision_question": "What should change in understanding, capability, or chosen action?",
+      "candidate_actions": [
+        "deepen_explanation",
+        "run_small_test"
+      ],
+      "evidence_to_collect": "Observable task outcomes or voluntary feedback relevant to the intended benefit.",
+      "limit": "Keep intended effects separate from demonstrated effects."
+    },
+    {
+      "id": "levels",
+      "source_label": "Law of levels",
+      "working_rule": "Provide different depths of explanation for different entry points.",
+      "decision_question": "Does this need an introduction, an explanation, or a practical application?",
+      "candidate_actions": [
+        "deepen_explanation",
+        "vary_format",
+        "adapt_platform"
+      ],
+      "evidence_to_collect": "Questions indicating missing context, requests for depth, and format-specific results.",
+      "limit": "Avoid ranking people by worth or assuming their readiness from unsupported profiling."
+    },
+    {
+      "id": "gap",
+      "source_label": "Law of gap",
+      "working_rule": "Use a meaningful unanswered question and provide a proportionate answer.",
+      "decision_question": "What honest question will this piece open and resolve?",
+      "candidate_actions": [
+        "revise_hook",
+        "clarify_message"
+      ],
+      "evidence_to_collect": "Hook-to-content agreement, retention context, and whether the answer was understood.",
+      "limit": "Do not hide essential context or promise a payoff the source cannot support."
+    },
+    {
+      "id": "repeated_offender",
+      "source_label": "Law of repeated offender",
+      "working_rule": "Revisit durable ideas with fresh examples, evidence, or presentation.",
+      "decision_question": "What deserves another expression, and what will this version add?",
+      "candidate_actions": [
+        "repeat_theme",
+        "vary_format",
+        "adapt_platform"
+      ],
+      "evidence_to_collect": "Variant lineage, recurring usefulness, repetition complaints, and comparable results.",
+      "limit": "Do not equate repetition with spam or repeat a corrected claim."
+    }
+  ],
+  "action_catalog": {
+    "observe_more": "Collect a missing observation or wait for the planned evaluation window.",
+    "revise_hook": "Propose a different opening while preserving the claim and payoff.",
+    "clarify_message": "Resolve ambiguity, missing context, or competing takeaways.",
+    "deepen_explanation": "Produce a sourced explanation or application at the appropriate depth.",
+    "vary_format": "Express the same supported idea in a different format.",
+    "repeat_theme": "Create a distinct, traceable expression of a durable theme.",
+    "run_small_test": "Define a bounded first test or a deliberate variation.",
+    "adapt_platform": "Adjust presentation for a destination while preserving meaning and permissions.",
+    "expand_campaign": "Propose a broader series when relevant repeated evidence and capacity support it.",
+    "propose_lane_routing": "Recommend a durable meaning-based destination with supporting evidence.",
+    "pause": "Suspend further production with a recorded reason and review condition.",
+    "archive": "Conclude the campaign and preserve its findings."
+  },
+  "mission_boundaries": [
+    "Keep the campaign's purpose distinct from engagement metrics.",
+    "Preserve source meaning and qualifications when changing format.",
+    "Treat observed audience responses as evidence with context and uncertainty.",
+    "Use truthful framing; deliver the answer or value promised by a hook.",
+    "Critique identifiable claims, practices, or obstacles without manufacturing an enemy.",
+    "Keep existing publication and state-transition authorization in force.",
+    "Do not let engagement alone rewrite mission, source claims, or permissions."
+  ],
+  "evidence_rules": [
+    "For an initial campaign, absent audience evidence permits a labeled exploratory test proposal.",
+    "Absent audience evidence cannot establish audience success, failure, or a winning formula, or justify lane promotion on performance grounds. Lane eligibility and authorization remain governed by the existing protocol.",
+    "Record counts and denominators together; small samples remain uncertain.",
+    "Compare within relevant platform, format, length, audience, and observation-window contexts.",
+    "Treat uncontrolled comparisons as observational; do not claim causal lift.",
+    "Read what comments mean; volume alone does not distinguish recognition, confusion, or conflict.",
+    "Preserve contradictory evidence and failed experiments.",
+    "Use campaign-specific evaluation criteria; do not invent universal success thresholds.",
+    "Treat repeatable patterns as revisable operating knowledge, not universal laws."
+  ]
+}
