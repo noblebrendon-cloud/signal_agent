@@ -63,3 +63,14 @@ Module README (legacy physical path): `signal_agent/leviathan/diagnostic/drift_a
 - `repro_out/`
 - `.tmp/`
 - `.tmp_offload_out/`
+
+## Campaign principles and traversal
+
+`signal_agent.campaigns` evaluates versioned campaign context, proposes an evidence-linked next action, and prepares provisional Source-to-Series task packets through the existing governed authoring runtime.
+
+- Entry point: `python -m signal_agent.campaigns`
+- Contract, CLI/API examples, evidence limits, and verification: [Campaign guide](docs/campaigns/README.md)
+- Controlled local trial: `python scripts/campaign_trial.py`
+- CI: `.github/workflows/campaign-verification.yml`
+
+Evaluation produces proposals. Handoffs preserve exact sources and pending tasks; content production and release require their own execution records and existing governance.

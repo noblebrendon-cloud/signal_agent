@@ -1,0 +1,4 @@
+# Test/schema dependencies only. The campaign runtime uses Python's stdlib.
+pytest==9.2.0
+jsonschema==4.26.0
+PyYAML==6.0.3

@@ -1,0 +1,211 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "campaign_handoff.v1.schema.json",
+  "title": "Campaign provisional handoff v1",
+  "description": "Actual governed authoring metadata plus a pending Source-to-Series task packet. Relational identifiers and content hashes must also be checked by consumers.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "campaign_handoff.v1"
+    },
+    "handoff_id": {
+      "type": "string",
+      "pattern": "^campaign-handoff\\.[a-f0-9]{24}$"
+    },
+    "campaign_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$",
+      "maxLength": 128
+    },
+    "campaign_digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "decision": {
+      "$ref": "campaign_decision.v1.schema.json"
+    },
+    "source_packet": {
+      "allOf": [
+        {
+          "$ref": "../governed_authoring/source_packet.v1.schema.json"
+        },
+        {
+          "properties": {
+            "requested_output_status": {
+              "const": "provisional"
+            },
+            "draft_mode": {
+              "const": "provisional"
+            },
+            "review_decision": {
+              "type": "null"
+            }
+          }
+        }
+      ]
+    },
+    "authoring_result": {
+      "type": "object",
+      "properties": {
+        "source_packet": {
+          "allOf": [
+            {
+              "$ref": "../governed_authoring/source_packet.v1.schema.json"
+            },
+            {
+              "properties": {
+                "requested_output_status": {
+                  "const": "provisional"
+                },
+                "draft_mode": {
+                  "const": "provisional"
+                },
+                "review_decision": {
+                  "type": "null"
+                }
+              }
+            }
+          ]
+        },
+        "draft_candidate": {
+          "allOf": [
+            {
+              "$ref": "../governed_authoring/draft_candidate.v1.schema.json"
+            },
+            {
+              "properties": {
+                "status": {
+                  "const": "provisional"
+                }
+              }
+            }
+          ]
+        },
+        "review_decision": {
+          "type": "null"
+        },
+        "output_manifest": {
+          "allOf": [
+            {
+              "$ref": "../governed_authoring/output_manifest.v1.schema.json"
+            },
+            {
+              "properties": {
+                "output_status": {
+                  "const": "provisional"
+                },
+                "review_decision_id": {
+                  "const": ""
+                },
+                "canonical_ledger_entry_id": {
+                  "const": ""
+                }
+              }
+            }
+          ]
+        },
+        "formal_decision": {
+          "type": "object",
+          "properties": {
+            "deterministic_decision_id": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "decision": {
+              "const": "EMIT_PROVISIONAL_DRAFT"
+            },
+            "decision_reason": {
+              "type": "string",
+              "minLength": 1
+            },
+            "gate_results": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "properties": {
+                  "gate_name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "status": {
+                    "enum": [
+                      "pass",
+                      "fail",
+                      "hold"
+                    ]
+                  },
+                  "reason_code": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "message": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "outcome": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "gate_name",
+                  "status",
+                  "reason_code",
+                  "message"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "proposal_id": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "deterministic_decision_id",
+            "decision",
+            "decision_reason",
+            "gate_results",
+            "proposal_id"
+          ],
+          "additionalProperties": false
+        },
+        "canonical_ledger_entry": {
+          "type": "null"
+        }
+      },
+      "required": [
+        "source_packet",
+        "draft_candidate",
+        "review_decision",
+        "output_manifest",
+        "formal_decision",
+        "canonical_ledger_entry"
+      ],
+      "additionalProperties": false
+    },
+    "production_packet": {
+      "$ref": "source_to_series.task_packet.v1.schema.json"
+    },
+    "execution_status": {
+      "const": "prepared_not_executed"
+    },
+    "publication_authorized": {
+      "const": false
+    }
+  },
+  "required": [
+    "schema_version",
+    "handoff_id",
+    "campaign_id",
+    "campaign_digest",
+    "decision",
+    "source_packet",
+    "authoring_result",
+    "production_packet",
+    "execution_status",
+    "publication_authorized"
+  ],
+  "additionalProperties": false
+}
